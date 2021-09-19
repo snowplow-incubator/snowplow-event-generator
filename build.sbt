@@ -26,6 +26,8 @@ lazy val core = project.in(file("."))
     Dependencies.Libraries.fs2,
     Dependencies.Libraries.blobstore,
     Dependencies.Libraries.analyticsSdk,
+    Dependencies.Libraries.pureconfig,
+    Dependencies.Libraries.pureconfigCirce,
     Dependencies.Libraries.scalaCheck,
     // Scala (test only)
     Dependencies.Libraries.specs2,
