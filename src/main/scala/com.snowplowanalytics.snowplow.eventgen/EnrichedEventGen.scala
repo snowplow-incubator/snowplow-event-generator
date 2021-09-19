@@ -18,7 +18,7 @@ import java.util.UUID
 import scala.util.Random
 
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.Sync
 
 import fs2.Stream
 
@@ -34,18 +34,6 @@ import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{ Unstruc
 import com.snowplowanalytics.snowplow.eventgen.{ Timestamps, ContextsGen }
 
 object EnrichedEventGen {
-
-  trait Ran[F[_]] {
-    def int: F[Int]
-    def char: F[Char]
-  }
-
-  object Ran {
-    val ioRan: Ran[IO] = new Ran[IO] {
-      def int: IO[Int] = IO(Random.nextInt())
-      def char: IO[Char] = IO(Random.nextPrintableChar())
-    }
-  }
 
   private def emptyEvent(id: UUID, collectorTstamp: Instant, vCollector: String, vEtl: String): Event =
     Event(None, None, None, collectorTstamp, None, None, id, None, None, None, vCollector, vEtl, None, None, None,
@@ -195,10 +183,13 @@ object EnrichedEventGen {
   private def strGen(n: Int, gen: Gen[Char]): Gen[String] =
     Gen.chooseNum(1, n).flatMap(len => Gen.listOfN(len, gen).map(_.mkString))
 
-  val pageViewGen: Gen[Event] = for {
+
+  def pageViewGen(idPair: Duplicates.Pair): Gen[Event] =
+    for {
     timestamps <- Timestamps.gen
 
-    id <- Gen.uuid
+    id = idPair.id
+    fingerprint = idPair.hash
     collectorTstamp = timestamps.collector
     etlTstamp = timestamps.etl
     userIpAddress <- ipAddress
@@ -260,83 +251,83 @@ object EnrichedEventGen {
     event_version = Some("1-0-0")
   )
 
-  val linkClickGen: Gen[Event] = for {
-    id <- Gen.uuid
-    timestamps <- Timestamps.gen
+  def linkClickGen(idPair: Duplicates.Pair): Gen[Event] =
+    for {
+      timestamps <- Timestamps.gen
+      id          = idPair.id
+      fingerprint = idPair.hash
 
-    collectorTstamp = timestamps.collector
-    etlTstamp = timestamps.etl
-    userIpAddress <- ipAddress
-    domainUserId <- Gen.uuid
-    domainSessionIdx <- Gen.chooseNum(1, 10000)
-    networkUserId <- Gen.uuid
-    pageUrlScheme <- urlSchemeGen
-    pageUrlPrefix <- urlPrefixGen
-    pageUrlDomain <- urlDomainGen
-    pageUrlTld <- urlTldGen
-    pageUrlHost = s"$pageUrlPrefix$pageUrlDomain$pageUrlTld"
-    pageUrlPath <- urlPathGen
-    pageUrl = s"$pageUrlScheme://$pageUrlHost/$pageUrlPath"
-    pageTitle <- pageTitleGen
-    refrUrlScheme <- urlSchemeGen
-    refrUrlPrefix <- urlPrefixGen
-    refrUrlTld <- urlTldGen
-    refrUrlHost = s"$refrUrlPrefix$RefrUrlDomain$refrUrlTld"
-    refrUrlPath <- urlPathGen
-    contexts <- eventContextGen
-    unstruct <- linkClickUnstructGen
-    pageReferrer = s"$refrUrlScheme://$refrUrlHost/$refrUrlPath"
-    derivedContexts <- derivedContextGen
-    domainSessionId <- Gen.uuid
-    derivedTstamp = timestamps.derived
-  } yield emptyEvent(id, collectorTstamp, VCollector, VEtl).copy(
-    app_id = Some(AppId),
-    platform = Some(Platform),
-    etl_tstamp = Some(etlTstamp),
-    event = Some("unstruct"),
-    name_tracker = Some(NameTracker),
-    v_tracker = Some(VTracker),
-    user_id = Some(UserId),
-    user_ipaddress = Some(userIpAddress),
-    domain_userid = Some(domainUserId.toString),
-    domain_sessionidx = Some(domainSessionIdx),
-    network_userid = Some(networkUserId.toString),
-    page_url = Some(pageUrl),
-    page_title = Some(pageTitle),
-    page_referrer = Some(pageReferrer),
-    page_urlscheme = Some(pageUrlScheme),
-    page_urlhost = Some(pageUrlHost),
-    page_urlpath = Some(pageUrlPath),
-    refr_urlscheme = Some(refrUrlScheme),
-    refr_urlhost = Some(refrUrlHost),
-    refr_urlpath = Some(refrUrlPath),
-    refr_medium = Some(RefrMedium),
-    refr_source = Some(RefrSource),
-    mkt_medium = Some(MktMedium),
-    mkt_source = Some(MktSource),
-    mkt_campaign = Some(MktCampaign),
-    contexts = contexts,
-    unstruct_event = unstruct,
-    useragent = Some(Useragent),
-    derived_contexts = derivedContexts,
-    domain_sessionid = Some(domainSessionId.toString),
-    derived_tstamp = Some(derivedTstamp),
-    event_vendor = Some("com.snowplowanalytics.snowplow"),
-    event_name = Some("link_click"),
-    event_format = Some(EventFormat),
-    event_version = Some("1-0-1")
-  )
+      collectorTstamp = timestamps.collector
+      etlTstamp = timestamps.etl
+      userIpAddress <- ipAddress
+      domainUserId <- Gen.uuid
+      domainSessionIdx <- Gen.chooseNum(1, 10000)
+      networkUserId <- Gen.uuid
+      pageUrlScheme <- urlSchemeGen
+      pageUrlPrefix <- urlPrefixGen
+      pageUrlDomain <- urlDomainGen
+      pageUrlTld <- urlTldGen
+      pageUrlHost = s"$pageUrlPrefix$pageUrlDomain$pageUrlTld"
+      pageUrlPath <- urlPathGen
+      pageUrl = s"$pageUrlScheme://$pageUrlHost/$pageUrlPath"
+      pageTitle <- pageTitleGen
+      refrUrlScheme <- urlSchemeGen
+      refrUrlPrefix <- urlPrefixGen
+      refrUrlTld <- urlTldGen
+      refrUrlHost = s"$refrUrlPrefix$RefrUrlDomain$refrUrlTld"
+      refrUrlPath <- urlPathGen
+      contexts <- eventContextGen
+      unstruct <- linkClickUnstructGen
+      pageReferrer = s"$refrUrlScheme://$refrUrlHost/$refrUrlPath"
+      derivedContexts <- derivedContextGen
+      domainSessionId <- Gen.uuid
+      derivedTstamp = timestamps.derived
+    } yield emptyEvent(id, collectorTstamp, VCollector, VEtl).copy(
+      app_id = Some(AppId),
+      platform = Some(Platform),
+      etl_tstamp = Some(etlTstamp),
+      event = Some("unstruct"),
+      name_tracker = Some(NameTracker),
+      v_tracker = Some(VTracker),
+      user_id = Some(UserId),
+      user_ipaddress = Some(userIpAddress),
+      domain_userid = Some(domainUserId.toString),
+      domain_sessionidx = Some(domainSessionIdx),
+      network_userid = Some(networkUserId.toString),
+      page_url = Some(pageUrl),
+      page_title = Some(pageTitle),
+      page_referrer = Some(pageReferrer),
+      page_urlscheme = Some(pageUrlScheme),
+      page_urlhost = Some(pageUrlHost),
+      page_urlpath = Some(pageUrlPath),
+      refr_urlscheme = Some(refrUrlScheme),
+      refr_urlhost = Some(refrUrlHost),
+      refr_urlpath = Some(refrUrlPath),
+      refr_medium = Some(RefrMedium),
+      refr_source = Some(RefrSource),
+      mkt_medium = Some(MktMedium),
+      mkt_source = Some(MktSource),
+      mkt_campaign = Some(MktCampaign),
+      contexts = contexts,
+      unstruct_event = unstruct,
+      useragent = Some(Useragent),
+      derived_contexts = derivedContexts,
+      domain_sessionid = Some(domainSessionId.toString),
+      derived_tstamp = Some(derivedTstamp),
+      event_vendor = Some("com.snowplowanalytics.snowplow"),
+      event_name = Some("link_click"),
+      event_format = Some(EventFormat),
+      event_version = Some("1-0-1"),
+      event_fingerprint = Some(fingerprint)
+    )
 
-  val eventGen: Gen[Event] = Gen.oneOf(pageViewGen, linkClickGen)
 
-  def generateEvent(idPair: Duplicates.Pair) =
-    Duplicates.runGen(eventGen)
+  def generateEvent[F[_]: Sync](idPair: Duplicates.Pair) =
+    Duplicates.runGen[F, Event](Gen.oneOf(pageViewGen(idPair), linkClickGen(idPair)))
 
-  def eventStream(duplicates: Duplicates.Distribution): Stream[IO, Event] =
-    Stream.resource(Duplicates.pregeneratePairs(???)).flatMap { duplicates =>
-      Stream.repeatEval(IO(eventGen.sample)).collect {
-        case Some(x) => x
-      }
+  def eventStream[F[_]: Sync](config: Config): Stream[F, Event] =
+    Stream.resource(Duplicates.pregeneratePairs[F](config.duplicates.totalDupes)).flatMap { state =>
+      Stream.repeatEval(Duplicates.generatePair[F](state, config.duplicates, config.total).flatMap(generateEvent[F]))
     }
     
 }

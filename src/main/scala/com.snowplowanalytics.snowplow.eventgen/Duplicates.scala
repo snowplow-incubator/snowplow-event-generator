@@ -1,6 +1,18 @@
+/*
+ * Copyright (c) 2021 Snowplow Analytics Ltd. All rights reserved.
+ *
+ * This program is licensed to you under the Apache License Version 2.0,
+ * and you may not use this file except in compliance with the Apache License Version 2.0.
+ * You may obtain a copy of the Apache License Version 2.0 at http://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the Apache License Version 2.0 is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
+ */
 package com.snowplowanalytics.snowplow.eventgen
 
-import cats.effect.{ IO, Resource }
+import cats.effect.{ Sync, Resource }
 import cats.effect.concurrent.Ref
 import cats.implicits._
 
@@ -69,21 +81,21 @@ object Duplicates {
    *                    Natural deduplication runs first, so `Count(2, 3)`
    *                    will result into three unique events
    */
-  def pregeneratePairs(cardinality: Int): Resource[IO, Ref[IO, State]] = {
+  def pregeneratePairs[F[_]: Sync](cardinality: Int): Resource[F, Ref[F, State]] = {
     val pairs = runGen(genPair)
       .replicateA(cardinality)
       .map { pairs => pairs.map(pair => pair -> Count(0, 0)).toMap }
-      .flatMap { pairs => Ref.of[IO, State](State(pairs, false)) }
+      .flatMap { pairs => Ref.of[F, State](State(pairs, false)) }
 
     Resource.eval(pairs)
   }
 
   /** Convert `Gen` into `IO` */
-  def runGen[A](gen: Gen[A]): IO[A] = {
-    def go(attempt: Int): IO[A] =
-      if (attempt >= 5) IO.raiseError(new RuntimeException("Couldn't generate a pair after several attempts"))
-      else IO(gen.sample).flatMap {
-        case Some(a) => IO.pure(a)
+  def runGen[F[_]: Sync, A](gen: Gen[A]): F[A] = {
+    def go(attempt: Int): F[A] =
+      if (attempt >= 5) Sync[F].raiseError(new RuntimeException("Couldn't generate a pair after several attempts"))
+      else Sync[F].delay(gen.sample).flatMap {
+        case Some(a) => Sync[F].pure(a)
         case None => go(attempt + 1)
       }
 
@@ -102,7 +114,7 @@ object Duplicates {
     * @param total total amount of events in the dataset being generated
     *
     */
-  def generatePair(state: Ref[IO, State], config: Distribution, total: Int): IO[Pair] = {
+  def generatePair[F[_]: Sync](state: Ref[F, State], config: Config.Duplicates, total: Int): F[Pair] = {
     val distribution = Distribution.build(config, total)
     for {
       kind <- runGen(distribution)
@@ -126,17 +138,6 @@ object Duplicates {
     }
   }
 
-  /** 
-   * Duplicate distribution settings
-   * @param natPerc percentage of natural duplicates in the whole dataset (0 to 100)
-   * @param synPerc percentage of synthetic duplicates in the whole dataset (0 to 100)
-   * @param totalDupes exact cardinality of pre-generated duplicate set, e.g. for a dataset
-   *                   of 100 events natPerc=10,totalDupes=10 will lean towards 10 duplicates
-   *                   each of which is encountered only twice in the dataset, whereas
-   *                   natPerc=10,totalDupes=1 will result into 1 event encountered 11 times
-   */
-  case class Distribution(natPerc: Int, synPerc: Int, totalDupes: Int)
-
   object Distribution {
     /**
      * Typical distribution
@@ -144,12 +145,12 @@ object Duplicates {
      * 3% of synthetic dupes
      * 100 unique duplicates
      */
-    val Default = Distribution(5, 3, 100)
+    val Default = Config.Duplicates(5, 3, 100)
 
     /** Build according to the total amount of events */
-    def build(config: Distribution, totalEvents: Int): Gen[Duplicate] =
+    def build(config: Config.Duplicates, totalEvents: Int): Gen[Duplicate] =
       config match {
-        case Distribution(natPerc, synPerc, _) =>
+        case Config.Duplicates(natPerc, synPerc, _) =>
           val howManyNatDupes = (totalEvents / 100) * natPerc
           val howManySynDupes = (totalEvents / 100) * synPerc
           Gen.frequency(howManyNatDupes -> Duplicate.Natural,
@@ -172,7 +173,7 @@ object Duplicates {
   }
 
   /** Pull a pair from duplicate set or generate new pair */
-  def getPair(state: Ref[IO, State], kind: Duplicate): IO[Pair] =
+  def getPair[F[_]: Sync](state: Ref[F, State], kind: Duplicate): F[Pair] =
     kind match {
       case No => runGen(genPair)
       case Synthetic => 
