@@ -25,6 +25,7 @@ lazy val core = project.in(file("."))
   .settings(libraryDependencies ++= Seq(
     Dependencies.Libraries.fs2,
     Dependencies.Libraries.blobstore,
+    Dependencies.Libraries.decline,
     Dependencies.Libraries.analyticsSdk,
     Dependencies.Libraries.pureconfig,
     Dependencies.Libraries.pureconfigCirce,

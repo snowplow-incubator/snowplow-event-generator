@@ -1,6 +1,7 @@
 package com.snowplowanalytics.snowplow.eventgen
 
-import java.nio.file.Paths
+import java.nio.file.{ Paths, Path }
+import java.net.URI
 
 import scala.util.Random
 
@@ -33,31 +34,29 @@ object Sink {
       name     <- getName
     } yield (totalNow, name, EnrichedEventGen.eventStream(config).take(perFile.toLong))
 
-  def getSink[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, path: String): Sink[F] =
-    if (path.startsWith("file://")) {
-      (fileName: FileName) =>
-        (in: Stream[F, Byte]) => {
-          val mkDir = createDirectory[F](blocker, Paths.get(path)).attempt.as(Paths.get(path).toAbsolutePath)
-          Stream.eval(mkDir).flatMap { dir =>
-            in.through(writeAll[F](Paths.get(s"$dir/$fileName"), blocker))
+  def getSink[F[_]: ConcurrentEffect: ContextShift: Timer](blocker: Blocker, path: URI): Sink[F] =
+    (fileName: FileName) =>
+      if (path.toString.startsWith("file:")) {
+          (in: Stream[F, Byte]) => {
+            val mkDir = createDirectory[F](blocker, Path.of(path)).attempt.as(Path.of(path))
+            Stream.eval(mkDir).flatMap { dir =>
+              in.through(writeAll[F](Paths.get(s"$dir/$fileName"), blocker))
+            }
           }
-        }
-    }
-    else if (path.startsWith("s3://")) {
-      val store = S3Store[F](S3AsyncClient.builder().build())
-      (fileName: FileName) =>
-        (in: Stream[F, Byte]) => 
-          Stream.eval(Url.parseF[F](s"$path/$fileName")).flatMap { url =>
-            in.through(store.put(url, true, None, None))
-          }.onFinalize(ConcurrentEffect[F].delay(println(s"Done with $fileName")))
-    }
-    else _ => _ => Stream.raiseError[F](new RuntimeException(s"Unknown scheme in $path"))
+      } else if (path.toString.startsWith("s3:")) {
+        val store = S3Store[F](S3AsyncClient.builder().build())
+          (in: Stream[F, Byte]) => 
+            Stream.eval(Url.parseF[F](s"$path/$fileName")).flatMap { url =>
+              in.through(store.put(url, true, None, None))
+            }.onFinalize(ConcurrentEffect[F].delay(println(s"Done with $fileName")))
+      } else _ => Stream.raiseError[F](new RuntimeException(s"Unknown scheme in $path"))
 
-  def run[F[_]: ConcurrentEffect: ContextShift: Timer](dir: String, cfg: Config): F[Unit] =
+  def run[F[_]: ConcurrentEffect: ContextShift: Timer](dir: URI, cfg: Config): F[Unit] =
     Blocker[F].use { blocker =>
       for {
         cpus         <- Sync[F].delay(Runtime.getRuntime.availableProcessors)  // RNG is CPU-bound
-        sinkBuilder   = Sink.getSink[F](blocker, dir)
+        sinkBuilder   = getSink[F](blocker, dir)
+        _ = println(s"Working in $dir")
         fileCounter  <- Ref.of[F, Int](0)
         totalCounter <- Ref.of[F, Int](0)     // Every stream before starting increases this with 
                                               // an amount of events it'd like to write

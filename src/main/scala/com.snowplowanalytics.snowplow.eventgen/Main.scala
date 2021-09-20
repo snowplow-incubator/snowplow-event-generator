@@ -17,13 +17,14 @@ import cats.effect.{IO, IOApp, ExitCode}
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
-    args match {
-      case path :: Nil =>
-        Config.fromPath[IO](path).flatMap {
-          case Right(config) => Sink.run[IO]("s3://production-data-samples-frankfurt/random-5/", config).as(ExitCode.Success)
+    Config.application.parse(args) match {
+      case Right(Config.Cli(configPath, outputUri)) =>
+        Config.fromPath[IO](configPath.toString).flatMap {
+          case Right(config) => Sink.run[IO](outputUri, config).as(ExitCode.Success)
           case Left(error) => IO(System.err.println(error)).as(ExitCode.Error)
         }
-      case _ =>
-        IO(System.err.println(s"The app requires single path arg. ${args.length} provided")).as(ExitCode.Error)
+      case Left(error) =>
+        IO(System.err.println(error)).as(ExitCode.Error)
+
     }
 }

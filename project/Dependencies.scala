@@ -19,6 +19,7 @@ object Dependencies {
     // Scala
     val analyticsSdk     = "2.1.0"
     val fs2              = "2.5.9"
+    val decline          = "2.1.0"
     val blobstore        = "0.8.4"
     val pureconfig       = "0.16.0"
 
@@ -31,6 +32,7 @@ object Dependencies {
     // Scala
     val analyticsSdk     = "com.snowplowanalytics"      %% "snowplow-scala-analytics-sdk" % V.analyticsSdk
     val fs2              = "co.fs2"                     %% "fs2-core"                     % V.fs2
+    val decline          = "com.monovore"               %% "decline"                      % V.decline
     val blobstore        = "com.github.fs2-blobstore"   %% "s3"                           % V.blobstore
     val pureconfig       = "com.github.pureconfig"      %% "pureconfig"                   % V.pureconfig
     val pureconfigCirce  = "com.github.pureconfig"      %% "pureconfig-circe"             % V.pureconfig

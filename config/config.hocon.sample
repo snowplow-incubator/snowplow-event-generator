@@ -1,0 +1,10 @@
+{
+  "total": 1000,
+  "minPerFile": 10,
+  "maxPerFile": 100,
+  "duplicates": {
+    "natPerc": 5
+    "synPerc": 3
+    "totalDupes": 10
+  }
+}

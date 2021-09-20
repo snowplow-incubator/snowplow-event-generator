@@ -12,13 +12,16 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
+import java.nio.file.Path
+import java.net.URI
+
 import scala.io.Source
 
-import cats.syntax.either._
-import cats.syntax.show._
-import cats.syntax.functor._
+import cats.implicits._
 
 import cats.effect.Sync
+
+import com.monovore.decline._
 
 import com.typesafe.config.ConfigFactory
 
@@ -45,6 +48,13 @@ object Config {
    *                   natPerc=10,totalDupes=1 will result into 1 event encountered 11 times
    */
   case class Duplicates(natPerc: Int, synPerc: Int, totalDupes: Int)
+
+  case class Cli(config: Path, output: URI)
+
+  val configOpt = Opts.option[Path]("config", "Path to the configuration HOCON")
+  val outputOpt = Opts.option[URI]("output", "Output path")
+  val cliOpt = (configOpt, outputOpt).mapN(Cli.apply)
+  val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow enriched events")(cliOpt)
 
   implicit val duplicatesDecoder: Decoder[Duplicates] =
     deriveDecoder[Duplicates]
