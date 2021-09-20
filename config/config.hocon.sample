@@ -1,6 +1,6 @@
 {
-  "total": 1000,
-  "minPerFile": 10,
+  "total": 100,
+  "minPerFile": 99,
   "maxPerFile": 100,
   "duplicates": {
     "natPerc": 5

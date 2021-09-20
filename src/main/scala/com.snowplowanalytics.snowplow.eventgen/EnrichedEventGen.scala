@@ -19,6 +19,7 @@ import scala.util.Random
 
 import cats.implicits._
 import cats.effect.Sync
+import cats.effect.concurrent.Ref
 
 import fs2.Stream
 
@@ -325,9 +326,7 @@ object EnrichedEventGen {
   def generateEvent[F[_]: Sync](idPair: Duplicates.Pair) =
     Duplicates.runGen[F, Event](Gen.oneOf(pageViewGen(idPair), linkClickGen(idPair)))
 
-  def eventStream[F[_]: Sync](config: Config): Stream[F, Event] =
-    Stream.resource(Duplicates.pregeneratePairs[F](config.duplicates.totalDupes)).flatMap { state =>
-      Stream.repeatEval(Duplicates.generatePair[F](state, config.duplicates, config.total).flatMap(generateEvent[F]))
-    }
+  def eventStream[F[_]: Sync](config: Config, state: Ref[F, Duplicates.State]): Stream[F, Event] =
+    Stream.repeatEval(Duplicates.generatePair[F](state, config.duplicates, config.total).flatMap(generateEvent[F]))
     
 }
