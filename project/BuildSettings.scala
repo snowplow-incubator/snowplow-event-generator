@@ -18,26 +18,50 @@ import sbtdynver.DynVerPlugin.autoImport._
 
 import scoverage.ScoverageKeys._
 
+import sbtassembly._
+import sbtassembly.AssemblyKeys._
+
 import com.typesafe.sbt.site.SitePlugin.autoImport._
 import com.typesafe.sbt.site.SiteScaladocPlugin.autoImport._
+import com.typesafe.sbt.SbtNativePackager.autoImport._
+import com.typesafe.sbt.packager.linux.LinuxPlugin.autoImport._
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import com.typesafe.sbt.site.preprocess.PreprocessPlugin.autoImport._
 
 object BuildSettings {
 
   lazy val commonSettings = Seq(
-    organization       := "com.snowplowanalytics",
-    scalaVersion       := "2.13.6",
+    name := "snowplow-event-generator",
+    description := "Generate random events",
+    organization := "com.snowplowanalytics",
+    scalaVersion := "2.13.6",
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))
   )
 
   lazy val basicSettigns = Seq(
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full)
+    resolvers ++= Dependencies.resolutionRepos
+  )
+
+  lazy val dynVerSettings = Seq(
+    ThisBuild / dynverVTagPrefix := false, // Otherwise git tags required to have v-prefix
+    ThisBuild / dynverSeparator := "-" // to be compatible with docker
+  )
+
+  /** Docker image settings */
+  lazy val dockerSettings = Seq(
+    Docker / maintainer := "Snowplow Analytics Ltd. <support@snowplowanalytics.com>",
+    dockerBaseImage := "adoptopenjdk:11-jre-hotspot-focal",
+    Docker / daemonUser := "daemon",
+    dockerUpdateLatest := true,
+    dockerRepository := Some("snowplow"),
+    Docker / daemonUserUid := None,
+    Docker / defaultLinuxInstallLocation := "/opt/snowplow",
   )
 
   // Maven Central publishing settings
   lazy val publishSettings = Seq[Setting[_]](
     pomIncludeRepository := { _ => false },
-    ThisBuild / dynverVTagPrefix := false,      // Otherwise git tags required to have v-prefix
+    ThisBuild / dynverVTagPrefix := false, // Otherwise git tags required to have v-prefix
     homepage := Some(url("http://snowplowanalytics.com")),
     scmInfo := Some(ScmInfo(url("https://github.com/snowplow-incubator/snowplow-event-generator"), "scm:git@github.com:snowplow-incubator/snowplow-event-generator.git")),
     publishArtifact := true,
@@ -51,6 +75,28 @@ object BuildSettings {
       )
     )
   )
+
+  lazy val assemblySettings = Seq(
+    assembly / assemblyMergeStrategy := {
+      case x if x.endsWith("module-info.class") => MergeStrategy.discard
+      case PathList("org", "apache", "commons", "logging", _ @ _*) => MergeStrategy.first
+      case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.discard
+      // case PathList("META-INF", _ @ _*) => MergeStrategy.discard    // Replaced with above for Stream Shredder
+      case PathList("reference.conf", _ @ _*) => MergeStrategy.concat
+      case PathList("codegen-resources", _ @ _*) => MergeStrategy.first // Part of AWS SDK v2
+      case "mime.types" => MergeStrategy.first // Part of AWS SDK v2
+      case "AUTHORS" => MergeStrategy.discard
+      case PathList("org", "slf4j", "impl", _) => MergeStrategy.first
+      case PathList("buildinfo", _) => MergeStrategy.first
+      case x if x.contains("javax") => MergeStrategy.first
+      case PathList("scala", "annotation", "nowarn.class" | "nowarn$.class") => MergeStrategy.first // http4s, 2.13 shim
+      case x =>
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
+        oldStrategy(x)
+
+    }
+  ) ++ (if (sys.env.get("SKIP_TEST").contains("true")) Seq(assembly / test := {}) else Seq())
 
   val scoverage = Seq(
     coverageMinimumStmtTotal := 50,
