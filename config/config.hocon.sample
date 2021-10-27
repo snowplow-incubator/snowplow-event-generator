@@ -1,10 +1,12 @@
 {
-  "total": 100,
-  "minPerFile": 99,
-  "maxPerFile": 100,
+  "seed": 5,
+  "total": 10000,
+  "withRaw": true,
+  "enrichFormat": "json",
+  "eventsPerFile": 1000,
   "duplicates": {
     "natPerc": 5
     "synPerc": 3
-    "totalDupes": 10
+    "totalDupes": 0
   }
 }
