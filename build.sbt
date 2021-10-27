@@ -11,28 +11,51 @@
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
 
-lazy val core = project.in(file("."))
+lazy val commonSettings = BuildSettings.commonSettings ++
+  BuildSettings.sbtSiteSettings ++
+  BuildSettings.basicSettigns ++
+  BuildSettings.publishSettings ++
+  BuildSettings.scoverage ++
+  BuildSettings.dockerSettings ++
+  BuildSettings.dynVerSettings
+
+lazy val core = project
   .settings(
-    name               := "snowplow-event-generator",
-    description        := "Generate random enriched events",
+    moduleName := "snowplow-event-generator-core",
+    description := "Generate random enriched events"
   )
   .enablePlugins(SiteScaladocPlugin)
-  .settings(BuildSettings.commonSettings)
-  .settings(BuildSettings.sbtSiteSettings)
-  .settings(BuildSettings.basicSettigns)
-  .settings(BuildSettings.publishSettings)
-  .settings(BuildSettings.scoverage)
+  .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(
-    Dependencies.Libraries.fs2,
-    Dependencies.Libraries.blobstore,
-    Dependencies.Libraries.decline,
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    Dependencies.Libraries.collectionCompat,
     Dependencies.Libraries.analyticsSdk,
-    Dependencies.Libraries.pureconfig,
-    Dependencies.Libraries.pureconfigCirce,
     Dependencies.Libraries.scalaCheck,
+    Dependencies.Libraries.scalaCheckCats,
+    Dependencies.Libraries.badRows,
+    Dependencies.Libraries.httpClient,
+    Dependencies.Libraries.snowplowRawEvent,
+    Dependencies.Libraries.collectorPayload,
+    Dependencies.Libraries.slf4j,
     // Scala (test only)
-    Dependencies.Libraries.specs2,
     Dependencies.Libraries.specs2Scalacheck,
+    Dependencies.Libraries.specs2,
     Dependencies.Libraries.specs2Cats
   ))
 
+lazy val fileSink = project
+  .settings(
+    moduleName := "snowplow-event-generator-file-sink"
+  )
+  .enablePlugins(SiteScaladocPlugin)
+  .settings(commonSettings)
+  .settings(libraryDependencies ++= Seq(
+    Dependencies.Libraries.decline,
+    Dependencies.Libraries.pureconfig,
+    Dependencies.Libraries.pureconfigCirce,
+    Dependencies.Libraries.fs2,
+    Dependencies.Libraries.fs2file,
+  ))
+  .dependsOn(core)
+
+lazy val root = project.aggregate(core, fileSink)

@@ -20,24 +20,46 @@ import scoverage.ScoverageKeys._
 
 import com.typesafe.sbt.site.SitePlugin.autoImport._
 import com.typesafe.sbt.site.SiteScaladocPlugin.autoImport._
+import com.typesafe.sbt.SbtNativePackager.autoImport._
+import com.typesafe.sbt.packager.linux.LinuxPlugin.autoImport._
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import com.typesafe.sbt.site.preprocess.PreprocessPlugin.autoImport._
 
 object BuildSettings {
 
   lazy val commonSettings = Seq(
-    organization       := "com.snowplowanalytics",
-    scalaVersion       := "2.13.6",
+    name := "snowplow-event-generator",
+    description := "Generate random events",
+    organization := "com.snowplowanalytics",
+    scalaVersion := "2.12.14",
+    crossScalaVersions := Seq( "2.12.14", "2.13.6"),
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))
   )
 
   lazy val basicSettigns = Seq(
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.0" cross CrossVersion.full)
+    resolvers ++= Dependencies.resolutionRepos
+  )
+
+  lazy val dynVerSettings = Seq(
+    ThisBuild / dynverVTagPrefix := false, // Otherwise git tags required to have v-prefix
+    ThisBuild / dynverSeparator := "-" // to be compatible with docker
+  )
+
+  /** Docker image settings */
+  lazy val dockerSettings = Seq(
+    Docker / maintainer := "Snowplow Analytics Ltd. <support@snowplowanalytics.com>",
+    dockerBaseImage := "adoptopenjdk:11-jre-hotspot-focal",
+    Docker / daemonUser := "daemon",
+    dockerUpdateLatest := true,
+    dockerRepository := Some("snowplow"),
+    Docker / daemonUserUid := None,
+    Docker / defaultLinuxInstallLocation := "/opt/snowplow",
   )
 
   // Maven Central publishing settings
   lazy val publishSettings = Seq[Setting[_]](
     pomIncludeRepository := { _ => false },
-    ThisBuild / dynverVTagPrefix := false,      // Otherwise git tags required to have v-prefix
+    ThisBuild / dynverVTagPrefix := false, // Otherwise git tags required to have v-prefix
     homepage := Some(url("http://snowplowanalytics.com")),
     scmInfo := Some(ScmInfo(url("https://github.com/snowplow-incubator/snowplow-event-generator"), "scm:git@github.com:snowplow-incubator/snowplow-event-generator.git")),
     publishArtifact := true,
