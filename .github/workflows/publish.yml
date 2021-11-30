@@ -87,7 +87,7 @@ jobs:
         id: ver
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
       - name: Assemble fat jars
-        run: sbt "project root; assembly"
+        run: sbt assembly
       - name: Create GitHub release and attach artifacts
         uses: softprops/action-gh-release@v1
         with:
