@@ -30,7 +30,7 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       - name: Stage the Docker build
-        run: sbt "project loader" docker:stage
+        run: sbt "project root" docker:stage
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v3
@@ -65,7 +65,7 @@ jobs:
           java-version: 11
           distribution: adopt
       - name: Deploy common on Bintray Maven and Maven Central
-        run: sbt "project common" ci-release
+        run: sbt "project root" ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.SONA_PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.SONA_PGP_SECRET }}
@@ -87,7 +87,7 @@ jobs:
         id: ver
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
       - name: Assemble fat jars
-        run: sbt "project loader; set assembly / test := {}; assembly"
+        run: sbt "project root; set assembly / test := {}; assembly"
       - name: Create GitHub release and attach artifacts
         uses: softprops/action-gh-release@v1
         with:
