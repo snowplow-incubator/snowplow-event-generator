@@ -24,7 +24,7 @@ lazy val core = project
     moduleName := "snowplow-event-generator-core",
     description := "Generate random enriched events"
   )
-  .enablePlugins(SiteScaladocPlugin)
+  .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -47,7 +47,7 @@ lazy val fileSink = project
   .settings(
     moduleName := "snowplow-event-generator-file-sink"
   )
-  .enablePlugins(SiteScaladocPlugin)
+  .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(
     Dependencies.Libraries.decline,

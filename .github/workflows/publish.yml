@@ -65,7 +65,7 @@ jobs:
           java-version: 11
           distribution: adopt
       - name: Deploy common on Bintray Maven and Maven Central
-        run: sbt "project root" ci-release
+        run: sbt "project core" ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.SONA_PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.SONA_PGP_SECRET }}
