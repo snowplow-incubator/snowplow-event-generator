@@ -17,7 +17,8 @@ lazy val commonSettings = BuildSettings.commonSettings ++
   BuildSettings.publishSettings ++
   BuildSettings.scoverage ++
   BuildSettings.dockerSettings ++
-  BuildSettings.dynVerSettings
+  BuildSettings.dynVerSettings ++
+  BuildSettings.assemblySettings
 
 lazy val core = project
   .settings(
@@ -27,7 +28,6 @@ lazy val core = project
   .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     Dependencies.Libraries.collectionCompat,
     Dependencies.Libraries.analyticsSdk,
     Dependencies.Libraries.scalaCheck,

@@ -18,6 +18,9 @@ import sbtdynver.DynVerPlugin.autoImport._
 
 import scoverage.ScoverageKeys._
 
+import sbtassembly._
+import sbtassembly.AssemblyKeys._
+
 import com.typesafe.sbt.site.SitePlugin.autoImport._
 import com.typesafe.sbt.site.SiteScaladocPlugin.autoImport._
 import com.typesafe.sbt.SbtNativePackager.autoImport._
@@ -73,6 +76,28 @@ object BuildSettings {
       )
     )
   )
+
+  lazy val assemblySettings = Seq(
+    assembly / assemblyMergeStrategy := {
+      case x if x.endsWith("module-info.class") => MergeStrategy.discard
+      case PathList("org", "apache", "commons", "logging", _ @ _*) => MergeStrategy.first
+      case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+      case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.discard
+      // case PathList("META-INF", _ @ _*) => MergeStrategy.discard    // Replaced with above for Stream Shredder
+      case PathList("reference.conf", _ @ _*) => MergeStrategy.concat
+      case PathList("codegen-resources", _ @ _*) => MergeStrategy.first // Part of AWS SDK v2
+      case "mime.types" => MergeStrategy.first // Part of AWS SDK v2
+      case "AUTHORS" => MergeStrategy.discard
+      case PathList("org", "slf4j", "impl", _) => MergeStrategy.first
+      case PathList("buildinfo", _) => MergeStrategy.first
+      case x if x.contains("javax") => MergeStrategy.first
+      case PathList("scala", "annotation", "nowarn.class" | "nowarn$.class") => MergeStrategy.first // http4s, 2.13 shim
+      case x =>
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
+        oldStrategy(x)
+
+    }
+  ) ++ (if (sys.env.get("SKIP_TEST").contains("true")) Seq(assembly / test := {}) else Seq())
 
   val scoverage = Seq(
     coverageMinimumStmtTotal := 50,
