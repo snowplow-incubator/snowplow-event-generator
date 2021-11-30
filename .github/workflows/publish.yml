@@ -30,12 +30,12 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       - name: Stage the Docker build
-        run: sbt "project root" docker:stage
+        run: sbt "project fileSink" docker:stage
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: snowplow/snowplow-postgres-loader
+          images: snowplow/snowplow-event-generator-file-sink
           tags: |
             type=raw,value=latest,enable=${{ !contains(steps.ver.outputs.tag, 'rc') }}
             type=raw,value=${{ steps.ver.outputs.tag }}
@@ -96,6 +96,8 @@ jobs:
           name: ${{ steps.ver.outputs.tag }}
           tag_name: ${{ steps.ver.outputs.tag }}
           files: |
-            modules/loader/target/scala-2.13/snowplow-postgres-loader-${{ steps.ver.outputs.tag }}.jar
+            modules/loader/target/scala-2.13/snowplow-event-generator-core-${{ steps.ver.outputs.tag }}.jar
+            modules/loader/target/scala-2.13/snowplow-event-generator-file-sink-${{ steps.ver.outputs.tag }}.jar
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
