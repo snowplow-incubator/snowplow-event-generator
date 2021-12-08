@@ -1,3 +1,5 @@
+import sbt.Keys.crossScalaVersions
+
 /**
  * Copyright (c) 2014-2021 Snowplow Analytics Ltd. All rights reserved.
  *
@@ -7,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the Apache License Version 2.0 is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.ƒ
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
 
@@ -23,7 +25,8 @@ lazy val commonSettings = BuildSettings.commonSettings ++
 lazy val core = project
   .settings(
     moduleName := "snowplow-event-generator-core",
-    description := "Generate random enriched events"
+    description := "Generate random enriched events",
+    crossScalaVersions := Seq("2.12.14", "2.13.6")
   )
   .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)
@@ -43,19 +46,21 @@ lazy val core = project
     Dependencies.Libraries.specs2Cats
   ))
 
-lazy val fileSink = project
-  .settings(
-    moduleName := "snowplow-event-generator-file-sink"
-  )
-  .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
+lazy val sinks = project
   .settings(commonSettings)
+  .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
+  .settings(
+    moduleName := "snowplow-event-generator-sinks"
+    // beware of runtime circe crushes for 2.12 version
+  )
   .settings(libraryDependencies ++= Seq(
     Dependencies.Libraries.decline,
     Dependencies.Libraries.pureconfig,
     Dependencies.Libraries.pureconfigCirce,
     Dependencies.Libraries.fs2,
     Dependencies.Libraries.fs2file,
+    Dependencies.Libraries.blobstore
   ))
   .dependsOn(core)
 
-lazy val root = project.aggregate(core, fileSink)
+lazy val root = project.aggregate(core, sinks)

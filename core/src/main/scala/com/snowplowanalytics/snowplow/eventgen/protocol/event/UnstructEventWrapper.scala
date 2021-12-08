@@ -1,7 +1,7 @@
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.UnstructEventData
-import com.snowplowanalytics.snowplow.eventgen.base.base64Encode
+import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen

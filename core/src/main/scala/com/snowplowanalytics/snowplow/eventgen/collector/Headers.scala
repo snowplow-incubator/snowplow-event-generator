@@ -1,7 +1,7 @@
 package com.snowplowanalytics.snowplow.eventgen.collector
 
 import cats.implicits._
-import com.snowplowanalytics.snowplow.eventgen.base.{Url, genUserAgent}
+import com.snowplowanalytics.snowplow.eventgen.primitives.{Url, genUserAgent}
 import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._
 

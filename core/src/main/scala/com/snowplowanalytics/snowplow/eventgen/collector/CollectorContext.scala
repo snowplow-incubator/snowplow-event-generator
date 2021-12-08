@@ -1,6 +1,6 @@
 package com.snowplowanalytics.snowplow.eventgen.collector
 
-import com.snowplowanalytics.snowplow.eventgen.base.{IpAddress, Url}
+import com.snowplowanalytics.snowplow.eventgen.primitives.{IpAddress, Url}
 import org.scalacheck.Gen
 
 import java.util.UUID

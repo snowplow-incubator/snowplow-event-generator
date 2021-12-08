@@ -1,4 +1,4 @@
-package com.snowplowanalytics.snowplow.eventgen.base
+package com.snowplowanalytics.snowplow.eventgen.primitives
 
 import org.scalacheck.Gen
 

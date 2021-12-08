@@ -3,7 +3,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{Contexts, UnstructEvent}
-import com.snowplowanalytics.snowplow.eventgen.base._
+import com.snowplowanalytics.snowplow.eventgen.primitives._
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 import org.apache.http.message.BasicNameValuePair

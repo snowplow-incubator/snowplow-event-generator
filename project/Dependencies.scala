@@ -24,7 +24,7 @@ object Dependencies {
 
   object V {
     // Scala
-    val analyticsSdk = "2.1.0"
+    val analyticsSdk = "2.1.1"
     val fs2 = "3.1.1"
     val decline = "2.1.0"
     val blobstore = "0.9.5"

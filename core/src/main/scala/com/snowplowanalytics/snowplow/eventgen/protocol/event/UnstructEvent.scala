@@ -2,7 +2,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{UnstructEvent => SdkUnstructEvent }
-import com.snowplowanalytics.snowplow.eventgen.base.Url
+import com.snowplowanalytics.snowplow.eventgen.primitives.Url
 import io.circe.Json
 import io.circe.syntax._
 

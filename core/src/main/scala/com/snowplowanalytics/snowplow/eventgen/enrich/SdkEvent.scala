@@ -43,7 +43,7 @@ object SdkEvent {
       case EventType.PageView => "page_view"
       case EventType.PagePing => "page_ping"
     }),
-    event_id = UUID.randomUUID(),
+    event_id = el.et.eid.getOrElse(UUID.randomUUID()),
     txn_id = el.et.tid,
     name_tracker = el.app.tna,
     v_tracker = Some(el.tv.tv),
@@ -55,9 +55,9 @@ object SdkEvent {
     domain_userid = el.u.flatMap(_.duid),
     domain_sessionidx = el.u.flatMap(_.vid),
     network_userid = el.u.flatMap(_.tnuid)
-        .orElse(el.u.flatMap(_.nuid))
-        .orElse(p.context.userId)
-        .orElse(p.context.headers.cookie).map(_.toString),
+      .orElse(el.u.flatMap(_.nuid))
+      .orElse(p.context.userId)
+      .orElse(p.context.headers.cookie).map(_.toString),
     geo_country = None,
     geo_region = None,
     geo_city = None,
@@ -177,8 +177,15 @@ object SdkEvent {
     etl_tstamp = None
   ))
 
-  def gen: Gen[List[Event]] = genPair.map(_._2)
+  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[List[Event]] =
+    genPair(eventPerPayloadMin, eventPerPayloadMax).map(_._2)
 
-  def genPair: Gen[(CollectorPayload, List[Event])] = CollectorPayload.gen.map(
-    p => (p, eventFromColPayload(p)))
+  def genPairDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[(CollectorPayload, List[Event])] =
+    CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax)
+      .map(p => (p, eventFromColPayload(p)))
+
+  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[(CollectorPayload, List[Event])] =
+    CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax)
+      .map(p => (p, eventFromColPayload(p)))
+
 }

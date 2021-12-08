@@ -1,7 +1,7 @@
 package com.snowplowanalytics.snowplow.eventgen.protocol.common
 
 import com.snowplowanalytics.snowplow.eventgen.protocol._
-import com.snowplowanalytics.snowplow.eventgen.base.{Dimensions, genDimensions}
+import com.snowplowanalytics.snowplow.eventgen.primitives.{Dimensions, genDimensions}
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 
