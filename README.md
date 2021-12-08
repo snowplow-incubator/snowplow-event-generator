@@ -16,9 +16,7 @@ libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core"
 ```scala
 
 scala> import com.snowplowanalytics.snowplow.eventgen._
- import com.snowplowanalytics.snowplow.eventgen._
-
- import java.util.Date
+import com.snowplowanalytics.snowplow.eventgen._
 
 scala> import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
@@ -31,14 +29,20 @@ val res0: (com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload, L
 (
        #################################### NEW EVENT ####################################
        ############  ############  ############ QueryString ############  ############  ##########
-       e=se&se_ca=se_ca_bGGwdg51zH&se_ac=se_ca_3cGQ39VyCy&se_la=se_ca_bFDoeybB5N&se_pr=se_ca_QBBUS3F0pj&se_va=2.1806073378160644E255&p=web&aid=aid_5cyTBHuwf3&tna=tna_gLAhEnI4Rl&tid=1000000&eid=fe773959-3a47-4e9f-9645-80e74a0eb9d6&dtm=-1693085107000&stm=-1693056326000&tz=Asia%2FRangoon&tv=go_1.2.3&duid=duid_7ZXhpWOs6d&nuid=59e1c99d-eb2d-4ea2-80b6-fa73de2028bb&tnuid=2c945614-722b-4a71-abe1-73b5d07ba96e&uid=uid_rnvz780Kup&vid=1000000&...
-
+       e=se&se_ca=se_ca_bGGwdg51zH&se_ac=se_ca_3cGQ39VyCy&se_la=se_ca_bFDoeybB5N&se_pr=se_ca_QBBUS3F0pj
+       &se_va=2.1806073378160644E255&p=web&aid=aid_5cyTBHuwf3&tna=tna_gLAhEnI4Rl&tid=1000000
+       &eid=fe773959-3a47-4e9f-9645-80e74a0eb9d6&dtm=-1693085107000&stm=-1693056326000
+       &tz=Asia%2FRangoon&tv=go_1.2.3&duid=duid_7ZXhpWOs6d&nuid=59e1c99d-eb2d-4ea2-80b6-fa73de2028bb
+       &tnuid=2c945614-722b-4a71-abe1-73b5d07ba96e&uid=uid_rnvz780Kup&vid=1000000&
+        ...
 //SdkEvent.genPairDup
 //(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int)
 // 1F - All events are natural duplicates
 // 0F - No Synthetic duplicates
 // 1 - All natural duplicates are copies of the same event
 // 0 - No Synthetic duplicates
+// 1 - Min event per payload
+// 1 - Max eventd per payload
 scala> :paste
 // Entering paste mode (ctrl-D to finish)
 val rng = new scala.util.Random()
@@ -53,7 +57,8 @@ List(
     .map(event => (event.et.eid, event.app.aid)) 
   )
 
-^D
+
+// Exiting paste mode, now interpreting.
 
 val res2: List[List[(Option[java.util.UUID], Option[String])]] =
   List(
