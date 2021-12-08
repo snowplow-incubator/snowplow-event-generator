@@ -1,6 +1,6 @@
 package com.snowplowanalytics.snowplow.eventgen.protocol.common
 
-import com.snowplowanalytics.snowplow.eventgen.base._
+import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
 import cats.implicits._
 import com.snowplowanalytics.snowplow.eventgen.protocol._

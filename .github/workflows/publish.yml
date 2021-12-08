@@ -35,7 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: snowplow/snowplow-event-generator-file-sink
+          images: snowplow/snowplow-event-generator-sinks
           tags: |
             type=raw,value=latest,enable=${{ !contains(steps.ver.outputs.tag, 'rc') }}
             type=raw,value=${{ steps.ver.outputs.tag }}
@@ -97,7 +97,7 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           files: |
             core/target/scala-2.13/snowplow-event-generator-core-${{ steps.ver.outputs.tag }}.jar
-            fileSink/target/scala-2.13/snowplow-event-generator-file-sink-${{ steps.ver.outputs.tag }}.jar
+            sinks/target/scala-2.13/snowplow-event-generator-sinks-${{ steps.ver.outputs.tag }}.jar
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

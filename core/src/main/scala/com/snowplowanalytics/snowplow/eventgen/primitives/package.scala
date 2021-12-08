@@ -8,7 +8,7 @@ import java.time.Instant
 import java.util.{Base64, TimeZone}
 import scala.util.Random
 
-package object base {
+package object primitives {
   private val base64Encoder = Base64.getEncoder
   private val now = System.currentTimeMillis().toInt
 

@@ -7,6 +7,9 @@ import io.circe.Json
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
+import org.scalacheck.rng.Seed
+
+import scala.util.Random
 
 
 final case class Body(
@@ -38,10 +41,24 @@ final case class Body(
 }
 
 object Body {
-  val gen: Gen[Body] = for {
+
+  val dupRng = new Random(20000L)
+
+  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int): Gen[Body] =
+    genWithEt(EventTransaction.genDup(synProb, synTotal)).withPerturb(in =>
+      if (natProb == 0 | natTotal == 0)
+        in
+      else if (dupRng.between(1, 10000) < (natProb * 10000))
+        Seed(dupRng.between(1, natTotal + 1).toLong)
+      else
+        in
+    )
+
+
+  private def genWithEt(etGen: Gen[EventTransaction]) = for {
     e <- EventType.gen
     app <- Application.gen
-    et <- EventTransaction.gen
+    et <- etGen
     dt <- DateTime.genOpt
     dev <- Device.genOpt
     tv <- TrackerVersion.gen
@@ -54,5 +71,8 @@ object Body {
     }
     context <- Context.ContextsWrapper.genOps
   } yield Body(e, app, dt, dev, tv, et, u, event, context)
+
+
+  val gen: Gen[Body] = genWithEt(EventTransaction.gen)
 }
 

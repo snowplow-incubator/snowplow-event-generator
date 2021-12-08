@@ -2,7 +2,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol.common
 
 import cats.implicits._
 import com.snowplowanalytics.snowplow.eventgen.protocol._
-import com.snowplowanalytics.snowplow.eventgen.base._
+import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._

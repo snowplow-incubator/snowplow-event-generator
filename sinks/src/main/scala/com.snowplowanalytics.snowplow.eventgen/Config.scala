@@ -27,25 +27,23 @@ import pureconfig.error.{CannotParse, ConfigReaderFailures}
 
 import scala.util.{Failure, Success}
 
-final case class Config(total: Int,
+final case class Config(payloadsTotal: Int,
                         seed: Long,
+                        compress: Boolean,
+                        eventPerPayloadMax: Int,
+                        eventPerPayloadMin: Int,
                         withRaw: Boolean,
-                        eventsPerFile: Int,
+                        payloadsPerFile: Int,
                         enrichFormat: Config.EnrichFormat,
-                        duplicates: Config.Duplicates)
+                        duplicates: Option[Config.Duplicates],
+                       )
 
 object Config {
-  /**
-   * Duplicate distribution settings
-   *
-   * @param natPerc    percentage of natural duplicates in the whole dataset (0 to 100)
-   * @param synPerc    percentage of synthetic duplicates in the whole dataset (0 to 100)
-   * @param totalDupes exact cardinality of pre-generated duplicate set, e.g. for a dataset
-   *                   of 100 events natPerc=10,totalDupes=10 will lean towards 10 duplicates
-   *                   each of which is encountered only twice in the dataset, whereas
-   *                   natPerc=10,totalDupes=1 will result into 1 event encountered 11 times
+
+  /*
+    Probability of duplication for natural and synthetic duplicates from 0 to 1
    */
-  case class Duplicates(natPerc: Double, synPerc: Double, totalDupes: Int)
+  case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
 
   sealed trait EnrichFormat
 
