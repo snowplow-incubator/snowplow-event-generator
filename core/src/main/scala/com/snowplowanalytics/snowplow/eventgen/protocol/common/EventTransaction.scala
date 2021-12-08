@@ -23,7 +23,7 @@ final case class EventTransaction(
 
 object EventTransaction {
 
-  val etRng = new Random(10000L)
+  lazy val etRng = new Random(10000L)
 
   def genDup(synProb: Float, synTotal: Int): Gen[EventTransaction] =
     (
@@ -31,12 +31,11 @@ object EventTransaction {
       Gen.option(Gen.uuid.withPerturb(in =>
         if (synProb == 0 | synTotal == 0)
           in
-        else if (etRng.between(1, 10000) < (synProb * 10000))
-          Seed(etRng.between(1, synTotal + 1).toLong)
+        else if (etRng.nextInt(10001) < (synProb * 10000))
+          Seed(etRng.nextInt(synTotal + 1).toLong)
         else
           in)
-      )
-      ).mapN(EventTransaction.apply)
+      )).mapN(EventTransaction.apply)
 
   def genDupOpt(synProb: Float, synTotal: Int): Gen[Option[EventTransaction]] = Gen.option(genDup(synProb, synTotal))
 
