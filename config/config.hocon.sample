@@ -1,0 +1,16 @@
+{
+  "seed": 1,
+  "payloadsTotal": 1000,
+  "withRaw": true,
+  "compress": false,
+  "enrichFormat": "json",
+  "payloadsPerFile": 100,
+  "eventPerPayloadMin": 1,
+  "eventPerPayloadMax": 1,
+  "duplicates": {
+    "natProb": 0.9
+    "synProb": 0.9
+    "natTotal": 0
+    "synTotal": 1
+  }
+}
