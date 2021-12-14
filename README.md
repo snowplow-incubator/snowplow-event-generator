@@ -10,7 +10,7 @@ These manifests could contain enriched events with pre-defined total volume, dup
 
 Core is a scala library for generating snowplow events.
 ```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.1.0-rc17" % Test
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.1.1" % Test
 ```
 
 ```scala
@@ -105,7 +105,7 @@ val res3: List[List[(Option[java.util.UUID], Option[String])]] =
 Snowplow Event Generator is a JVM application packaged in docker:
 
 ```bash
-$docker pull snowplow/snowplow-event-generator-sinks:0.1.0-rc17
+$docker pull snowplow/snowplow-event-generator-sinks:0.1.1
 ```
 
 It is configured with HOCON file:
@@ -163,8 +163,8 @@ It is configured with HOCON file:
 And finally you can run it:
 
 ```bash
-$ docker run snowplow/snowplow-event-generator-sinks:0.1.0-rc17 --config config/config.hocon.sample --output file:/tmp/out
-$ docker run snowplow/snowplow-event-generator-sinks:0.1.0-rc17 --config config/config.hocon.sample --output s3://mybucket/out
+$ docker run snowplow/snowplow-event-generator-sinks:0.1.1 --config config/config.hocon.sample --output file:/tmp/out
+$ docker run snowplow/snowplow-event-generator-sinks:0.1.1 --config config/config.hocon.sample --output s3://mybucket/out
 
 ```
 
