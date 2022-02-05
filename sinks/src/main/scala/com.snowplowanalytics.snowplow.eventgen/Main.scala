@@ -12,10 +12,9 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
-import fs2.Stream
-import cats.implicits._
+import fs2.{INothing, Pipe, Stream}
 import cats.effect.kernel.Sync
-import cats.effect.{Async, ExitCode, IO, IOApp, Resource}
+import cats.effect.{Async, ExitCode, IO, IOApp}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.Config.EnrichFormat
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
@@ -36,11 +35,13 @@ object Main extends IOApp {
 
     }
 
+  type GenOutput = (collector.CollectorPayload, List[Event])
+
 
   def sink[F[_] : Async](outputDir: URI, config: Config): F[Unit] = {
     val rng = new scala.util.Random(config.seed)
 
-    val eventStream: Stream[F, (collector.CollectorPayload, List[Event])] = {
+    val eventStream: Stream[F, GenOutput] = {
       config.duplicates match {
         case Some(dups) => Stream.repeatEval(Sync[F].delay(
           runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax), rng)))
@@ -48,43 +49,40 @@ object Main extends IOApp {
       }
     }
 
-    def sinkBuilder(prefix: String) = if (outputDir.toString.startsWith("file:")) {
-      RotatingSink.file(prefix, outputDir, config.payloadsPerFile)
-    } else if (outputDir.toString.startsWith("s3:")) {
-      RotatingSink.s3(prefix, outputDir, config.payloadsPerFile)
-    } else {
-      throw new RuntimeException(s"Unknown scheme in $outputDir")
-    }
-
-    val rawSink: Resource[F, RotatingSink[F]] = if (config.withRaw)
-      sinkBuilder("raw")
-    else
-      RotatingSink.void
-
-    val enrichSink: Resource[F, RotatingSink[F]] = if (config.withRaw)
-      config.enrichFormat match {
-        case EnrichFormat.Json => sinkBuilder("json-enrich")
-        case EnrichFormat.Tsv => sinkBuilder("tsv-enrich")
+    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, INothing] =
+      if (outputDir.toString.startsWith("file:")) {
+        RotatingSink.file(prefix, idx, outputDir)
+      } else if (outputDir.toString.startsWith("s3:")) {
+        RotatingSink.s3(prefix, idx, outputDir)
+      } else {
+        throw new RuntimeException(s"Unknown scheme in $outputDir")
       }
-    else RotatingSink.void
 
+    def rawSink(idx: Int): Pipe[F, Byte, INothing] =
+      if (config.withRaw)
+        sinkBuilder("raw", idx)
+      else
+        _.drain
 
-    (for {
-      raw <- rawSink
-      enrich <- enrichSink
-    } yield (raw, enrich)).use { case (raw, enrich) =>
-      eventStream
-        .zipWithIndex
-        .takeWhile(_._2 < config.payloadsTotal)
-        .map(_._1)
-        .evalTap {
-          case (payload, sdkEvents) =>
-            raw.write(Stream.emit(payload).through(Serializers.rawSerializer(config.compress))) *>
-              enrich.write(Stream.emits(sdkEvents).through(Serializers.enrichedSerializer(config.enrichFormat, config.compress)))
-        }
-        .compile
-        .drain
-    }
+    def enrichSink(idx: Int): Pipe[F, Byte, INothing] =
+      config.enrichFormat match {
+        case EnrichFormat.Json => sinkBuilder("json-enrich", idx)
+        case EnrichFormat.Tsv => sinkBuilder("tsv-enrich", idx)
+      }
+
+    eventStream
+      .take(config.payloadsTotal.toLong)
+      .through(RotatingSink.rotate(config.payloadsPerFile) { idx =>
+        val pipe1: Pipe[F, GenOutput, INothing]  = _.map(_._1)
+          .through(Serializers.rawSerializer(config.compress))
+          .through(rawSink(idx))
+        val pipe2: Pipe[F, GenOutput, INothing]  = _.flatMap(in => Stream.emits(in._2))
+          .through(Serializers.enrichedSerializer(config.enrichFormat, config.compress))
+          .through(enrichSink(idx))
+        in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2)
+      })
+      .compile
+      .drain
   }
 
 }
