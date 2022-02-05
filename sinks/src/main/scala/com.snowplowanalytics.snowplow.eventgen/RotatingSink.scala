@@ -1,87 +1,65 @@
 package com.snowplowanalytics.snowplow.eventgen
 
-import cats.effect.{Ref, Resource, Sync}
-import fs2.{INothing, Pipe, Stream}
+import fs2.{INothing, Pipe, Pull, Stream}
 import fs2.io.file.{Files, Flags, Path}
-import cats.implicits._
+import fs2.concurrent.Channel
 
 import java.nio.file.{Path => JPath}
 import java.net.URI
 import blobstore.s3.S3Store
 import blobstore.url.Url
 import cats.effect.Async
+import cats.syntax.all._
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
 
-abstract class RotatingSink[F[_]] {
-  def write(in: Stream[F, Byte]): F[Unit]
-
-  def checkpoint: F[Unit]
-}
-
 object RotatingSink {
-  def void[F[_] : Sync]: Resource[F, RotatingSink[F]] = Resource.eval {
-    Sync[F].delay(new RotatingSink[F] {
-      override def checkpoint: F[Unit] = Sync[F].unit
 
-      override def write(in: Stream[F, Byte]): F[Unit] = Sync[F].unit
-    })
-  }
+  def rotate[F[_]: Async, A](max: Int)(toPipe: Int => Pipe[F, A, INothing]): Pipe[F, A, INothing] = {
+    def newChannel = Channel.synchronous[F, A]
 
-  def apply[F[_] : Async, V](payloadsPerFile: Int, makePipe: Int => Pipe[F, Byte, V]): Resource[F, RotatingSink[F]] =
-    Resource.make {
-      for {
-        index <- Ref[F].of(0)
-        count <- Ref[F].of(0)
-        pendingStreamRef <- Ref[F].of(Stream.emits(Seq.empty[Byte]).covary[F])
-      } yield new RotatingSink[F] {
-
-        override def checkpoint: F[Unit] = for {
-          pipe <- index.updateAndGet(_ + 1).map(makePipe)
-          pendingStream <- pendingStreamRef.get
-          _ <- pendingStream.through(pipe).compile.drain
-          _ <- count.set(1)
-          _ <- pendingStreamRef.set(Stream.emits(Seq.empty[Byte]).covary[F])
-        } yield ()
-
-
-        override def write(in: Stream[F, Byte]): F[Unit] =
-          count.get.flatMap(currentCount =>
-            count.update(_ + 1) >> pendingStreamRef.update(_ ++ in).>>(
-              if (currentCount >= payloadsPerFile) checkpoint else Sync[F].unit)
-          )
+    def go(in: Stream[F, A],
+           aCount: Int,
+           streamCount: Int,
+           outputs: Channel[F, Stream[F, INothing]],
+           chan: Channel[F, A]): Pull[F, INothing, Unit] =
+      in.pull.uncons1.flatMap {
+        case None => Pull.eval(outputs.close *> chan.close) *> Pull.done
+        case Some((head, rest)) =>
+          for {
+            streamCount <- if (aCount == 0)
+                Pull.eval {
+                  outputs
+                    .send(chan.stream.through(toPipe(streamCount + 1)))
+                    .as(streamCount + 1)
+                } else Pull.pure(streamCount)
+            _ <- Pull.eval(chan.send(head))
+            aCount <- Pull.pure(aCount + 1)
+            chan <- if (aCount == max) Pull.eval(chan.close *> newChannel) else Pull.pure(chan)
+            aCount <- if (aCount == max) Pull.pure(0) else Pull.pure(aCount)
+            _ <- go(rest, aCount, streamCount, outputs, chan)
+          } yield ()
       }
-    }(_.checkpoint)
 
-
-  def s3[F[_] : Async](prefix: String, outputDir: URI, payloadsPerFile: Int): Resource[F, RotatingSink[F]] = {
-    val store: S3Store[F] = S3Store[F](S3AsyncClient.builder().build())
-
-    def makeS3Sink: Int => Pipe[F, Byte, Unit] =
-      (idx: Int) =>
-        (in: Stream[F, Byte]) => {
-          Stream.eval(Url.parseF[F](s"$outputDir/${prefix}_${pad(idx)}")).flatMap(url =>
-            in.through(store.put(url, overwrite = true, None, None)))
-        }
-
-    RotatingSink(payloadsPerFile, makeS3Sink)
+    in =>
+      (for {
+        outputs <- Stream.eval(Channel.synchronous[F, Stream[F, INothing]])
+        current <- Stream.eval(newChannel)
+      } yield go(in, 0, 0, outputs, current).stream.merge(outputs.stream.flatMap(identity[Stream[F, INothing]])))
+      .flatMap(identity[Stream[F, INothing]])
   }
 
-  def file[F[_] : Async](prefix: String, outputDir: URI, payloadsPerFile: Int): Resource[F, RotatingSink[F]] = {
+  def s3[F[_]: Async](prefix: String, idx: Int, outputDir: URI): Pipe[F, Byte, INothing] =
+    in =>
+      Stream.eval(Url.parseF[F](s"$outputDir/${prefix}_${pad(idx)}")).flatMap { url =>
+        val store = S3Store[F](S3AsyncClient.builder().build())
+        in.through(store.put(url, overwrite = true, None, None))
+      }.drain
+
+  def file[F[_]: Async](prefix: String, idx: Int, outputDir: URI): Pipe[F, Byte, INothing] = {
     val catDir = Path.fromNioPath(JPath.of(outputDir))
-
-    def makeFileSink: Int => Pipe[F, Byte, INothing] =
-      (idx: Int) =>
-        (in: Stream[F, Byte]) => {
-          Stream.eval(Files[F].createDirectory(catDir).attempt.void) >>
-            in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}"), Flags.Write))
-        }
-
-    RotatingSink(payloadsPerFile, makeFileSink)
+    _.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}"), Flags.Write))
   }
 
-  private def pad(int: Int): String = {
-    val zeros = "0".repeat(4 - int.toString.length)
-    s"$zeros$int"
-  }
+  private def pad(idx: Int): String = f"$idx%04d"
 }

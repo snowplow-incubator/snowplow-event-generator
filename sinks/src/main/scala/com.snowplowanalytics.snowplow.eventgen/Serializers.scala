@@ -24,7 +24,7 @@ object Serializers {
       case EnrichFormat.Json => e.toJson(false).noSpaces
       case EnrichFormat.Tsv => e.toTsv
     })
-      .intersperse("\n")
+      .flatMap(x => Stream(x, "\n"))
       .through(utf8.encode)
 
     if (compress)
