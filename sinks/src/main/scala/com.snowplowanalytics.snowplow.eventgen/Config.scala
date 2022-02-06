@@ -22,16 +22,15 @@ import io.circe.Decoder
 import io.circe.config.parser
 import io.circe.generic.semiauto.deriveDecoder
 
-import scala.util.{Failure, Success}
-
 final case class Config(payloadsTotal: Int,
                         seed: Long,
                         compress: Boolean,
                         eventPerPayloadMax: Int,
                         eventPerPayloadMin: Int,
                         withRaw: Boolean,
+                        withEnrichedTsv: Boolean,
+                        withEnrichedJson: Boolean,
                         payloadsPerFile: Int,
-                        enrichFormat: Config.EnrichFormat,
                         duplicates: Option[Config.Duplicates],
                        )
 
@@ -41,22 +40,6 @@ object Config {
     Probability of duplication for natural and synthetic duplicates from 0 to 1
    */
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
-
-  sealed trait EnrichFormat
-
-  object EnrichFormat {
-
-    case object Json extends EnrichFormat
-
-    case object Tsv extends EnrichFormat
-
-  }
-
-  implicit val decodeEnrichFormat: Decoder[EnrichFormat] = Decoder.decodeString.emapTry {
-    case "json" => Success(EnrichFormat.Json)
-    case "tsv" => Success(EnrichFormat.Tsv)
-    case _ => Failure(new Exception("format could only be json or tsv"))
-  }
 
   case class Cli(config: Config, output: URI)
 

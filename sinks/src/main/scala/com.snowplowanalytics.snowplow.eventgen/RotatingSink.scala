@@ -49,16 +49,17 @@ object RotatingSink {
       .flatMap(identity[Stream[F, INothing]])
   }
 
-  def s3[F[_]: Async](prefix: String, idx: Int, outputDir: URI): Pipe[F, Byte, INothing] =
+  def s3[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] =
     in =>
-      Stream.eval(Url.parseF[F](s"$outputDir/${prefix}_${pad(idx)}")).flatMap { url =>
+      Stream.eval(Url.parseF[F](s"$baseDir/$prefix/${prefix}_${pad(idx)}$suffix")).flatMap { url =>
         val store = S3Store[F](S3AsyncClient.builder().build())
         in.through(store.put(url, overwrite = true, None, None))
       }.drain
 
-  def file[F[_]: Async](prefix: String, idx: Int, outputDir: URI): Pipe[F, Byte, INothing] = {
-    val catDir = Path.fromNioPath(JPath.of(outputDir))
-    _.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}"), Flags.Write))
+  def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] = { in =>
+    val catDir = Path.fromNioPath(JPath.of(baseDir).resolve(prefix))
+    Stream.eval(Files[F].createDirectories(catDir)) *>
+    in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }
 
   private def pad(idx: Int): String = f"$idx%04d"
