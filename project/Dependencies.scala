@@ -30,8 +30,7 @@ object Dependencies {
     val blobstore = "0.9.5"
     val scalaCheckCats = "0.3.1"
     val slf4j = "1.7.32"
-
-    val pureconfig = "0.16.0"
+    val circeConfig = "0.8.0"
     // Scala (test only)
     val specs2 = "4.12.3"
     val scalaCheck = "1.14.0"
@@ -51,8 +50,7 @@ object Dependencies {
     val fs2file = "co.fs2" %% "fs2-io" % V.fs2
     val decline = "com.monovore" %% "decline" % V.decline
     val blobstore = "com.github.fs2-blobstore" %% "s3" % V.blobstore
-    val pureconfig = "com.github.pureconfig" %% "pureconfig" % V.pureconfig
-    val pureconfigCirce = "com.github.pureconfig" %% "pureconfig-circe" % V.pureconfig
+    val circeConfig = "io.circe" %% "circe-config" % V.circeConfig
     val scalaCheck = "org.scalacheck" %% "scalacheck" % V.scalaCheck
     val scalaCheckCats = "io.chrisdavenport" %% "cats-scalacheck" % V.scalaCheckCats
     val httpClient = "org.apache.httpcomponents" % "httpclient" % V.httpClient

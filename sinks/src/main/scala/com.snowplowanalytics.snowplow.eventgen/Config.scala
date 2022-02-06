@@ -16,14 +16,11 @@ import java.nio.file.Path
 import java.net.URI
 import scala.io.Source
 import cats.implicits._
-import cats.effect.Sync
 import com.monovore.decline._
-import com.typesafe.config.ConfigFactory
-import io.circe.{Decoder, Json}
+import com.typesafe.config.{Config => RawConfig, ConfigFactory}
+import io.circe.Decoder
+import io.circe.config.parser
 import io.circe.generic.semiauto.deriveDecoder
-import pureconfig._
-import pureconfig.module.circe._
-import pureconfig.error.{CannotParse, ConfigReaderFailures}
 
 import scala.util.{Failure, Success}
 
@@ -61,12 +58,20 @@ object Config {
     case _ => Failure(new Exception("format could only be json or tsv"))
   }
 
-  case class Cli(config: Path, output: URI)
+  case class Cli(config: Config, output: URI)
 
-  val configOpt = Opts.option[Path]("config", "Path to the configuration HOCON")
+  /* Temporary class for raw parameters */
+  case class RawCli(config: Option[Path], output: URI)
+
+  val configOpt = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
   val outputOpt = Opts.option[URI]("output", "Output path")
-  val cliOpt = (configOpt, outputOpt).mapN(Cli.apply)
+  val cliOpt = (configOpt, outputOpt).mapN(RawCli.apply)
   val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(cliOpt)
+
+  // This is needed when providing parameters via system properties
+  // e.g. -Dsnowplow.compress=false
+  implicit val booleanDecoder: Decoder[Boolean] =
+    Decoder.decodeBoolean.or(Decoder.decodeString.emap(_.toBooleanOption.toRight("Invalid boolean")))
 
   implicit val duplicatesDecoder: Decoder[Duplicates] =
     deriveDecoder[Duplicates]
@@ -74,22 +79,52 @@ object Config {
   implicit val configDecoder: Decoder[Config] =
     deriveDecoder[Config]
 
-  def fromString(s: String): Either[String, Config] =
-    Either
-      .catchNonFatal(ConfigSource.fromConfig(ConfigFactory.parseString(s)))
-      .leftMap(error => ConfigReaderFailures(CannotParse(s"Not valid HOCON. ${error.getMessage}", None)))
-      .flatMap { config =>
-        config
-          .load[Json]
-          .flatMap { json =>
-            json.as[Config].leftMap(failure => ConfigReaderFailures(CannotParse(failure.show, None)))
-          }
-      }
-      .leftMap(_.prettyPrint())
+  /**
+    * Parse raw CLI arguments into validated and transformed application config
+    *
+    * @param argv list of command-line arguments, including optionally a `--config` argument
+    * @return The parsed config using the provided file and the standard typesafe config loading process.
+    *         See https://github.com/lightbend/config/tree/v1.4.1#standard-behavior
+    *         Or an error message if config could not be loaded.
+    */
+  def parse(argv: Seq[String]): Either[String, Cli] =
+    application.parse(argv).leftMap(_.show).flatMap {
+      case RawCli(Some(path), output) =>
+        for {
+          raw    <- loadFromFile(path)
+          parsed <- parser.decode[Config](raw).leftMap(e => s"Could not parse config $path: ${e.show}")
+        } yield Cli(parsed, output)
+      case RawCli(None, output) =>
+        val raw = namespaced(ConfigFactory.load())
+        parser
+          .decode[Config](raw)
+          .leftMap(e => s"Could not resolve config without a provided hocon file: ${e.show}")
+          .map(Cli(_, output))
+    }
 
-  def fromPath[F[_] : Sync](path: String): F[Either[String, Config]] =
-    Sync[F].delay(Source.fromFile(path, "UTF-8"))
-      .map(_.mkString)
-      .map(fromString)
+  /** Uses the typesafe config layering approach. Loads configurations in the following priority order:
+    *  1. System properties
+    *  2. The provided configuration file
+    *  3. application.conf of our app
+    *  4. reference.conf of any libraries we use
+    */
+  def loadFromFile(file: Path): Either[String, RawConfig] =
+    for {
+      text <- Either
+        .catchNonFatal(Source.fromFile(file.toFile).mkString)
+        .leftMap(e => s"Could not read config file: ${e.getMessage}")
+      resolved <- Either
+        .catchNonFatal(ConfigFactory.parseString(text).resolve)
+        .leftMap(e => s"Could not parse config file $file: ${e.getMessage}")
+    } yield namespaced(ConfigFactory.load(namespaced(resolved.withFallback(namespaced(ConfigFactory.load())))))
+
+  /** Optionally give precedence to configs wrapped in a "snowplow" block. To help avoid polluting config namespace */
+  private def namespaced(config: RawConfig): RawConfig =
+    if (config.hasPath(Namespace))
+      config.getConfig(Namespace).withFallback(config.withoutPath(Namespace))
+    else
+      config
+
+  private val Namespace = "snowplow"
 
 }

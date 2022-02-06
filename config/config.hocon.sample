@@ -1,10 +1,10 @@
 {
   "seed": 1,
-  "payloadsTotal": 1000,
+  "payloadsTotal": 2000,
   "withRaw": true,
-  "compress": false,
-  "enrichFormat": "json",
-  "payloadsPerFile": 100,
+  "compress": true,
+  "enrichFormat": "tsv",
+  "payloadsPerFile": 1000,
   "eventPerPayloadMin": 1,
   "eventPerPayloadMax": 1,
   "duplicates": {
