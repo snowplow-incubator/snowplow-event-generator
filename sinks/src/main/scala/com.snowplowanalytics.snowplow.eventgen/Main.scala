@@ -24,12 +24,9 @@ import java.net.URI
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
-    Config.application.parse(args) match {
-      case Right(Config.Cli(configPath, outputUri)) =>
-        Config.fromPath[IO](configPath.toString).flatMap {
-          case Right(config) => sink[IO](outputUri, config).as(ExitCode.Success)
-          case Left(error) => IO(System.err.println(error)).as(ExitCode.Error)
-        }
+    Config.parse(args) match {
+      case Right(Config.Cli(config, outputUri)) =>
+          sink[IO](outputUri, config).as(ExitCode.Success)
       case Left(error) =>
         IO(System.err.println(error)).as(ExitCode.Error)
 
