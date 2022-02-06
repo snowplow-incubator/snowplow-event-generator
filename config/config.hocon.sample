@@ -1,12 +1,13 @@
 {
-  "seed": 1,
-  "payloadsTotal": 2000,
-  "withRaw": true,
-  "compress": true,
-  "enrichFormat": "tsv",
-  "payloadsPerFile": 1000,
-  "eventPerPayloadMin": 1,
-  "eventPerPayloadMax": 1,
+  "seed": 1
+  "payloadsTotal": 2000
+  "withRaw": true
+  "withEnrichedTsv": true
+  "withEnrichedJson": true
+  "compress": true
+  "payloadsPerFile": 1000
+  "eventPerPayloadMin": 1
+  "eventPerPayloadMax": 1
   "duplicates": {
     "natProb": 0.9
     "synProb": 0.9

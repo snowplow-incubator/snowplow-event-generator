@@ -16,7 +16,6 @@ import fs2.{INothing, Pipe, Stream}
 import cats.effect.kernel.Sync
 import cats.effect.{Async, ExitCode, IO, IOApp}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-import com.snowplowanalytics.snowplow.eventgen.Config.EnrichFormat
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 
 import java.net.URI
@@ -46,37 +45,34 @@ object Main extends IOApp {
       }
     }
 
-    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, INothing] =
+    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, INothing] = {
+      val suffix = if (config.compress) ".gz" else ""
       if (outputDir.toString.startsWith("file:")) {
-        RotatingSink.file(prefix, idx, outputDir)
+        RotatingSink.file(prefix, suffix, idx, outputDir)
       } else if (outputDir.toString.startsWith("s3:")) {
-        RotatingSink.s3(prefix, idx, outputDir)
+        RotatingSink.s3(prefix, suffix, idx, outputDir)
       } else {
         throw new RuntimeException(s"Unknown scheme in $outputDir")
       }
+    }
 
-    def rawSink(idx: Int): Pipe[F, Byte, INothing] =
-      if (config.withRaw)
-        sinkBuilder("raw", idx)
-      else
-        _.drain
-
-    def enrichSink(idx: Int): Pipe[F, Byte, INothing] =
-      config.enrichFormat match {
-        case EnrichFormat.Json => sinkBuilder("json-enrich", idx)
-        case EnrichFormat.Tsv => sinkBuilder("tsv-enrich", idx)
-      }
+    def sinkFor(name: String, idx: Int, predicate: Boolean): Pipe[F, Byte, INothing] =
+      if (predicate) sinkBuilder(name, idx)
+      else _.drain
 
     eventStream
       .take(config.payloadsTotal.toLong)
       .through(RotatingSink.rotate(config.payloadsPerFile) { idx =>
         val pipe1: Pipe[F, GenOutput, INothing]  = _.map(_._1)
           .through(Serializers.rawSerializer(config.compress))
-          .through(rawSink(idx))
+          .through(sinkFor("raw", idx, config.withRaw))
         val pipe2: Pipe[F, GenOutput, INothing]  = _.flatMap(in => Stream.emits(in._2))
-          .through(Serializers.enrichedSerializer(config.enrichFormat, config.compress))
-          .through(enrichSink(idx))
-        in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2)
+          .through(Serializers.enrichedTsvSerializer(config.compress))
+          .through(sinkFor("enriched", idx, config.withEnrichedTsv))
+        val pipe3: Pipe[F, GenOutput, INothing]  = _.flatMap(in => Stream.emits(in._2))
+          .through(Serializers.enrichedJsonSerializer(config.compress))
+          .through(sinkFor("transformed", idx, config.withEnrichedJson))
+        in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
       })
       .compile
       .drain

@@ -129,12 +129,15 @@ It is configured with HOCON file:
   
     // Output collector payloads in Thrift format
     "withRaw": true,
+
+    // Output enriched events in TSV format
+    "withEnrichedTsv": true,
+
+    // Output transformed enriched events in JSON format
+    "withEnrichedJson": true,
   
     // Compress all output in GZIP  
     "compress": false,
-  
-    // Seralization mode for Sdk Events either "json" or "tsv"
-    "enrichFormat": "json",
   
     // Number of collector payloads per file
     "payloadsPerFile": 100,
