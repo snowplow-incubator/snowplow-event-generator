@@ -5,144 +5,75 @@
 
 Snowplow Event Generator is a tool for random events manifest generation.
 These manifests could contain enriched events with pre-defined total volume, duplicates distribution and amount of contexts.
+We provide [a command line tool](#quickstart-cli) to output events to a file, and also a [scala library](#quickstart-core) to support generating random events in unit tests.
 
-## Quickstart Core
+## Quickstart CLI
 
-Core is a scala library for generating snowplow events.
-```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.1.1" % Test
-```
-
-```scala
-
-scala> import com.snowplowanalytics.snowplow.eventgen._
-import com.snowplowanalytics.snowplow.eventgen._
-
-scala> import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
-import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
-
-// Generate a Pair of Coollector Payload and List of events in Payload
-// 1 - eventPerPayloadMin min number of events in payload
-// 10 - eventPerPayloadMax max number of events in payload
-scala> runGen(SdkEvent.genPair(1,10), new scala.util.Random())
-val res0: (com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload, List[com.snowplowanalytics.snowplow.analytics.scalasdk.Event]) =
-(
-       #################################### NEW EVENT ####################################
-       ############  ############  ############ QueryString ############  ############  ##########
-       e=se&se_ca=se_ca_bGGwdg51zH&se_ac=se_ca_3cGQ39VyCy&se_la=se_ca_bFDoeybB5N&se_pr=se_ca_QBBUS3F0pj
-       &se_va=2.1806073378160644E255&p=web&aid=aid_5cyTBHuwf3&tna=tna_gLAhEnI4Rl&tid=1000000
-       &eid=fe773959-3a47-4e9f-9645-80e74a0eb9d6&dtm=-1693085107000&stm=-1693056326000
-       &tz=Asia%2FRangoon&tv=go_1.2.3&duid=duid_7ZXhpWOs6d&nuid=59e1c99d-eb2d-4ea2-80b6-fa73de2028bb
-       &tnuid=2c945614-722b-4a71-abe1-73b5d07ba96e&uid=uid_rnvz780Kup&vid=1000000&
-        ...
-//SdkEvent.genPairDup
-//(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int)
-// 1F - All events are natural duplicates
-// 0F - No Synthetic duplicates
-// 1 - All natural duplicates are copies of the same event
-// 0 - No Synthetic duplicates
-// 1 - Min event per payload
-// 1 - Max eventd per payload
-scala> :paste
-// Entering paste mode (ctrl-D to finish)
-val rng = new scala.util.Random()
-List(
-  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1), rng),
-  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1), rng), 
-  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1), rng)
-   )
-  .map(_._1) // Take collector payload
-  .map(_.payload // Pick indo the payload
-    // get few fields to show on the screen
-    .map(event => (event.et.eid, event.app.aid)) 
-  )
-
-
-// Exiting paste mode, now interpreting.
-
-val res2: List[List[(Option[java.util.UUID], Option[String])]] =
-  List(
-    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F))),
-    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F))),
-    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F)))
-)
-
-
-
-// Synthetic duplicates example
-scala> :paste
-// Entering paste mode (ctrl-D to finish)
-
-val rng = new scala.util.Random()
-List(
-  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1), rng),
-  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1), rng),
-  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1), rng)
-)
-  .map(_._1) // Take collector payload
-  .map(_.payload // Pick indo the payload
-    // get few fields to show on the screen
-    .map(event => (event.et.eid, event.app.aid))
-  )
-
-
-// Exiting paste mode, now interpreting.
-
-
-
-val res3: List[List[(Option[java.util.UUID], Option[String])]] = 
-  List(
-    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_EnXJiWoiK6))),
-    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_iWpBIzTKom))),
-    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_zxWvypeqDO)))
-  )
-
-```
-
-## Quickstart Sinks
-
-
-Snowplow Event Generator is a JVM application packaged in docker:
+Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.2.0/snowplow-event-generator-0.2.0.tar.gz). You need java installed to run it.
 
 ```bash
-$docker pull snowplow/snowplow-event-generator-sinks:0.1.1
+wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.2.0/snowplow-event-generator-0.2.0.tar.gz
+tar -xzf snowplow-event-generator-0.2.0.zip
 ```
 
-It is configured with HOCON file:
+And start generating events in your `my-events` directory:
 
-```json
+```bash
+./snowplow-event-generator --output file:/path/to/my-events
+```
+
+Alternatively you can write events directly to a S3 bucket:
+
+```bash
+./snowplow-event-generator --output s3://my-bucket/my-events
+```
+
+By default, it generates 1000 events with no duplicates. The generated events are _deterministic_, which means if you re-run the app multiple times with the same configuration then you will generate the same events each time.
+
+#### Configuration
+
+The app can be configured by providing a HOCON file, like [the one in this example](./config/config.example.hocon):
+
+```bash
+./snowplow-event-generator --config /path/to/config.hocon --output file:/path/to/my-events
+```
+
+All fields in the configuration file are optional:
+
+
+```
 {
-    // Seed for random generation.
-    "seed": 1,
+    // Seed for random generation. Change the seed to generate a different set of events
+    "seed": 1
   
     // Number of collector payloads to generate. 
     // Total number of event get multiplied by eventPerPayload* setting. 
-    "payloadsTotal": 1000,
+    "payloadsTotal": 1000
   
     // Min number of events per payload.
     // Single event has a 1:1 odds of being send via GET or POST
+    "eventPerPayloadMin": 1
+  
     // Max number of events per payload.
-    "eventPerPayloadMin": 1,
+    // Multiple events always send via POST
+    "eventPerPayloadMax": 10
   
-    // multiple events always send via POST
-    "eventPerPayloadMax": 10,
-  
-    // Output collector payloads in Thrift format
-    "withRaw": true,
+    // Output collector payloads to a "raw" sub-directory in base64-encoded Thrift format
+    "withRaw": true
 
-    // Output enriched events in TSV format
-    "withEnrichedTsv": true,
+    // Output events to the "enriched" sub-directory in TSV format
+    "withEnrichedTsv": true
 
-    // Output transformed enriched events in JSON format
-    "withEnrichedJson": true,
+    // Output events to the "transformed" sub-directory in JSON format
+    "withEnrichedJson": true
   
     // Compress all output in GZIP  
-    "compress": false,
+    "compress": false
   
-    // Number of collector payloads per file
-    "payloadsPerFile": 100,
+    // Number of collector payloads per output file
+    "payloadsPerFile": 100
   
-    // Optional secition to generate duplicates
+    // Configure duplicate events
     "duplicates": {        
        // Probablity of full event duplicate float 0 to 1
        "natProb": 0.9,
@@ -160,16 +91,112 @@ It is configured with HOCON file:
         // Setting it to 1 means that same event ID got duplicated all the time.
         // If total number of events is less then pool size, it might not generate any duplicates.
        "synTotal": 1
+     }
+
+    // Generated event timestamps are close in time to this value.
+    "timestamps": {
+
+      // Should be "Fixed" to use a deterministic timestamp, or "Now" to always generate recent events
+      "type": "Fixed"
+
+      // Only used for "Fixed" timestamps.  Change this to generate more recent or more historic events.
+      "at": "2022-02-01T01:01:01z"
+    }
 }
 ```
 
-And finally you can run it:
+## Quickstart Core
 
-```bash
-$ docker run snowplow/snowplow-event-generator-sinks:0.1.1 --config config/config.hocon.sample --output file:/tmp/out
-$ docker run snowplow/snowplow-event-generator-sinks:0.1.1 --config config/config.hocon.sample --output s3://mybucket/out
+Core is a scala library for generating snowplow events.
 
 ```
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.1.1" % Test
+```
+
+```scala
+
+scala> import com.snowplowanalytics.snowplow.eventgen._
+import com.snowplowanalytics.snowplow.eventgen._
+
+scala> import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
+import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
+
+scala> val rng = new scala.util.Random(1)
+val rng: scala.util.Random = scala.util.Random@1cca85d5
+
+scala> val now = java.time.Instant.parse("2022-01-01T01:01:01z")
+val now: java.time.Instant = 2022-01-01T01:01:01Z
+
+// Generate a Pair of Coollector Payload and List of events in Payload
+// 1 - eventPerPayloadMin min number of events in payload
+// 10 - eventPerPayloadMax max number of events in payload
+scala> runGen(SdkEvent.genPair(1,10, now), rng)
+val res0: (com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload, List[com.snowplowanalytics.snowplow.analytics.scalasdk.Event]) =
+(
+       #################################### NEW EVENT ####################################
+       ############  ############  ############ QueryString ############  ############  ##########
+       e=pp&url=http%3A%2F%2FqHFXCGj.net%3A1%2FMvdRGGMERtRzEX3&ua=Mozilla%2F5.0+%28compatible%3B+MSIE+9.0%3B+Windows+NT+6.0%3B+Trident%2F5.0%29
+       &page=Do+amet+dolor+elit+sed+consectetur+ipsum+sit+adipiscing+lorem&refr=http%3A%2F%2Fwww.wvHtxQL.ru%3A1%2FpBXAZkzW8SMHNNh
+       &fp=1000000&cookie=0&lang=-1&f_pdf=1&f_qt=0&f_realp=1&f_wma=0&f_dir=1&f_fla=1&f_java=1&f_gears=0
+       &f_ag=0&cd=1&ds=9467x5732&cs=ISO-8859-16&vp=10000x1&pp_mix=1&pp_max=1&pp_m...
+
+//SdkEvent.genPairDup
+//(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant)
+// 1F - All events are natural duplicates
+// 0F - No Synthetic duplicates
+// 1 - All natural duplicates are copies of the same event
+// 0 - No Synthetic duplicates
+// 1 - Min event per payload
+// 1 - Max eventd per payload
+scala> :paste
+// Entering paste mode (ctrl-D to finish)
+List(
+  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1, now), rng),
+  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1, now), rng), 
+  runGen(SdkEvent.genPairDup(1F, 0F, 1, 0, 1, 1, now), rng)
+   )
+  .map(_._1) // Take collector payload
+  .map(_.payload // Pick indo the payload
+    // get few fields to show on the screen
+    .map(event => (event.et.eid, event.app.aid)) 
+  )
+
+
+// Exiting paste mode, now interpreting.
+
+val res1: List[List[(Option[java.util.UUID], Option[String])]] = List(
+    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F))),
+    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F))),
+    List((Some(98f1ea70-866f-4ed1-b74e-61a8e1f2c58b),Some(aid_0mC9Eg4X9F)))
+  )
+
+
+// Synthetic duplicates example
+scala> :paste
+// Entering paste mode (ctrl-D to finish)
+
+List(
+  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1, now), rng),
+  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1, now), rng),
+  runGen(SdkEvent.genPairDup(0F, 1F, 0, 1, 1, 1, now), rng)
+)
+  .map(_._1) // Take collector payload
+  .map(_.payload // Pick indo the payload
+    // get few fields to show on the screen
+    .map(event => (event.et.eid, event.app.aid))
+  )
+
+// Exiting paste mode, now interpreting.
+
+val res2: List[List[(Option[java.util.UUID], Option[String])]] =
+  List(
+    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_orTrI8vI9D))),
+    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_8borEVQRrt))),
+    List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_6zkeZ28aTr)))
+  )
+
+```
+
 
 ## Copyright and License
 
@@ -188,6 +215,6 @@ limitations under the License.
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
 [license]: http://www.apache.org/licenses/LICENSE-2.0
 
-[build]: https://github.com/snowplow-incubator/snowplow-event-generator/actions?query=workflow%3A%22Test+and+deploy%22
-[build-image]: https://github.com/snowplow-incubator/snowplow-event-generator/workflows/Test%20and%20deploy/badge.svg
+[build]: https://github.com/snowplow-incubator/snowplow-event-generator/actions?query=workflow%3A%22CI%22
+[build-image]: https://github.com/snowplow-incubator/snowplow-event-generator/workflows/CI/badge.svg
 
