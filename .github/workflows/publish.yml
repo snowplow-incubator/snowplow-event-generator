@@ -88,6 +88,8 @@ jobs:
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
       - name: Assemble fat jars
         run: sbt assembly
+      - name: Zip artifact
+        run: tar -czf sinks/target/scala-2.13/snowplow-event-generator-${{ steps.ver.outputs.tag }}.tar.gz -C sinks/target/scala-2.13/ snowplow-event-generator
       - name: Create GitHub release and attach artifacts
         uses: softprops/action-gh-release@v1
         with:
@@ -97,7 +99,7 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           files: |
             core/target/scala-2.13/snowplow-event-generator-core-${{ steps.ver.outputs.tag }}.jar
-            sinks/target/scala-2.13/snowplow-event-generator-sinks-${{ steps.ver.outputs.tag }}.jar
+            sinks/target/scala-2.13/snowplow-event-generator-${{ steps.ver.outputs.tag }}.tar.gz
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

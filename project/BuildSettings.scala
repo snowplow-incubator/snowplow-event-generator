@@ -20,6 +20,7 @@ import scoverage.ScoverageKeys._
 
 import sbtassembly._
 import sbtassembly.AssemblyKeys._
+import sbtassembly.AssemblyPlugin.defaultUniversalScript
 
 import com.typesafe.sbt.site.SitePlugin.autoImport._
 import com.typesafe.sbt.site.SiteScaladocPlugin.autoImport._
@@ -94,9 +95,18 @@ object BuildSettings {
       case x =>
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
-
-    }
+    },
+    assembly / assemblyJarName := { s"${moduleName.value}-${version.value}.jar" },
   ) ++ (if (sys.env.get("SKIP_TEST").contains("true")) Seq(assembly / test := {}) else Seq())
+
+  lazy val executableSettings = Seq(
+    // Executable jarfile
+    assembly / assemblyPrependShellScript := Some(defaultUniversalScript(shebang = true)),
+
+    // Name it as an executable
+    assembly / assemblyJarName := { name.value },
+  )
+
 
   val scoverage = Seq(
     coverageMinimumStmtTotal := 50,

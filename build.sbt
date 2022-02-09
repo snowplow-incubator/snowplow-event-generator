@@ -18,7 +18,6 @@ lazy val commonSettings = BuildSettings.commonSettings ++
   BuildSettings.basicSettigns ++
   BuildSettings.publishSettings ++
   BuildSettings.scoverage ++
-  BuildSettings.dockerSettings ++
   BuildSettings.dynVerSettings ++
   BuildSettings.assemblySettings
 
@@ -53,6 +52,8 @@ lazy val sinks = project
     moduleName := "snowplow-event-generator-sinks"
     // beware of runtime circe crushes for 2.12 version
   )
+  .settings(BuildSettings.dockerSettings)
+  .settings(BuildSettings.executableSettings)
   .settings(libraryDependencies ++= Seq(
     Dependencies.Libraries.decline,
     Dependencies.Libraries.circeCore,
