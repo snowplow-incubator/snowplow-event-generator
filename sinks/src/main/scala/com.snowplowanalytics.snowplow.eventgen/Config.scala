@@ -14,6 +14,7 @@ package com.snowplowanalytics.snowplow.eventgen
 
 import java.nio.file.Path
 import java.net.URI
+import java.time.Instant
 import scala.io.Source
 import cats.implicits._
 import com.monovore.decline._
@@ -32,6 +33,7 @@ final case class Config(payloadsTotal: Int,
                         withEnrichedJson: Boolean,
                         payloadsPerFile: Int,
                         duplicates: Option[Config.Duplicates],
+                        now: Instant
                        )
 
 object Config {

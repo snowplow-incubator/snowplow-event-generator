@@ -36,7 +36,7 @@ final case class DateTime(
 }
 
 object DateTime {
-  def gen: Gen[DateTime] = (genInstantOpt, genInstantOpt, genInstantOpt, genTzOpt).mapN(DateTime.apply)
+  def gen(now: Instant): Gen[DateTime] = (genInstantOpt(now), genInstantOpt(now), genInstantOpt(now), genTzOpt).mapN(DateTime.apply)
 
-  def genOpt: Gen[Option[DateTime]] = Gen.option(gen)
+  def genOpt(now: Instant): Gen[Option[DateTime]] = Gen.option(gen(now))
 }

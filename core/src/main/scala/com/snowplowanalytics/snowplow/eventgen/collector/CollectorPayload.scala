@@ -30,6 +30,7 @@ import scala.jdk.CollectionConverters._
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 final case class CollectorPayload(
                                    api: Api,
@@ -49,7 +50,7 @@ final case class CollectorPayload(
   private def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 
   private[this] lazy val parts: PayloadParts = {
-    val timestamp: Long = context.timestamp.map(_.toEpochMilli).getOrElse(0)
+    val timestamp: Long = context.timestamp.toEpochMilli
     var querystring: List[NameValuePair] = List.empty[NameValuePair]
     var contentType: Option[String] = None
     var bodyJson: Option[Json] = None
@@ -113,20 +114,26 @@ final case class CollectorPayload(
 object CollectorPayload {
 
 
-  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal))
+  def genDup(natProb: Float,
+             synProb: Float,
+             natTotal: Int,
+             synTotal: Int,
+             eventPerPayloadMin: Int,
+             eventPerPayloadMax: Int,
+             now: Instant): Gen[CollectorPayload] =
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal, now), now)
 
 
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body]) = for {
+  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) = for {
     n <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
     api <- Api.genApi(n)
     src <- Source.gen
-    cc <- CollectorContext.gen
+    cc <- CollectorContext.gen(now)
     payload <- Gen.listOfN(n, bodyGen)
   } yield CollectorPayload(api, payload, src, cc)
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen)
+  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[CollectorPayload] =
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now), now)
 
   val IgluUri: SchemaKey = SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
 

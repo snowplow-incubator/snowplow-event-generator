@@ -21,6 +21,7 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
 
+import java.time.Instant
 import scala.util.Random
 
 
@@ -56,8 +57,8 @@ object Body {
 
   lazy val dupRng = new Random(20000L)
 
-  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int): Gen[Body] =
-    genWithEt(EventTransaction.genDup(synProb, synTotal)).withPerturb(in =>
+  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, now: Instant): Gen[Body] =
+    genWithEt(EventTransaction.genDup(synProb, synTotal), now).withPerturb(in =>
       if (natProb == 0F | natTotal == 0)
         in
       else if (dupRng.nextInt(10000) < (natProb * 10000))
@@ -67,11 +68,11 @@ object Body {
     )
 
 
-  private def genWithEt(etGen: Gen[EventTransaction]) = for {
+  private def genWithEt(etGen: Gen[EventTransaction], now: Instant) = for {
     e <- EventType.gen
     app <- Application.gen
     et <- etGen
-    dt <- DateTime.genOpt
+    dt <- DateTime.genOpt(now)
     dev <- Device.genOpt
     tv <- TrackerVersion.gen
     u <- User.genOpt
@@ -85,6 +86,6 @@ object Body {
   } yield Body(e, app, dt, dev, tv, et, u, event, context)
 
 
-  val gen: Gen[Body] = genWithEt(EventTransaction.gen)
+  def gen(now: Instant): Gen[Body] = genWithEt(EventTransaction.gen, now)
 }
 

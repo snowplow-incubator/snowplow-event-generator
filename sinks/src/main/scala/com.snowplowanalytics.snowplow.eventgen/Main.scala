@@ -40,8 +40,8 @@ object Main extends IOApp {
     val eventStream: Stream[F, GenOutput] = {
       config.duplicates match {
         case Some(dups) => Stream.repeatEval(Sync[F].delay(
-          runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax), rng)))
-        case None => Stream.repeatEval(Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax), rng)))
+          runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax, config.now), rng)))
+        case None => Stream.repeatEval(Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, config.now), rng)))
       }
     }
 
