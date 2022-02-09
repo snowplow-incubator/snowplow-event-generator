@@ -55,7 +55,11 @@ lazy val sinks = project
   )
   .settings(libraryDependencies ++= Seq(
     Dependencies.Libraries.decline,
+    Dependencies.Libraries.circeCore,
     Dependencies.Libraries.circeConfig,
+    Dependencies.Libraries.circeExtras,
+    Dependencies.Libraries.circeGeneric,
+    Dependencies.Libraries.circeParser,
     Dependencies.Libraries.fs2,
     Dependencies.Libraries.fs2file,
     Dependencies.Libraries.blobstore

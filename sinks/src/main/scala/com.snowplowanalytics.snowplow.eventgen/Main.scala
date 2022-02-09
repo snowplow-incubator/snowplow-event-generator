@@ -14,7 +14,7 @@ package com.snowplowanalytics.snowplow.eventgen
 
 import fs2.{INothing, Pipe, Stream}
 import cats.effect.kernel.Sync
-import cats.effect.{Async, ExitCode, IO, IOApp}
+import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 
@@ -36,14 +36,19 @@ object Main extends IOApp {
 
   def sink[F[_] : Async](outputDir: URI, config: Config): F[Unit] = {
     val rng = new scala.util.Random(config.seed)
-
-    val eventStream: Stream[F, GenOutput] = {
-      config.duplicates match {
-        case Some(dups) => Stream.repeatEval(Sync[F].delay(
-          runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax), rng)))
-        case None => Stream.repeatEval(Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax), rng)))
-      }
+    val timeF = config.timestamps match {
+      case Config.Timestamps.Now => Clock[F].realTimeInstant
+      case Config.Timestamps.Fixed(time) => Async[F].pure(time)
     }
+
+    val eventStream: Stream[F, GenOutput] =
+      Stream.eval(timeF).flatMap { time =>
+        config.duplicates match {
+          case Some(dups) => Stream.repeatEval(Sync[F].delay(
+            runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax, time), rng)))
+          case None => Stream.repeatEval(Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time), rng)))
+        }
+      }
 
     def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, INothing] = {
       val suffix = if (config.compress) ".gz" else ""

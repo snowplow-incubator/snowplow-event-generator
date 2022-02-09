@@ -22,7 +22,8 @@ import scala.util.Random
 
 package object primitives {
   private val base64Encoder = Base64.getEncoder
-  private val now = System.currentTimeMillis().toInt
+
+  private lazy val rng = new Random(30000L)
 
   type Epoch = Int
 
@@ -40,7 +41,7 @@ package object primitives {
 
   def genLocaleStrOpt: Gen[Option[String]] = Gen.option(genLocaleStr)
 
-  def genWords: Gen[String] = Gen.chooseNum(1, 10).map(n => Random.shuffle(LoremIpsum.take(n)).mkString(" ").capitalize)
+  def genWords: Gen[String] = Gen.chooseNum(1, 10).map(n => rng.shuffle(LoremIpsum.take(n)).mkString(" ").capitalize)
 
   def genWordsOpt: Gen[Option[String]] = Gen.option(genWords)
 
@@ -51,9 +52,9 @@ package object primitives {
 
   def strGen(len: Int, g: Gen[Char]): Gen[String] = Gen.chooseNum(1, len).flatMap { x => Gen.stringOfN(x, g) }
 
-  def genInstant: Gen[Epoch] = Gen.chooseNum(now - 100000, now)
+  def genInstant(now: Instant): Gen[Instant] = Gen.chooseNum(0, 10000000).map(m => now.minusMillis(m.toLong))
 
-  def genInstantOpt: Gen[Option[Instant]] = Gen.option(genInstant.map(s => Instant.ofEpochSecond(s.toLong)))
+  def genInstantOpt(now: Instant): Gen[Option[Instant]] = Gen.option(genInstant(now))
 
   def genTz: Gen[String] = Gen.oneOf(TimeZone.getAvailableIDs.toSeq)
 

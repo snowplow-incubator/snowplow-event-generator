@@ -38,13 +38,11 @@ object SdkEvent {
     case _ => None
   }
 
-  val now: Instant = Instant.now
-
-  private def eventFromColPayload(p: CollectorPayload): List[Event] = p.payload.map(el => Event(
+  private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] = p.payload.map(el => Event(
     app_id = el.app.aid,
     platform = Some(el.app.p),
     //etl_tstamp:               Option[Instant],
-    collector_tstamp = p.context.timestamp.getOrElse(Instant.now()),
+    collector_tstamp = p.context.timestamp,
     dvce_created_tstamp = el.dt.flatMap(_.dtm),
     //  case "ad" => "ad_impression".asRight
     //  case "tr" => "transaction".asRight
@@ -55,7 +53,7 @@ object SdkEvent {
       case EventType.PageView => "page_view"
       case EventType.PagePing => "page_ping"
     }),
-    event_id = el.et.eid.getOrElse(UUID.randomUUID()),
+    event_id = el.et.eid.getOrElse(fallbackEid),
     txn_id = el.et.tid,
     name_tracker = el.app.tna,
     v_tracker = Some(el.tv.tv),
@@ -189,15 +187,25 @@ object SdkEvent {
     etl_tstamp = None
   ))
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax).map(_._2)
+  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[List[Event]] =
+    genPair(eventPerPayloadMin, eventPerPayloadMax, now).map(_._2)
 
-  def genPairDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[(CollectorPayload, List[Event])] =
-    CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax)
-      .map(p => (p, eventFromColPayload(p)))
+  def genPairDup(natProb: Float,
+                 synProb: Float,
+                 natTotal: Int,
+                 synTotal: Int,
+                 eventPerPayloadMin: Int,
+                 eventPerPayloadMax: Int,
+                 now: Instant): Gen[(CollectorPayload, List[Event])] =
+    for {
+      cp  <- CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now)
+      eid <- Gen.uuid
+    } yield (cp, eventFromColPayload(cp, eid))
 
-  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int): Gen[(CollectorPayload, List[Event])] =
-    CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax)
-      .map(p => (p, eventFromColPayload(p)))
+  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[(CollectorPayload, List[Event])] =
+    for {
+      cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now)
+      eid <- Gen.uuid
+    } yield (cp, eventFromColPayload(cp, eid))
 
 }

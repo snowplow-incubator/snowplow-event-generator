@@ -14,13 +14,15 @@ package com.snowplowanalytics.snowplow.eventgen
 
 import java.nio.file.Path
 import java.net.URI
+import java.time.Instant
 import scala.io.Source
 import cats.implicits._
 import com.monovore.decline._
 import com.typesafe.config.{Config => RawConfig, ConfigFactory}
 import io.circe.Decoder
 import io.circe.config.parser
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto._
 
 final case class Config(payloadsTotal: Int,
                         seed: Long,
@@ -32,6 +34,7 @@ final case class Config(payloadsTotal: Int,
                         withEnrichedJson: Boolean,
                         payloadsPerFile: Int,
                         duplicates: Option[Config.Duplicates],
+                        timestamps: Config.Timestamps
                        )
 
 object Config {
@@ -40,6 +43,15 @@ object Config {
     Probability of duplication for natural and synthetic duplicates from 0 to 1
    */
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
+
+  implicit val customCodecConfig: Configuration =
+    Configuration.default.withDiscriminator("type")
+
+  sealed trait Timestamps
+  object Timestamps {
+    case object Now extends Timestamps 
+    case class Fixed(at: Instant) extends Timestamps
+  }
 
   case class Cli(config: Config, output: URI)
 
@@ -56,11 +68,15 @@ object Config {
   implicit val booleanDecoder: Decoder[Boolean] =
     Decoder.decodeBoolean.or(Decoder.decodeString.emap(_.toBooleanOption.toRight("Invalid boolean")))
 
+  implicit val timestampsConfigDecoder: Decoder[Timestamps] = {
+    deriveConfiguredDecoder[Timestamps]
+  }
+
   implicit val duplicatesDecoder: Decoder[Duplicates] =
-    deriveDecoder[Duplicates]
+    deriveConfiguredDecoder[Duplicates]
 
   implicit val configDecoder: Decoder[Config] =
-    deriveDecoder[Config]
+    deriveConfiguredDecoder[Config]
 
   /**
     * Parse raw CLI arguments into validated and transformed application config
