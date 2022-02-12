@@ -39,6 +39,7 @@ lazy val core = project
     Dependencies.Libraries.snowplowRawEvent,
     Dependencies.Libraries.collectorPayload,
     Dependencies.Libraries.slf4j,
+    Dependencies.Libraries.thrift,
     // Scala (test only)
     Dependencies.Libraries.specs2Scalacheck,
     Dependencies.Libraries.specs2,

@@ -35,13 +35,13 @@ object Dependencies {
     // Scala (test only)
     val specs2 = "4.12.3"
     val scalaCheck = "1.14.0"
-    val thrift = "1.14.0"
     val collectionCompat = "2.4.4"
     // raw output
     val snowplowRawEvent = "0.1.0"
     val collectorPayload = "0.0.0"
     val badRows = "2.1.1"
     val httpClient = "4.5.13"
+    val thrift = "0.15.0" // override transitive dependency to mitigate security vulnerabilities
   }
 
   object Libraries {
@@ -66,6 +66,7 @@ object Dependencies {
     val specs2Scalacheck = "org.specs2" %% "specs2-scalacheck" % V.specs2 % Test
 
     val collectionCompat = "org.scala-lang.modules"     %% "scala-collection-compat" % V.collectionCompat
+    val thrift = "org.apache.thrift" %  "libthrift" % V.thrift
     // raw output
     val snowplowRawEvent = "com.snowplowanalytics" % "snowplow-thrift-raw-event" % V.snowplowRawEvent
     val collectorPayload = "com.snowplowanalytics" % "collector-payload-1" % V.collectorPayload
