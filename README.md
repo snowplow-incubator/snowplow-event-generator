@@ -110,7 +110,7 @@ All fields in the configuration file are optional:
 Core is a scala library for generating snowplow events.
 
 ```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.1.1" % Test
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.2.0" % Test
 ```
 
 ```scala

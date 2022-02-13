@@ -1,5 +1,13 @@
-Version 0.2.0 (2021-11-01)
+Version 0.2.0 (2022-02-12)
 --------------------------
+Bump libthrift to 0.14.0 (#10)
+Update README (#9)
+Release sinks cli as an executable (#8)
+Output should be deterministic (#7)
+Update copyright license to 2022 (#5)
+Allow simultaneous tsv and json outputs (#4)
+Config file should be optional (#3)
+Refactor of rotating sinks (#2)
 
 
 Version 0.1.0 (2021-08-04)
