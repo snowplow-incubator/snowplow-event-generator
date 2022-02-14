@@ -88,7 +88,7 @@ object RotatingSink {
       }.drain
 
   def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] = { in =>
-    val catDir = Path.fromNioPath(JPath.of(baseDir).resolve(prefix))
+    val catDir = Path.fromNioPath(JPath.get(baseDir).resolve(prefix))
     Stream.eval(Files[F].createDirectories(catDir)) *>
     in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }

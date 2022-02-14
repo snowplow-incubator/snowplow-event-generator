@@ -5,7 +5,7 @@ on:
     tags:
       - '*'
     branches:
-      - master
+      - main
       - develop
   pull_request:
 
