@@ -43,7 +43,7 @@ jobs:
     - name: Create PR
       uses: repo-sync/pull-request@v2
       with:
-        destination_branch: "master"
+        destination_branch: "main"
         pr_title: "Release ${{ steps.version.outputs.release_version }}"
         pr_body: "Created by Github Actions"
         github_token: ${{ secrets.GITHUB_TOKEN }}

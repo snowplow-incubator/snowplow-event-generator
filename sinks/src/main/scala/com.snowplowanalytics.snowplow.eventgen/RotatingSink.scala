@@ -16,7 +16,7 @@ import fs2.{Chunk, INothing, Pipe, Pull, Stream}
 import fs2.io.file.{Files, Flags, Path}
 import fs2.concurrent.Channel
 
-import java.nio.file.{Path => JPath}
+import java.nio.file.{Paths => JPaths}
 import java.net.URI
 import blobstore.s3.S3Store
 import blobstore.url.Url
@@ -88,7 +88,7 @@ object RotatingSink {
       }.drain
 
   def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] = { in =>
-    val catDir = Path.fromNioPath(JPath.of(baseDir).resolve(prefix))
+    val catDir = Path.fromNioPath(JPaths.get(baseDir).resolve(prefix))
     Stream.eval(Files[F].createDirectories(catDir)) *>
     in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }

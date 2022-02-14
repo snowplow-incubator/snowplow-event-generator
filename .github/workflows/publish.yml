@@ -5,13 +5,31 @@ on:
     tags:
       - '*'
     branches:
-      - master
+      - main
       - develop
   pull_request:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '8', '11']
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v5
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Run tests
+        run: sbt clean test
+
   docker-release:
     if: startsWith(github.ref, 'refs/tags/')
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -56,6 +74,7 @@ jobs:
 
   deploy_common:
     if: startsWith(github.ref, 'refs/tags/')
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -74,6 +93,7 @@ jobs:
 
   github_release:
     if: startsWith(github.ref, 'refs/tags/')
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
