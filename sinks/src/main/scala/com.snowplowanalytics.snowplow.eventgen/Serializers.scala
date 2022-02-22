@@ -37,5 +37,5 @@ object Serializers {
     _.map(_.toTsv).through(stringSerializer(compress))
 
   def enrichedJsonSerializer[F[_] : Sync](compress: Boolean = true): Pipe[F, Event, Byte] =
-    _.map(_.toJson(false).noSpaces).through(stringSerializer(compress))
+    _.map(_.toJson(true).noSpaces).through(stringSerializer(compress))
 }
