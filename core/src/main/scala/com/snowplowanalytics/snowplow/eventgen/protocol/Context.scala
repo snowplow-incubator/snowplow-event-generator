@@ -20,10 +20,15 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
+import java.util.concurrent.atomic.AtomicLong
+
 
 object Context {
+
+  var changeFormGenCount = new AtomicLong()
   val changeFormGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](changeFormGenCount.incrementAndGet()))
       formId <- strGen(32, Gen.alphaNumChar).withKey("formId")
       elementId <- strGen(32, Gen.alphaNumChar).withKey("elementId")
       nodeName <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT")).withKey("nodeName")
@@ -34,8 +39,10 @@ object Context {
       asObject(List(formId, elementId, nodeName, `type`, value))
     )
 
+  var clientSessionGenCount = new AtomicLong()
   val clientSessionGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](clientSessionGenCount.incrementAndGet()))
       userId <- Gen.uuid.withKey("userId")
       sessionId <- Gen.uuid.withKey("sessionId")
       sessionIndex <- Gen.choose(0, 2147483647).withKey("sessionIndex")
@@ -46,8 +53,10 @@ object Context {
       asObject(List(userId, sessionId, sessionIndex, previousSessionId, storageMechanism))
     )
 
+  var consentDocumentCount = new AtomicLong()
   val consentDocumentGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](consentDocumentCount.incrementAndGet()))
       id <- strGen(36, Gen.alphaNumChar).withKey("id")
       version <- strGen(36, Gen.alphaNumChar).withKey("version")
       name <- Gen.option(strGen(60, Gen.alphaNumChar)).withKeyOpt("name")
@@ -57,8 +66,11 @@ object Context {
       asObject(List(id, version, name, description))
     )
 
+
+  var desktopContextCount = new AtomicLong()
   val desktopContextGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](desktopContextCount.incrementAndGet()))
       osType <- Gen.oneOf(List("Windows", "Linux", "macOS", "Solaris")).withKey("osType")
       osVersion <- strGen(36, Gen.numChar).withKey("osVersion")
       osServicePack <- Gen.option(strGen(48, Gen.alphaNumChar)).withKeyOpt("osServicePack")
@@ -71,8 +83,10 @@ object Context {
       asObject(List(osType, osVersion, osIs64Bit, osServicePack, deviceManufacturer, deviceModel, deviceProcessorCount))
     )
 
+  var httpCookieCount = new AtomicLong()
   val httpCookieGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](httpCookieCount.incrementAndGet()))
       name <- strGen(32, Gen.alphaNumChar).withKey("name")
       value <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("value")
     } yield SelfDescribingData(
@@ -80,8 +94,10 @@ object Context {
       asObject(List(name, value))
     )
 
+  var httpHeaderCount = new AtomicLong()
   val httpHeaderGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](httpHeaderCount.incrementAndGet()))
       name <- strGen(16, Gen.alphaNumChar).withKey("name")
       value <- strGen(16, Gen.alphaNumChar).withKey("value")
     } yield SelfDescribingData(
@@ -89,8 +105,10 @@ object Context {
       asObject(List(name, value))
     )
 
+  var googleCookiesCount = new AtomicLong()
   val googleCookiesGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](googleCookiesCount.incrementAndGet()))
       utma <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utma")
       utmb <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utmb")
       utmc <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utmc")
@@ -102,8 +120,10 @@ object Context {
       asObject(List(utma, utmb, utmc, utmv, utmz, ga))
     )
 
+  var googlePrivateCount = new AtomicLong()
   val googlePrivateGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](googlePrivateCount.incrementAndGet()))
       v <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("v")
       s <- Gen.option(Gen.choose(-128000, 1000000)).withKeyNull("s")
       u <- Gen.option(strGen(256, Gen.alphaNumChar)).withKeyNull("u") // exceeds 256 on purpose
@@ -114,8 +134,10 @@ object Context {
       asObject(List(v, s, u, gid, r))
     )
 
+  var optimizelyVisitorCount = new AtomicLong()
   val optimizelyVisitorGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](optimizelyVisitorCount.incrementAndGet()))
       browser <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("browser")
       browserVersion <- Gen.option(strGen(4, Gen.alphaNumChar)).withKeyNull("browserVersion")
       device <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("device")
@@ -126,8 +148,10 @@ object Context {
       asObject(List(browser, browserVersion, device, deviceType, mobile))
     )
 
+  var optimizelyStateCount = new AtomicLong()
   val optimizelyStateGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](optimizelyStateCount.incrementAndGet()))
       experimentId <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("experimentId")
       isActive <- Gen.option(Gen.oneOf(true, false)).withKeyNull("isActive")
       variationIndex <- Gen.option(Gen.choose(-100, 32767)).withKeyNull("variationIndex")
@@ -138,8 +162,10 @@ object Context {
       asObject(List(experimentId, isActive, variationIndex, variationId, variationName))
     )
 
+  var optimizelyVariationCount = new AtomicLong()
   val optimizelyVariationGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](optimizelyVariationCount.incrementAndGet()))
       id <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("id")
       name <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("name")
       code <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("code")
@@ -148,8 +174,10 @@ object Context {
       asObject(List(id, name, code))
     )
 
+  var optimizelySummaryCount = new AtomicLong()
   val optimizelySummaryGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](optimizelySummaryCount.incrementAndGet()))
       experimentId <- Gen.option(Gen.choose(-10, 100000)).withKeyNull("experimentId")
       variationName <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("variationName")
       variation <- Gen.option(Gen.choose(-10, 100000)).withKeyOpt("variation")
@@ -159,32 +187,40 @@ object Context {
       asObject(List(experimentId, variationName, variation, visitorId))
     )
 
+  var sessionContextCount = new AtomicLong()
   val sessionContextGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](sessionContextCount.incrementAndGet()))
       id <- strGen(32, Gen.alphaNumChar).withKey("id")
     } yield SelfDescribingData(
       SchemaKey("com.mparticle.snowplow", "session_context", "jsonschema", SchemaVer.Full(1, 0, 0)),
       asObject(List(id))
     )
 
+  var consentWithdrawnCount = new AtomicLong()
   val consentWithdrawnGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](consentWithdrawnCount.incrementAndGet()))
       all <- Gen.oneOf(true, false).withKey("all")
     } yield SelfDescribingData(
       SchemaKey("com.snowplowanalytics.snowplow", "consent_withdrawn", "jsonschema", SchemaVer.Full(1, 0, 0)),
       asObject(List(all))
     )
 
+  var segmentScreenCount = new AtomicLong()
   val segmentScreenGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](segmentScreenCount.incrementAndGet()))
       name <- strGen(32, Gen.alphaNumChar).withKey("name")
     } yield SelfDescribingData(
       SchemaKey("com.segment", "screen", "jsonschema", SchemaVer.Full(1, 0, 0)),
       asObject(List(name))
     )
 
+  var pushRegistrationCount = new AtomicLong()
   val pushRegistrationGen =
     for {
+      _ <- Gen.delay(Gen.const[Long](pushRegistrationCount.incrementAndGet()))
       name <- strGen(32, Gen.alphaNumChar).withKey("name")
       registrationToken <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyOpt("registrationToken")
     } yield SelfDescribingData(
@@ -197,7 +233,10 @@ object Context {
   private val osFamilyGen: Gen[String] = Gen.oneOf("Linux", "Windows", "Mac OS X")
   private val deviceFamilyGen: Gen[String] = Gen.oneOf("Mac", "iPhone", "Generic Feature Phone")
 
+  var uaParserContextCount = new AtomicLong()
+
   val uaParserContextGen: Gen[SelfDescribingData[Json]] = for {
+    _ <- Gen.delay(Gen.const[Long](uaParserContextCount.incrementAndGet()))
     uaFamily <- useragentFamilyGen
     uaMaj <- Gen.chooseNum[Int](0, 10)
     uaMin <- Gen.chooseNum[Int](0, 10)
