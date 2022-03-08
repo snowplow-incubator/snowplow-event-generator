@@ -16,8 +16,13 @@ import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{UnstructEvent => SdkUnstructEvent}
 import com.snowplowanalytics.snowplow.eventgen.primitives.{Url, strGen}
 import io.circe.Json
+import cats.syntax.all._
+import org.scalacheck.cats.implicits._
 import io.circe.syntax._
 import org.scalacheck.Gen
+
+import java.util.concurrent.atomic.AtomicLong
+
 
 object UnstructEvent {
   trait UnstructEventData {
@@ -33,6 +38,10 @@ object UnstructEvent {
     val ChangeForm: SchemaKey =
       SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0))
   }
+
+  var unstuctEventCount = new AtomicLong()
+  val genLink =
+    Gen.delay(Gen.const[Long](unstuctEventCount.incrementAndGet())) >> Url.gen.map(LinkClick.apply)
 
   final case class LinkClick(url: Url) extends UnstructEventData {
     def schema: SchemaKey = UnstructEvent.schemas.LinkClick
