@@ -97,5 +97,5 @@ object RotatingSink {
       in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }
 
-  private def pad(idx: Int): String = f"$idx%04d"
+  private def pad(idx: Int): String = f"$idx%10d"
 }
