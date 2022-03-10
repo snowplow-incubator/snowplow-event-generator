@@ -29,6 +29,7 @@ object Dependencies {
     val decline = "2.1.0"
     val blobstore = "0.9.5"
     val scalaCheckCats = "0.3.1"
+    val kcl = "2.4.0"
     val slf4j = "1.7.32"
     val circeConfig = "0.8.0"
     val circe = "0.14.1"
@@ -65,11 +66,12 @@ object Dependencies {
     val specs2Cats = "org.specs2" %% "specs2-cats" % V.specs2 % Test
     val specs2Scalacheck = "org.specs2" %% "specs2-scalacheck" % V.specs2 % Test
 
-    val collectionCompat = "org.scala-lang.modules"     %% "scala-collection-compat" % V.collectionCompat
-    val thrift = "org.apache.thrift" %  "libthrift" % V.thrift
+    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat
+    val thrift = "org.apache.thrift" % "libthrift" % V.thrift
     // raw output
     val snowplowRawEvent = "com.snowplowanalytics" % "snowplow-thrift-raw-event" % V.snowplowRawEvent
     val collectorPayload = "com.snowplowanalytics" % "collector-payload-1" % V.collectorPayload
     val badRows = "com.snowplowanalytics" %% "snowplow-badrows" % V.badRows
+    val kcl = "software.amazon.kinesis" % "amazon-kinesis-client" % V.kcl
   }
 }
