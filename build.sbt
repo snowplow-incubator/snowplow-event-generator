@@ -63,9 +63,10 @@ lazy val sinks = project
     Dependencies.Libraries.circeGeneric,
     Dependencies.Libraries.circeParser,
     Dependencies.Libraries.fs2,
+    Dependencies.Libraries.kcl,
     Dependencies.Libraries.fs2file,
     Dependencies.Libraries.blobstore
   ))
   .dependsOn(core)
 
-lazy val root = project.aggregate(core, sinks)
+lazy val eventGenerator = project.aggregate(core, sinks)

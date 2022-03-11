@@ -28,6 +28,12 @@ Alternatively you can write events directly to a S3 bucket:
 ./snowplow-event-generator --output s3://my-bucket/my-events
 ```
 
+Alternatively you can write events directly to a Kinesis stream:
+
+```bash
+./snowplow-event-generator --output kinesis://my-kinesis-stream
+```
+
 By default, it generates 1000 events with no duplicates. The generated events are _deterministic_, which means if you re-run the app multiple times with the same configuration then you will generate the same events each time.
 
 #### Configuration
@@ -36,6 +42,31 @@ The app can be configured by providing a HOCON file, like [the one in this examp
 
 ```bash
 ./snowplow-event-generator --config /path/to/config.hocon --output file:/path/to/my-events
+```
+
+Generator will print following output, which could be used for verification:
+Total number of payloads, events and count for each generated self-described json.
+```
+Payloads = 100
+Events = 506
+changeFormGenCount  = 771
+clientSessionGenCount  = 388
+consentDocumentCount  = 439
+desktopContextCount  = 439
+httpCookieCount  = 439
+httpHeaderCount  = 439
+googleCookiesCount  = 439
+googlePrivateCount  = 439
+optimizelyVisitorCount  = 439
+optimizelyStateCount  = 439
+optimizelyVariationCount  = 439
+optimizelySummaryCount  = 439
+sessionContextCount  = 439
+consentWithdrawnCount  = 439
+segmentScreenCount  = 439
+pushRegistrationCount  = 439
+uaParserContextCount  = 439
+unstuctEventCount = 140
 ```
 
 All fields in the configuration file are optional:

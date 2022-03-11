@@ -13,10 +13,15 @@
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
-import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{UnstructEvent => SdkUnstructEvent }
+import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{UnstructEvent => SdkUnstructEvent}
 import com.snowplowanalytics.snowplow.eventgen.primitives.Url
 import io.circe.Json
+import cats.syntax.all._
+import org.scalacheck.cats.implicits._
 import io.circe.syntax._
+import org.scalacheck.Gen
+
+import java.util.concurrent.atomic.AtomicLong
 
 
 object UnstructEvent {
@@ -50,7 +55,10 @@ object UnstructEvent {
   //      SchemaKey("com.snowplowanalytics.snowplow", "client_session", "jsonschema", SchemaVer.Full(1, 0, 1)),
   //      asObject(List(userId, sessionId, sessionIndex, previousSessionId, storageMechanism))
 
-  val genLink = Url.gen.map(LinkClick.apply)
+
+  var unstuctEventCount = new AtomicLong()
+  val genLink =
+    Gen.delay(Gen.const[Long](unstuctEventCount.incrementAndGet())) >> Url.gen.map(LinkClick.apply)
 
   final case class LinkClick(url: Url) extends UnstructEventData {
     def schema: SchemaKey = UnstructEvent.LinkClickSchemaKey
