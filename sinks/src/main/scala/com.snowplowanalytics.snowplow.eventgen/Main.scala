@@ -65,8 +65,8 @@ object Main extends IOApp {
   def sink[F[_] : Async](outputDir: URI, config: Config): F[Unit] = {
     val rng = new scala.util.Random(config.seed)
     val timeF = config.timestamps match {
-      case Config.Timestamps.Now => Clock[F].realTimeInstant flatMap (t => Sync[F].delay(println(s"time: $t")).as(t))
-      case Config.Timestamps.Fixed(time) => Async[F].pure(time) flatMap (t => Sync[F].delay(println(s"time: $t")).as(t))
+      case Config.Timestamps.Now => Clock[F].realTimeInstant flatTap (t => Sync[F].delay(println(s"time: $t")))
+      case Config.Timestamps.Fixed(time) => Async[F].pure(time) flatTap (t => Sync[F].delay(println(s"time: $t")))
     }
 
     val eventStream: Stream[F, GenOutput] =
@@ -135,14 +135,14 @@ object Main extends IOApp {
       .zipWithScan1((0, 0)) { case (idx, el) => (el._2.length + idx._1, 1 + idx._2) }
       .evalTap {
         case (_, idx) =>
-          if (idx._1 % 10000 == 0 && idx._1 != 0) {
-            Sync[F].delay(println(s"processed events: ${idx._1}..."))
-          } else if (idx._2 == config.payloadsTotal.toLong) {
+          if (idx._2 == config.payloadsTotal.toLong) {
             Sync[F].delay(println(
               s"""Payloads = ${idx._2}
                  |Events = ${idx._1}""".stripMargin))
           }
-          else {
+          else if (idx._1 % 10000 == 0 && idx._1 != 0) {
+            Sync[F].delay(println(s"processed events: ${idx._1}..."))
+          } else {
             Sync[F].unit
           }
       }
