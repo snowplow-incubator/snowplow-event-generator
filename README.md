@@ -13,7 +13,7 @@ Download the [executable from github](https://github.com/snowplow-incubator/snow
 
 ```bash
 wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.2.2/snowplow-event-generator-0.2.2.tar.gz
-tar -xzf snowplow-event-generator-0.2.2.zip
+tar -xzf snowplow-event-generator-0.2.2.tar.gz
 ```
 
 And start generating events in your `my-events` directory:
