@@ -64,7 +64,8 @@ lazy val sinks = project
     Dependencies.Libraries.circeParser,
     Dependencies.Libraries.fs2,
     Dependencies.Libraries.fs2file,
-    Dependencies.Libraries.blobstore
+    Dependencies.Libraries.blobstore,
+    Dependencies.Libraries.specs2
   ))
   .dependsOn(core)
 
