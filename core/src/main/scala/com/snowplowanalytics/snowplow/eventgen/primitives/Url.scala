@@ -47,10 +47,14 @@ object Url {
 
   def genOpt: Gen[Option[Url]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply))
 
+  def genOptStr: Gen[Option[String]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply).map(_.toString))
+
+  def genOriginHost: Gen[Option[String]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, Gen.const(Option.empty[Int]), urlTldGen, Gen.const("")).mapN(Url.apply).map(_.toString))
+
   private val urlSchemeGen: Gen[String] = Gen.oneOf("http", "https")
   private val urlPrefixGen: Gen[String] = Gen.oneOf("", "www.")
   private val urlDomainGen: Gen[String] = Gen.stringOfN(7, Gen.alphaNumChar)
-  private val urlTldGen: Gen[String] = Gen.oneOf(".com", ".net", ".co.uk", ".bg", ".ru", ".fr", ".tr")
+  private val urlTldGen: Gen[String] = Gen.oneOf(".com", ".net", ".co.uk", ".bg", ".ru", ".fr", ".tr", ".pl", ".ie", ".ro", ".ca")
   private val urlPortGen: Gen[Option[Int]] = Gen.option(Gen.chooseNum(1, 65335))
   private val urlPathGen: Gen[String] = Gen.stringOfN(15, Gen.alphaNumChar).map(s => s"/$s")
 }

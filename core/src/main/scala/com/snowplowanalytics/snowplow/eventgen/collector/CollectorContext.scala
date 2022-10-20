@@ -34,7 +34,7 @@ final case class CollectorContext(
                                    timestamp: Instant,
                                    ipAddress: Option[IpAddress],
                                    useragent: Option[String],
-                                   refererUri: Option[Url],
+                                   refererUri: Option[String],
                                    userId: Option[UUID],
                                    headers: Headers
                                  )
@@ -44,7 +44,7 @@ final case class CollectorContext(
        ts: $timestamp
        ip: $ipAddress
        ua: $useragent
-       ref: ${refererUri.toString}
+       ref: $refererUri
        uid: $userId
        headers: ${headers.toList.mkString("\n")}
        """.stripMargin
@@ -57,5 +57,4 @@ object CollectorContext {
     ip <- IpAddress.genOpt
     uid <- Gen.some(Gen.uuid)
   } yield CollectorContext(ts, ip, hdr.ua, hdr.ref, uid, hdr)
-
 }

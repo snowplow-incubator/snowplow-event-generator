@@ -16,18 +16,16 @@ import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.{CollectorPayload => CollectorPayload1}
 import com.snowplowanalytics.snowplow.eventgen.protocol._
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
-
+import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import org.apache.http.NameValuePair
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.message.BasicNameValuePair
 import org.apache.thrift.TSerializer
 import org.scalacheck.Gen
-
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
 import scala.jdk.CollectionConverters._
-
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -61,7 +59,7 @@ final case class CollectorPayload(
       contentType = Some("application/json")
       bodyJson = Some(
         SelfDescribingData(
-          SchemaKey("com.snowplowanalytics.snowplow", "payload_data", "jsonschema", SchemaVer.Full(1, 0, 4)),
+          PayloadDataSchema.Default,
           payload.map(body => body.toPayloadElement).asJson
         ).asJson)
     }
@@ -112,8 +110,6 @@ final case class CollectorPayload(
 }
 
 object CollectorPayload {
-
-
   def genDup(natProb: Float,
              synProb: Float,
              natTotal: Int,

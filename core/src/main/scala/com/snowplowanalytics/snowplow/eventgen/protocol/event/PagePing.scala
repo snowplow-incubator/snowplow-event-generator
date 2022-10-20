@@ -16,12 +16,11 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
 import org.scalacheck.Gen
 import com.snowplowanalytics.snowplow.eventgen.primitives._
 import cats.implicits._
-import com.snowplowanalytics.snowplow.eventgen.protocol._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.cats.implicits._
 
 final case class PagePing(
-                     override val deps: List[Protocol], // all web props
+                     override val deps: List[Web], // all web props
                      pp_mix: Option[Int], // pp_xoffset_min
                      pp_max: Option[Int], //pp_xoffset_max
                      pp_miy: Option[Int], //pp_yoffset_min

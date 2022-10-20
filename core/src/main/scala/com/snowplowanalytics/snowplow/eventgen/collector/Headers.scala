@@ -12,28 +12,28 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.collector
 
-import cats.implicits._
-import com.snowplowanalytics.snowplow.eventgen.primitives.{Url, genUserAgent}
+import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequestHeaders.genDefaultHeaders
 import org.scalacheck.Gen
-import org.scalacheck.cats.implicits._
-
-import java.util.UUID
-
 
 case class Headers(
-                    ref: Option[Url],
+                    ref: Option[String],
                     ua: Option[String],
-                    cookie: Option[UUID]
-                    // other header types could be added
+                    cookie: Option[String],
+                    custom: Map[String, String]
                   ) {
   def toList: List[String] = List(
-    ref.map(u => s"referrer: ${u.toString}"),
-    ua.map(ua => s"user-agent: $ua"),
-    cookie.map(cookie => s"cookie: $cookie")
-  ).flatten
+    ref.map(u => s"Referer: $u"),
+    ua.map(ua => s"User-Agent: $ua"),
+    cookie.map(cookie => s"Cookie: $cookie")
+  ).flatten ++ custom.toList.map { case (k, v) => s"$k: $v" }
 }
 
 object Headers {
-  def gen: Gen[Headers] = (Url.genOpt, Gen.option(genUserAgent), Gen.option(Gen.uuid)
-    ).mapN(Headers.apply)
+  def gen: Gen[Headers] = for {
+    default <- genDefaultHeaders
+    ref = default.get("Referer")
+    ua = default.get("User-Agent")
+    cookie = default.get("Cookie")
+    custom = default.filterNot { case (k, _) => List("Referer", "User-Agent", "Cookie").contains(k)}
+  } yield Headers(ref, ua, cookie, custom)
 }

@@ -21,6 +21,8 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 import scala.util.Random
 
@@ -87,5 +89,7 @@ object Body {
 
 
   def gen(now: Instant): Gen[Body] = genWithEt(EventTransaction.gen, now)
+
+  def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }
 
