@@ -22,18 +22,6 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 
 object Context {
-  val changeFormGen =
-    for {
-      formId <- strGen(32, Gen.alphaNumChar).withKey("formId")
-      elementId <- strGen(32, Gen.alphaNumChar).withKey("elementId")
-      nodeName <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT")).withKey("nodeName")
-      `type` <- Gen.option(Gen.oneOf(List("button", "checkbox", "color", "date", "datetime", "datetime-local", "email", "file", "hidden", "image", "month", "number", "password", "radio", "range", "reset", "search", "submit", "tel", "text", "time", "url", "week"))).withKeyOpt("type")
-      value <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("value")
-    } yield SelfDescribingData(
-      SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0)),
-      asObject(List(formId, elementId, nodeName, `type`, value))
-    )
-
   val clientSessionGen =
     for {
       userId <- Gen.uuid.withKey("userId")
@@ -213,8 +201,6 @@ object Context {
 
   def contextsGen: Gen[Contexts] =
     for {
-      mainContextCardinality <- Gen.chooseNum(1, 3)
-      mainContexts <- Gen.listOfN(mainContextCardinality, changeFormGen)
       clientSession <- Gen.option(clientSessionGen)
       consentDocument <- consentDocumentGen
       desktopContext <- desktopContextGen
@@ -231,7 +217,7 @@ object Context {
       consentWithdrawn <- consentWithdrawnGen
       segmentScreen <- segmentScreenGen
       pushRegistration <- pushRegistrationGen
-    } yield Contexts(pushRegistration :: segmentScreen :: consentWithdrawn :: sessionContext :: optimizelySummary :: optimizelyVariation :: optimizelyState :: optimizelyVisitor :: googlePrivate :: googleCookies :: httpCookie :: httpHeader :: uaParserContext :: desktopContext :: consentDocument :: (clientSession.toList ++ mainContexts))
+    } yield Contexts(pushRegistration :: segmentScreen :: consentWithdrawn :: sessionContext :: optimizelySummary :: optimizelyVariation :: optimizelyState :: optimizelyVisitor :: googlePrivate :: googleCookies :: httpCookie :: httpHeader :: uaParserContext :: desktopContext :: consentDocument :: clientSession.toList)
 
 
   final case class ContextsWrapper(contexts: Contexts) extends Protocol {
@@ -244,7 +230,7 @@ object Context {
     val genOps: Gen[Option[ContextsWrapper]] = Gen.option(gen)
   }
 
-  def singeContextGen: Gen[UnstructEvent] = Gen.oneOf(changeFormGen, clientSessionGen, desktopContextGen)
+  def singeContextGen: Gen[UnstructEvent] = Gen.oneOf(clientSessionGen, desktopContextGen)
     .map(d => UnstructEvent(Some(d)))
 
   def toJson(unstructEvent: UnstructEvent): Json = SelfDescribingData(

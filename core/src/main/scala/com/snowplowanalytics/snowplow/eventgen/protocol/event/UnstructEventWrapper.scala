@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.UnstructEventData
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.{ChangeForm, LinkClick, UnstructEventData}
 import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
@@ -32,5 +32,5 @@ final case class UnstructEventWrapper(
 }
 
 object UnstructEventWrapper {
-  val gen: Gen[UnstructEventWrapper] = UnstructEvent.genLink.map(l => UnstructEventWrapper(l, b64 = true))
+  val gen: Gen[UnstructEventWrapper] = Gen.oneOf(LinkClick.gen, ChangeForm.gen).map(l => UnstructEventWrapper(l, b64 = true))
 }
