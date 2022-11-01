@@ -18,24 +18,25 @@ import cats.implicits._
 import org.scalacheck.cats.implicits._
 
 case class Url(
-                scheme: String,
-                prefix: String,
-                domain: String,
-                port: Option[Int],
-                tld: String,
-                path: String
-              ) {
+  scheme: String,
+  prefix: String,
+  domain: String,
+  port: Option[Int],
+  tld: String,
+  path: String
+) {
   override def toString: String = port match {
     case Some(port) => s"""$scheme://$prefix$domain$tld:$port$path"""
-    case None => s"""$scheme://$prefix$domain$tld$path"""
+    case None       => s"""$scheme://$prefix$domain$tld$path"""
   }
 
   def sdkPort: Int = port match {
     case Some(value) => value
-    case None => scheme match {
-      case "https" => 443
-      case _ => 80
-    }
+    case None =>
+      scheme match {
+        case "https" => 443
+        case _       => 80
+      }
   }
 
   def host: String = s"$prefix$domain$tld"
@@ -45,16 +46,26 @@ object Url {
 
   def gen: Gen[Url] = (urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply)
 
-  def genOpt: Gen[Option[Url]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply))
+  def genOpt: Gen[Option[Url]] =
+    Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply))
 
-  def genOptStr: Gen[Option[String]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply).map(_.toString))
+  def genOptStr: Gen[Option[String]] =
+    Gen.option(
+      (urlSchemeGen, urlPrefixGen, urlDomainGen, urlPortGen, urlTldGen, urlPathGen).mapN(Url.apply).map(_.toString)
+    )
 
-  def genOriginHost: Gen[Option[String]] = Gen.option((urlSchemeGen, urlPrefixGen, urlDomainGen, Gen.const(Option.empty[Int]), urlTldGen, Gen.const("")).mapN(Url.apply).map(_.toString))
+  def genOriginHost: Gen[Option[String]] =
+    Gen.option(
+      (urlSchemeGen, urlPrefixGen, urlDomainGen, Gen.const(Option.empty[Int]), urlTldGen, Gen.const(""))
+        .mapN(Url.apply)
+        .map(_.toString)
+    )
 
   private val urlSchemeGen: Gen[String] = Gen.oneOf("http", "https")
   private val urlPrefixGen: Gen[String] = Gen.oneOf("", "www.")
   private val urlDomainGen: Gen[String] = Gen.stringOfN(7, Gen.alphaNumChar)
-  private val urlTldGen: Gen[String] = Gen.oneOf(".com", ".net", ".co.uk", ".bg", ".ru", ".fr", ".tr", ".pl", ".ie", ".ro", ".ca")
+  private val urlTldGen: Gen[String] =
+    Gen.oneOf(".com", ".net", ".co.uk", ".bg", ".ru", ".fr", ".tr", ".pl", ".ie", ".ro", ".ca")
   private val urlPortGen: Gen[Option[Int]] = Gen.option(Gen.chooseNum(1, 65335))
-  private val urlPathGen: Gen[String] = Gen.stringOfN(15, Gen.alphaNumChar).map(s => s"/$s")
+  private val urlPathGen: Gen[String]      = Gen.stringOfN(15, Gen.alphaNumChar).map(s => s"/$s")
 }

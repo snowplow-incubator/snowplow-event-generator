@@ -31,27 +31,27 @@ import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 final case class CollectorPayload(
-                                   api: Api,
-                                   payload: List[Body],
-                                   source: Source,
-                                   context: CollectorContext
-                                 ) {
+  api: Api,
+  payload: List[Body],
+  source: Source,
+  context: CollectorContext
+) {
   private case class PayloadParts(
-                                   querystring: List[NameValuePair],
-                                   bodyJson: Option[Json],
-                                   contentType: Option[String],
-                                   timestamp: Long
-                                 ) {
+    querystring: List[NameValuePair],
+    bodyJson: Option[Json],
+    contentType: Option[String],
+    timestamp: Long
+  ) {
     def body: Option[String] = bodyJson.map(_.noSpaces)
   }
 
   private def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 
   private[this] lazy val parts: PayloadParts = {
-    val timestamp: Long = context.timestamp.toEpochMilli
+    val timestamp: Long                  = context.timestamp.toEpochMilli
     var querystring: List[NameValuePair] = List.empty[NameValuePair]
-    var contentType: Option[String] = None
-    var bodyJson: Option[Json] = None
+    var contentType: Option[String]      = None
+    var bodyJson: Option[Json]           = None
 
     if (api.version == "tp1") {
       querystring = payload.head.toProto.map(kv => new BasicNameValuePair(kv.getName, encodeValue(kv.getValue)))
@@ -61,15 +61,21 @@ final case class CollectorPayload(
         SelfDescribingData(
           PayloadDataSchema.Default,
           payload.map(body => body.toPayloadElement).asJson
-        ).asJson)
+        ).asJson
+      )
     }
     PayloadParts(querystring, bodyJson, contentType, timestamp)
   }
 
-  def toThrift: CollectorPayload1 = {
+  def toThrift: CollectorPayload1 =
     // Timestamp must be always set, otherwise long will fallback it to 1970-01-01
-    new CollectorPayload1(CollectorPayload.IgluUri.toSchemaUri, context.ipAddress.map(_.toString).orNull, parts.timestamp, source.encoding, source.name)
-      .setHostname(source.hostname.orNull)
+    new CollectorPayload1(
+      CollectorPayload.IgluUri.toSchemaUri,
+      context.ipAddress.map(_.toString).orNull,
+      parts.timestamp,
+      source.encoding,
+      source.name
+    ).setHostname(source.hostname.orNull)
       .setQuerystring(
         (new URIBuilder).setPath(api.toString).setParameters(parts.querystring.asJava).build().getQuery
       )
@@ -80,9 +86,8 @@ final case class CollectorPayload(
       .setNetworkUserId(context.userId.map(_.toString).orNull)
       .setHeaders(context.headers.toList.asJava)
       .setPath(api.toString);
-  }
 
-  override def toString: String = {
+  override def toString: String =
     s"""
        #################################### NEW EVENT ####################################
        ############  ############  ############ QueryString ############  ############  ##########
@@ -102,36 +107,36 @@ final case class CollectorPayload(
        #########################################################################################
        """.stripMargin
 
-
-  }
-
   def toRaw: Array[Byte] =
     CollectorPayload.serializer.serialize(toThrift)
 }
 
 object CollectorPayload {
-  def genDup(natProb: Float,
-             synProb: Float,
-             natTotal: Int,
-             synTotal: Int,
-             eventPerPayloadMin: Int,
-             eventPerPayloadMax: Int,
-             now: Instant): Gen[CollectorPayload] =
+  def genDup(
+    natProb: Float,
+    synProb: Float,
+    natTotal: Int,
+    synTotal: Int,
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant
+  ): Gen[CollectorPayload] =
     genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal, now), now)
 
-
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) = for {
-    n <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
-    api <- Api.genApi(n)
-    src <- Source.gen
-    cc <- CollectorContext.gen(now)
-    payload <- Gen.listOfN(n, bodyGen)
-  } yield CollectorPayload(api, payload, src, cc)
+  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
+    for {
+      n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
+      api     <- Api.genApi(n)
+      src     <- Source.gen
+      cc      <- CollectorContext.gen(now)
+      payload <- Gen.listOfN(n, bodyGen)
+    } yield CollectorPayload(api, payload, src, cc)
 
   def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[CollectorPayload] =
     genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now), now)
 
-  val IgluUri: SchemaKey = SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
+  val IgluUri: SchemaKey =
+    SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
 
   lazy val serializer = new TSerializer()
 }

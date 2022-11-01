@@ -28,30 +28,73 @@ object UnstructEvent {
   }
 
   object schemas {
-    val LinkClick: SchemaKey = SchemaKey("com.snowplowanalytics.snowplow", "link_click", "jsonschema", SchemaVer.Full(1, 0, 1))
-    val ChangeForm: SchemaKey = SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0))
+    val LinkClick: SchemaKey =
+      SchemaKey("com.snowplowanalytics.snowplow", "link_click", "jsonschema", SchemaVer.Full(1, 0, 1))
+    val ChangeForm: SchemaKey =
+      SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0))
   }
 
   final case class LinkClick(url: Url) extends UnstructEventData {
     def schema: SchemaKey = UnstructEvent.schemas.LinkClick
-    def data: Json = Map("targetUrl" -> url.toString).asJson
+    def data: Json        = Map("targetUrl" -> url.toString).asJson
   }
 
   object LinkClick {
     val gen: Gen[LinkClick] = Url.gen.map(LinkClick.apply)
   }
 
-  final case class ChangeForm(formId: String, elementId: String, nodeName: String, `type`: Option[String], value: Option[String]) extends UnstructEventData {
+  final case class ChangeForm(
+    formId: String,
+    elementId: String,
+    nodeName: String,
+    `type`: Option[String],
+    value: Option[String]
+  ) extends UnstructEventData {
     def schema: SchemaKey = UnstructEvent.schemas.ChangeForm
-    def data: Json = Map("formId" -> formId, "elementId" -> elementId, "nodeName" -> nodeName, "type" -> `type`.getOrElse(""), "value" -> value.orNull).filterNot { case (_, v) => v == "" }.asJson
+    def data: Json =
+      Map(
+        "formId"    -> formId,
+        "elementId" -> elementId,
+        "nodeName"  -> nodeName,
+        "type"      -> `type`.getOrElse(""),
+        "value"     -> value.orNull
+      ).filterNot { case (_, v) => v == "" }.asJson
   }
 
   object ChangeForm {
     val gen: Gen[ChangeForm] = for {
-      formId <- strGen(32, Gen.alphaNumChar)
+      formId    <- strGen(32, Gen.alphaNumChar)
       elementId <- strGen(32, Gen.alphaNumChar)
-      nodeName <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT"))
-      `type` <- Gen.option(Gen.oneOf(List("button", "checkbox", "color", "date", "datetime", "datetime-local", "email", "file", "hidden", "image", "month", "number", "password", "radio", "range", "reset", "search", "submit", "tel", "text", "time", "url", "week")))
+      nodeName  <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT"))
+      `type` <- Gen.option(
+        Gen.oneOf(
+          List(
+            "button",
+            "checkbox",
+            "color",
+            "date",
+            "datetime",
+            "datetime-local",
+            "email",
+            "file",
+            "hidden",
+            "image",
+            "month",
+            "number",
+            "password",
+            "radio",
+            "range",
+            "reset",
+            "search",
+            "submit",
+            "tel",
+            "text",
+            "time",
+            "url",
+            "week"
+          )
+        )
+      )
       value <- Gen.option(strGen(16, Gen.alphaNumChar))
     } yield ChangeForm(formId, elementId, nodeName, `type`, value)
   }

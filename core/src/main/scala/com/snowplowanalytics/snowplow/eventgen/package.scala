@@ -31,7 +31,7 @@ package object eventgen {
       else
         gen.apply(Gen.Parameters.default, Seed(seed.nextLong())) match {
           case Some(a) => a
-          case None => go(attempt + 1)
+          case None    => go(attempt + 1)
         }
 
     go(1)

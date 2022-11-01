@@ -16,7 +16,7 @@ import org.scalacheck.Gen
 
 sealed trait EventType {
   override def toString: String = this match {
-    case EventType.Struct => "se"
+    case EventType.Struct   => "se"
     case EventType.Unstruct => "ue"
     case EventType.PageView => "pv"
     case EventType.PagePing => "pp"
@@ -43,7 +43,11 @@ object EventType {
   //  case object Transaction extends EventType
   //  case object TransactionItem extends EventType
 
-  val gen: Gen[EventType] = Gen.oneOf(Struct, Unstruct, PageView, PagePing
+  val gen: Gen[EventType] = Gen.oneOf(
+    Struct,
+    Unstruct,
+    PageView,
+    PagePing
     //      AdImpression, Transaction, TransactionItem,
   )
 }

@@ -18,9 +18,9 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 
 final case class Device(
-                   res: Option[Dimensions] // dvce_screenheight and dvce_screenwidth
-                 ) extends Protocol {
-  override def toProto: List[BasicNameValuePair] = asKV("res",res)
+  res: Option[Dimensions] // dvce_screenheight and dvce_screenwidth
+) extends Protocol {
+  override def toProto: List[BasicNameValuePair] = asKV("res", res)
 }
 
 object Device {

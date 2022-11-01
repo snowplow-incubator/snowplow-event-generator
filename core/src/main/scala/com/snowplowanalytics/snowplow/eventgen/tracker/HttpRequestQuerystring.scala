@@ -27,5 +27,8 @@ final case class HttpRequestQuerystring(qs: List[BasicNameValuePair]) extends Pr
 object HttpRequestQuerystring {
   def gen(now: Instant): Gen[HttpRequestQuerystring] = genWithBody(Body.gen(now))
 
-  private def genWithBody(bodyGen: Gen[Body]) = bodyGen.flatMap(qs => HttpRequestQuerystring(qs.toProto.map(kv => new BasicNameValuePair(kv.getName, encodeValue(kv.getValue)))))
+  private def genWithBody(bodyGen: Gen[Body]) =
+    bodyGen.flatMap(qs =>
+      HttpRequestQuerystring(qs.toProto.map(kv => new BasicNameValuePair(kv.getName, encodeValue(kv.getValue))))
+    )
 }

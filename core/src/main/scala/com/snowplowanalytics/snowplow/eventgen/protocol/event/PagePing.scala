@@ -20,13 +20,12 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.cats.implicits._
 
 final case class PagePing(
-                     override val deps: List[Web], // all web props
-                     pp_mix: Option[Int], // pp_xoffset_min
-                     pp_max: Option[Int], //pp_xoffset_max
-                     pp_miy: Option[Int], //pp_yoffset_min
-                     pp_may: Option[Int] //pp_yoffset_max
-                   ) extends LegacyEvent {
-
+  override val deps: List[Web], // all web props
+  pp_mix: Option[Int],          // pp_xoffset_min
+  pp_max: Option[Int],          // pp_xoffset_max
+  pp_miy: Option[Int],          // pp_yoffset_min
+  pp_may: Option[Int]           // pp_yoffset_max
+) extends LegacyEvent {
 
   override def toProto: List[BasicNameValuePair] =
     deps.flatMap(_.toProto) ++
@@ -38,11 +37,12 @@ final case class PagePing(
 }
 
 object PagePing {
-  def gen: Gen[PagePing] = (
-    Gen.listOfN(1, Web.gen),
-    genIntOpt,
-    genIntOpt,
-    genIntOpt,
-    genIntOpt
+  def gen: Gen[PagePing] =
+    (
+      Gen.listOfN(1, Web.gen),
+      genIntOpt,
+      genIntOpt,
+      genIntOpt,
+      genIntOpt
     ).mapN(PagePing.apply)
 }

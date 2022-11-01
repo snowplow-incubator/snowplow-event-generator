@@ -45,12 +45,13 @@ package object primitives {
 
   def genWordsOpt: Gen[Option[String]] = Gen.option(genWords)
 
-  def genString(prefix: String, len: Int): Gen[String] = Gen.stringOfN(len, Gen.alphaNumChar)
-    .map(s => s"${prefix}_$s")
+  def genString(prefix: String, len: Int): Gen[String] = Gen.stringOfN(len, Gen.alphaNumChar).map(s => s"${prefix}_$s")
 
   def genStringOpt(prefix: String, len: Int): Gen[Option[String]] = Gen.option(genString(prefix, len))
 
-  def strGen(len: Int, g: Gen[Char]): Gen[String] = Gen.chooseNum(1, len).flatMap { x => Gen.stringOfN(x, g) }
+  def strGen(len: Int, g: Gen[Char]): Gen[String] = Gen.chooseNum(1, len).flatMap { x =>
+    Gen.stringOfN(x, g)
+  }
 
   def genInstant(now: Instant): Gen[Instant] = Gen.chooseNum(0, 10000000).map(m => now.minusMillis(m.toLong))
 
@@ -64,10 +65,11 @@ package object primitives {
 
   val genIpOpt: Gen[Option[String]] = Gen.option(genIp)
 
-  def genDimensions: Gen[Dimensions] = for {
-    x <- Gen.chooseNum(1, 10000)
-    y <- Gen.chooseNum(1, 10000)
-  } yield Dimensions(x, y)
+  def genDimensions: Gen[Dimensions] =
+    for {
+      x <- Gen.chooseNum(1, 10000)
+      y <- Gen.chooseNum(1, 10000)
+    } yield Dimensions(x, y)
 
   def genDimensionsOpt: Gen[Option[Dimensions]] = Gen.option(genDimensions)
 
@@ -90,7 +92,8 @@ package object primitives {
     """Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
       | Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
       | dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-      | proident, sunt in culpa qui officia deserunt mollit anim id est laborum.""".stripMargin
+      | proident, sunt in culpa qui officia deserunt mollit anim id est laborum."""
+      .stripMargin
       .replaceAll("""[\p{Punct}]""", "")
       .toLowerCase
       .split(" ")

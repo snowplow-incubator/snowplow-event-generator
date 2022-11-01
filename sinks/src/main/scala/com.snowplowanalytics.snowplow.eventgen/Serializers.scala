@@ -28,14 +28,12 @@ object Serializers {
       pipe
   }
 
-  def rawSerializer[F[_] : Sync](compress: Boolean = true): Pipe[F, collector.CollectorPayload, Byte] =
-    _.flatMap(e => Stream.emits(e.toRaw))
-      .through(base64.encode)
-      .through(stringSerializer(compress))
+  def rawSerializer[F[_]: Sync](compress: Boolean = true): Pipe[F, collector.CollectorPayload, Byte] =
+    _.flatMap(e => Stream.emits(e.toRaw)).through(base64.encode).through(stringSerializer(compress))
 
-  def enrichedTsvSerializer[F[_] : Sync](compress: Boolean = true): Pipe[F, Event, Byte] =
+  def enrichedTsvSerializer[F[_]: Sync](compress: Boolean = true): Pipe[F, Event, Byte] =
     _.map(_.toTsv).through(stringSerializer(compress))
 
-  def enrichedJsonSerializer[F[_] : Sync](compress: Boolean = true): Pipe[F, Event, Byte] =
+  def enrichedJsonSerializer[F[_]: Sync](compress: Boolean = true): Pipe[F, Event, Byte] =
     _.map(_.toJson(true).noSpaces).through(stringSerializer(compress))
 }

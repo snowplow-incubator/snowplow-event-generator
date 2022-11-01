@@ -17,8 +17,8 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 
 final case class PageView(
-                     override val deps: List[Web] // all web props
-                   ) extends LegacyEvent {
+  override val deps: List[Web] // all web props
+) extends LegacyEvent {
   override def toProto: List[BasicNameValuePair] = deps.flatMap(_.toProto)
 }
 

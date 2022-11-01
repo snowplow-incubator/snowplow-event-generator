@@ -22,11 +22,11 @@ import org.scalacheck.cats.implicits._
 import java.time.Instant
 
 final case class DateTime(
-                     dtm: Option[Instant], // dvce_created_tstamp
-                     stm: Option[Instant], // dvce_sent_tstamp
-                     ttm: Option[Instant], // true_tstamp
-                     tz: Option[String] // os_timezone
-                   ) extends Protocol {
+  dtm: Option[Instant], // dvce_created_tstamp
+  stm: Option[Instant], // dvce_sent_tstamp
+  ttm: Option[Instant], // true_tstamp
+  tz: Option[String]    // os_timezone
+) extends Protocol {
   override def toProto: List[BasicNameValuePair] =
     asKV("dtm", dtm) ++
       asKV("stm", stm) ++
@@ -36,7 +36,8 @@ final case class DateTime(
 }
 
 object DateTime {
-  def gen(now: Instant): Gen[DateTime] = (genInstantOpt(now), genInstantOpt(now), genInstantOpt(now), genTzOpt).mapN(DateTime.apply)
+  def gen(now: Instant): Gen[DateTime] =
+    (genInstantOpt(now), genInstantOpt(now), genInstantOpt(now), genTzOpt).mapN(DateTime.apply)
 
   def genOpt(now: Instant): Gen[Option[DateTime]] = Gen.option(gen(now))
 }

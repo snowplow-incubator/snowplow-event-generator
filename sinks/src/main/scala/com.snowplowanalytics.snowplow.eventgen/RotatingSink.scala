@@ -24,7 +24,6 @@ import cats.effect.Async
 import cats.syntax.all._
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
-
 object RotatingSink {
 
   /* A Pipe that periodically rotates the inner pipe it sends elements through
@@ -40,27 +39,29 @@ object RotatingSink {
     def newChannel = Channel.synchronous[F, Chunk[A]]
 
     // Adds sub-streams to the outputs channels, with each sub-stream receiving `max` elements
-    def go(in: Stream[F, A],
-           aCount: Int,
-           streamCount: Int,
-           outputs: Channel[F, (Int, Stream[F, A])],
-           chan: Channel[F, Chunk[A]]): Pull[F, INothing, Unit] =
+    def go(
+      in: Stream[F, A],
+      aCount: Int,
+      streamCount: Int,
+      outputs: Channel[F, (Int, Stream[F, A])],
+      chan: Channel[F, Chunk[A]]
+    ): Pull[F, INothing, Unit] =
       in.pull.uncons.flatMap {
         case None => Pull.eval(outputs.close *> chan.close) *> Pull.done
         case Some((chunk, rest)) =>
           val (split1, split2) = chunk.splitAt(max - aCount)
           for {
-            streamCount <- if (aCount == 0)
+            streamCount <-
+              if (aCount == 0)
                 Pull.eval {
-                  outputs
-                    .send((streamCount, chan.stream.unchunks))
-                    .as(streamCount + 1)
-                } else Pull.pure(streamCount)
-            _ <- Pull.eval(chan.send(split1))
+                  outputs.send((streamCount, chan.stream.unchunks)).as(streamCount + 1)
+                }
+              else Pull.pure(streamCount)
+            _      <- Pull.eval(chan.send(split1))
             aCount <- Pull.pure(aCount + split1.size)
-            chan <- if (aCount >= max) Pull.eval(chan.close *> newChannel) else Pull.pure(chan)
+            chan   <- if (aCount >= max) Pull.eval(chan.close *> newChannel) else Pull.pure(chan)
             aCount <- if (aCount >= max) Pull.pure(0) else Pull.pure(aCount)
-            _ <- go(Stream.chunk(split2) ++ rest, aCount, streamCount, outputs, chan)
+            _      <- go(Stream.chunk(split2) ++ rest, aCount, streamCount, outputs, chan)
           } yield ()
       }
 
@@ -82,15 +83,18 @@ object RotatingSink {
 
   def s3[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] =
     in =>
-      Stream.eval(Url.parseF[F](s"$baseDir/$prefix/${prefix}_${pad(idx)}$suffix")).flatMap { url =>
-        val store = S3Store[F](S3AsyncClient.builder().build())
-        in.through(store.put(url, overwrite = true, None, None))
-      }.drain
+      Stream
+        .eval(Url.parseF[F](s"$baseDir/$prefix/${prefix}_${pad(idx)}$suffix"))
+        .flatMap { url =>
+          val store = S3Store[F](S3AsyncClient.builder().build())
+          in.through(store.put(url, overwrite = true, None, None))
+        }
+        .drain
 
   def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] = { in =>
     val catDir = Path.fromNioPath(JPaths.get(baseDir).resolve(prefix))
     Stream.eval(Files[F].createDirectories(catDir)) *>
-    in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
+      in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }
 
   private def pad(idx: Int): String = f"$idx%04d"

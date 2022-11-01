@@ -24,18 +24,19 @@ import io.circe.config.parser
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-final case class Config(payloadsTotal: Int,
-                        seed: Long,
-                        compress: Boolean,
-                        eventPerPayloadMax: Int,
-                        eventPerPayloadMin: Int,
-                        withRaw: Boolean,
-                        withEnrichedTsv: Boolean,
-                        withEnrichedJson: Boolean,
-                        payloadsPerFile: Int,
-                        duplicates: Option[Config.Duplicates],
-                        timestamps: Config.Timestamps
-                       )
+final case class Config(
+  payloadsTotal: Int,
+  seed: Long,
+  compress: Boolean,
+  eventPerPayloadMax: Int,
+  eventPerPayloadMin: Int,
+  withRaw: Boolean,
+  withEnrichedTsv: Boolean,
+  withEnrichedJson: Boolean,
+  payloadsPerFile: Int,
+  duplicates: Option[Config.Duplicates],
+  timestamps: Config.Timestamps
+)
 
 object Config {
 
@@ -49,7 +50,7 @@ object Config {
 
   sealed trait Timestamps
   object Timestamps {
-    case object Now extends Timestamps 
+    case object Now extends Timestamps
     case class Fixed(at: Instant) extends Timestamps
   }
 
@@ -58,9 +59,9 @@ object Config {
   /* Temporary class for raw parameters */
   case class RawCli(config: Option[Path], output: URI)
 
-  val configOpt = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
-  val outputOpt = Opts.option[URI]("output", "Output path")
-  val cliOpt = (configOpt, outputOpt).mapN(RawCli.apply)
+  val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
+  val outputOpt   = Opts.option[URI]("output", "Output path")
+  val cliOpt      = (configOpt, outputOpt).mapN(RawCli.apply)
   val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(cliOpt)
 
   // This is needed when providing parameters via system properties
@@ -68,9 +69,8 @@ object Config {
   implicit val booleanDecoder: Decoder[Boolean] =
     Decoder.decodeBoolean.or(Decoder.decodeString.emap(_.toBooleanOption.toRight("Invalid boolean")))
 
-  implicit val timestampsConfigDecoder: Decoder[Timestamps] = {
+  implicit val timestampsConfigDecoder: Decoder[Timestamps] =
     deriveConfiguredDecoder[Timestamps]
-  }
 
   implicit val duplicatesDecoder: Decoder[Duplicates] =
     deriveConfiguredDecoder[Duplicates]
@@ -78,13 +78,14 @@ object Config {
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]
 
-  /**
-    * Parse raw CLI arguments into validated and transformed application config
+  /** Parse raw CLI arguments into validated and transformed application config
     *
-    * @param argv list of command-line arguments, including optionally a `--config` argument
-    * @return The parsed config using the provided file and the standard typesafe config loading process.
-    *         See https://github.com/lightbend/config/tree/v1.4.1#standard-behavior
-    *         Or an error message if config could not be loaded.
+    * @param argv
+    *   list of command-line arguments, including optionally a `--config` argument
+    * @return
+    *   The parsed config using the provided file and the standard typesafe config loading process. See
+    *   https://github.com/lightbend/config/tree/v1.4.1#standard-behavior Or an error message if config could not be
+    *   loaded.
     */
   def parse(argv: Seq[String]): Either[String, Cli] =
     application.parse(argv).leftMap(_.show).flatMap {
@@ -102,10 +103,8 @@ object Config {
     }
 
   /** Uses the typesafe config layering approach. Loads configurations in the following priority order:
-    *  1. System properties
-    *  2. The provided configuration file
-    *  3. application.conf of our app
-    *  4. reference.conf of any libraries we use
+    *   1. System properties 2. The provided configuration file 3. application.conf of our app 4. reference.conf of any
+    *      libraries we use
     */
   def loadFromFile(file: Path): Either[String, RawConfig] =
     for {

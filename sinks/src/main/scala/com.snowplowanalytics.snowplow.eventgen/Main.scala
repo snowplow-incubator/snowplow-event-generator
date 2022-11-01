@@ -20,12 +20,11 @@ import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 
 import java.net.URI
 
-
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     Config.parse(args) match {
       case Right(Config.Cli(config, outputUri)) =>
-          sink[IO](outputUri, config).as(ExitCode.Success)
+        sink[IO](outputUri, config).as(ExitCode.Success)
       case Left(error) =>
         IO(System.err.println(error)).as(ExitCode.Error)
 
@@ -33,20 +32,37 @@ object Main extends IOApp {
 
   type GenOutput = (collector.CollectorPayload, List[Event])
 
-
-  def sink[F[_] : Async](outputDir: URI, config: Config): F[Unit] = {
+  def sink[F[_]: Async](outputDir: URI, config: Config): F[Unit] = {
     val rng = new scala.util.Random(config.seed)
     val timeF = config.timestamps match {
-      case Config.Timestamps.Now => Clock[F].realTimeInstant
+      case Config.Timestamps.Now         => Clock[F].realTimeInstant
       case Config.Timestamps.Fixed(time) => Async[F].pure(time)
     }
 
     val eventStream: Stream[F, GenOutput] =
       Stream.eval(timeF).flatMap { time =>
         config.duplicates match {
-          case Some(dups) => Stream.repeatEval(Sync[F].delay(
-            runGen(SdkEvent.genPairDup(dups.natProb, dups.synProb, dups.natTotal, dups.synTotal, config.eventPerPayloadMin, config.eventPerPayloadMax, time), rng)))
-          case None => Stream.repeatEval(Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time), rng)))
+          case Some(dups) =>
+            Stream.repeatEval(
+              Sync[F].delay(
+                runGen(
+                  SdkEvent.genPairDup(
+                    dups.natProb,
+                    dups.synProb,
+                    dups.natTotal,
+                    dups.synTotal,
+                    config.eventPerPayloadMin,
+                    config.eventPerPayloadMax,
+                    time
+                  ),
+                  rng
+                )
+              )
+            )
+          case None =>
+            Stream.repeatEval(
+              Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time), rng))
+            )
         }
       }
 
@@ -68,13 +84,12 @@ object Main extends IOApp {
     eventStream
       .take(config.payloadsTotal.toLong)
       .through(RotatingSink.rotate(config.payloadsPerFile) { idx =>
-        val pipe1: Pipe[F, GenOutput, INothing]  = _.map(_._1)
-          .through(Serializers.rawSerializer(config.compress))
-          .through(sinkFor("raw", idx, config.withRaw))
-        val pipe2: Pipe[F, GenOutput, INothing]  = _.flatMap(in => Stream.emits(in._2))
+        val pipe1: Pipe[F, GenOutput, INothing] =
+          _.map(_._1).through(Serializers.rawSerializer(config.compress)).through(sinkFor("raw", idx, config.withRaw))
+        val pipe2: Pipe[F, GenOutput, INothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedTsvSerializer(config.compress))
           .through(sinkFor("enriched", idx, config.withEnrichedTsv))
-        val pipe3: Pipe[F, GenOutput, INothing]  = _.flatMap(in => Stream.emits(in._2))
+        val pipe3: Pipe[F, GenOutput, INothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedJsonSerializer(config.compress))
           .through(sinkFor("transformed", idx, config.withEnrichedJson))
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)

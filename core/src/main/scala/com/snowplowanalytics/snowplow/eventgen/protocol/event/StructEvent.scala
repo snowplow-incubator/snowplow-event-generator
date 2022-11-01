@@ -18,14 +18,13 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._
 
-
 final case class StructEvent(
-                              se_ca: Option[String], //	se_category
-                              se_ac: Option[String], //	se_action
-                              se_la: Option[String], //	se_label
-                              se_pr: Option[String], //	se_property
-                              se_va: Option[Double], //	se_value
-                            ) extends BodyEvent {
+  se_ca: Option[String], //	se_category
+  se_ac: Option[String], //	se_action
+  se_la: Option[String], //	se_label
+  se_pr: Option[String], //	se_property
+  se_va: Option[Double]  //	se_value
+) extends BodyEvent {
   override def toProto: List[BasicNameValuePair] =
     asKV("se_ca", se_ca) ++
       asKV("se_ac", se_ac) ++
@@ -35,11 +34,12 @@ final case class StructEvent(
 }
 
 object StructEvent {
-  def gen: Gen[StructEvent] = (
-    genStringOpt("se_ca", 10),
-    genStringOpt("se_ca", 10),
-    genStringOpt("se_ca", 10),
-    genStringOpt("se_ca", 10),
-    genDblOpt
+  def gen: Gen[StructEvent] =
+    (
+      genStringOpt("se_ca", 10),
+      genStringOpt("se_ca", 10),
+      genStringOpt("se_ca", 10),
+      genStringOpt("se_ca", 10),
+      genDblOpt
     ).mapN(StructEvent.apply)
 }

@@ -29,12 +29,21 @@ final case class HttpRequestBody(schema: SchemaKey, data: List[Body]) {
 }
 
 object HttpRequestBody {
-  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, min: Int, max: Int, now: Instant): Gen[HttpRequestBody] = genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now))
+  def genDup(
+    natProb: Float,
+    synProb: Float,
+    natTotal: Int,
+    synTotal: Int,
+    min: Int,
+    max: Int,
+    now: Instant
+  ): Gen[HttpRequestBody] = genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now))
 
   def gen(min: Int, max: Int, now: Instant): Gen[HttpRequestBody] = genWithBody(min, max, Body.gen(now))
 
-  private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) = for {
-    n <- Gen.chooseNum(min, max)
-    payload <- Gen.listOfN(n, bodyGen)
-  } yield HttpRequestBody(PayloadDataSchema.Default, payload)
+  private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
+    for {
+      n       <- Gen.chooseNum(min, max)
+      payload <- Gen.listOfN(n, bodyGen)
+    } yield HttpRequestBody(PayloadDataSchema.Default, payload)
 }
