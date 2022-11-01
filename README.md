@@ -9,11 +9,11 @@ We provide [a command line tool](#quickstart-cli) to output events to a file, an
 
 ## Quickstart CLI
 
-Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.2.2/snowplow-event-generator-0.2.2.tar.gz). You need java installed to run it.
+Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.3.0/snowplow-event-generator-0.3.0.tar.gz). You need java installed to run it.
 
 ```bash
-wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.2.2/snowplow-event-generator-0.2.2.tar.gz
-tar -xzf snowplow-event-generator-0.2.2.tar.gz
+wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.3.0/snowplow-event-generator-0.3.0.tar.gz
+tar -xzf snowplow-event-generator-0.3.0.tar.gz
 ```
 
 And start generating events in your `my-events` directory:
@@ -110,7 +110,7 @@ All fields in the configuration file are optional:
 Core is a scala library for generating snowplow events.
 
 ```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.2.2" % Test
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.3.0" % Test
 ```
 
 ```scala
@@ -127,7 +127,7 @@ val rng: scala.util.Random = scala.util.Random@1cca85d5
 scala> val now = java.time.Instant.parse("2022-01-01T01:01:01z")
 val now: java.time.Instant = 2022-01-01T01:01:01Z
 
-// Generate a Pair of Coollector Payload and List of events in Payload
+// Generate a Pair of Collector Payload and List of events in Payload
 // 1 - eventPerPayloadMin min number of events in payload
 // 10 - eventPerPayloadMax max number of events in payload
 scala> runGen(SdkEvent.genPair(1,10, now), rng)
@@ -194,7 +194,6 @@ val res2: List[List[(Option[java.util.UUID], Option[String])]] =
     List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_8borEVQRrt))),
     List((Some(77cc2249-6d3f-49f6-9143-35c2ffc36e96),Some(aid_6zkeZ28aTr)))
   )
-
 ```
 
 
@@ -217,4 +216,3 @@ limitations under the License.
 
 [build]: https://github.com/snowplow-incubator/snowplow-event-generator/actions?query=workflow%3A%22CI%22
 [build-image]: https://github.com/snowplow-incubator/snowplow-event-generator/workflows/CI/badge.svg
-

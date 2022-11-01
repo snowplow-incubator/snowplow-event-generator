@@ -1,3 +1,11 @@
+Version 0.3.0 (2022-11-01)
+--------------------------
+Add http request generator (#25)
+Add ConfigSpec tests (#25)
+Move change_form from context to unstruct event (#25)
+Add scalafmt plugin (#25)
+README incorrectly refers to tar file as a zip file (#22)
+
 Version 0.2.2 (2022-02-22)
 --------------------------
 Output JSON consistent with RDB transformer (#18)
