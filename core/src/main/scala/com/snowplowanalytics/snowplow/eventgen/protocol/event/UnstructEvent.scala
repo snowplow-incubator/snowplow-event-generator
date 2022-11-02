@@ -57,7 +57,7 @@ object UnstructEvent {
         "elementId" -> elementId,
         "nodeName"  -> nodeName,
         "type"      -> `type`.getOrElse(""),
-        "value"     -> value.orNull
+        "value"     -> value.getOrElse("")
       ).filterNot { case (_, v) => v == "" }.asJson
   }
 
