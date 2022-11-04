@@ -1,3 +1,10 @@
+Version 0.3.1 (2022-11-08)
+--------------------------
+Ensure HEAD requests don't have a body (#29)
+Limit the possible separators for the path's vendor segment (#29)
+Make Api.toString always output a path with a leading slash (#29)
+Fix NPE when generating change_form event (#29)
+
 Version 0.3.0 (2022-11-01)
 --------------------------
 Add http request generator (#25)
