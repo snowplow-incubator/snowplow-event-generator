@@ -42,7 +42,7 @@ object Api {
       venPartsN   <- Gen.chooseNum(1, 5)
       venNs       <- Gen.listOfN(venPartsN, Gen.chooseNum(1, 10))
       vendorParts <- Gen.sequence[List[String], String](venNs.map(Gen.stringOfN(_, Gen.alphaNumChar)))
-      sep         <- Gen.oneOf("-", ".", "_", "~", "!", "$", "&", "'", "(", ")", "*", "+", ",", ";", "=", ":", "@", "%")
+      sep         <- Gen.oneOf("-", ".", "_", "~")
     } yield vendorParts.mkString(sep)
 
   private def genVersion =
