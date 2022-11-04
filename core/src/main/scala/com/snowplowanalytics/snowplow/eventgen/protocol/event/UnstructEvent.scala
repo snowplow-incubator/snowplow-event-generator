@@ -53,12 +53,12 @@ object UnstructEvent {
     def schema: SchemaKey = UnstructEvent.schemas.ChangeForm
     def data: Json =
       Map(
-        "formId"    -> formId,
-        "elementId" -> elementId,
-        "nodeName"  -> nodeName,
-        "type"      -> `type`.getOrElse(""),
-        "value"     -> value.orNull
-      ).filterNot { case (_, v) => v == "" }.asJson
+        "formId"    -> Some(formId),
+        "elementId" -> Some(elementId),
+        "nodeName"  -> Some(nodeName),
+        "type"      -> Some(`type`.getOrElse("")), // we do want an empty String here,
+        "value"     -> value
+      ).filterNot { case (_, v) => v.contains("") }.asJson
   }
 
   object ChangeForm {
