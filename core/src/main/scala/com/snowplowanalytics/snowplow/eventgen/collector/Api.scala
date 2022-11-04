@@ -21,7 +21,7 @@ import org.scalacheck.cats.implicits._
 final case class Api(vendor: String, version: String) {
   override def toString: String =
     if (vendor == "com.snowplowanalytics.snowplow" && version == "tp1" || vendor == "i" && version == "") "/i"
-    else s"$vendor/$version"
+    else s"/$vendor/$version"
 }
 
 object Api {
