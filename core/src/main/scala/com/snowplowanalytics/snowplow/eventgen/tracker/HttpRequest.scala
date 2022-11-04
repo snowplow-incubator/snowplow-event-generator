@@ -50,7 +50,10 @@ object HttpRequest {
     for {
       method      <- Method.gen
       qs          <- Gen.option(qsGen)
-      body        <- Gen.option(bodyGen)
+      body        <- method match {
+        case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
+        case _ => Gen.option(bodyGen)
+      }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
       raw = HttpRequestHeaders.rawReqUriHeader(qs)
     } yield HttpRequest(method, generatedHs ++ raw, qs, body)
