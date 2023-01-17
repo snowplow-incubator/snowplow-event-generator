@@ -23,7 +23,6 @@ import org.scalacheck.Gen
 
 import java.util.concurrent.atomic.AtomicLong
 
-
 object UnstructEvent {
   trait UnstructEventData {
     def schema: SchemaKey
@@ -37,6 +36,8 @@ object UnstructEvent {
       SchemaKey("com.snowplowanalytics.snowplow", "link_click", "jsonschema", SchemaVer.Full(1, 0, 1))
     val ChangeForm: SchemaKey =
       SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0))
+    val FunnelInteraction: SchemaKey =
+      SchemaKey("io.snowplow.foundation", "funnel_interaction", "jsonschema", SchemaVer.Full(1, 0, 0))
   }
 
   var unstuctEventCount = new AtomicLong()
@@ -106,5 +107,27 @@ object UnstructEvent {
       )
       value <- Gen.option(strGen(16, Gen.alphaNumChar))
     } yield ChangeForm(formId, elementId, nodeName, `type`, value)
+  }
+
+  final case class FunnelInteraction(
+    funnelName: String,
+    stepName: String,
+    stepPosition: Int
+  ) extends UnstructEventData {
+    def schema: SchemaKey = UnstructEvent.schemas.FunnelInteraction
+    def data: Json =
+      Map(
+        "funnel_name"   -> funnelName.asJson,
+        "step_name"     -> stepName.asJson,
+        "step_position" -> stepPosition.asJson
+      ).asJson
+  }
+
+  object FunnelInteraction {
+    val gen: Gen[FunnelInteraction] = for {
+      funnelName   <- strGen(32, Gen.alphaNumChar)
+      stepName     <- strGen(32, Gen.alphaNumChar)
+      stepPosition <- Gen.chooseNum(1, 100)
+    } yield FunnelInteraction(funnelName, stepName, stepPosition)
   }
 }

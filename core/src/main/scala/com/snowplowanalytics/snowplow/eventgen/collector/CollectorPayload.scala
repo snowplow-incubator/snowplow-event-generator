@@ -15,6 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.collector
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.{CollectorPayload => CollectorPayload1}
 import com.snowplowanalytics.snowplow.eventgen.protocol._
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import org.apache.http.NameValuePair
@@ -119,11 +120,16 @@ object CollectorPayload {
     synTotal: Int,
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant
+    now: Instant,
+    frequencies: EventFrequencies
   ): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal, now), now)
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies), now)
 
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
+  private def genWithBody(
+    eventPerPayloadMin: Int, 
+    eventPerPayloadMax: Int, 
+    bodyGen: Gen[Body], 
+    now: Instant) =
     for {
       n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
       api     <- Api.genApi(n)
@@ -132,8 +138,12 @@ object CollectorPayload {
       payload <- Gen.listOfN(n, bodyGen)
     } yield CollectorPayload(api, payload, src, cc)
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now), now)
+  def gen(
+    eventPerPayloadMin: Int, 
+    eventPerPayloadMax: Int, 
+    now: Instant,     
+    frequencies: EventFrequencies): Gen[CollectorPayload] =
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now, frequencies), now)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
