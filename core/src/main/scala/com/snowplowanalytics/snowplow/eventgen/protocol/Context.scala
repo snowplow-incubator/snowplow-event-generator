@@ -22,17 +22,46 @@ import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import java.util.concurrent.atomic.AtomicLong
 
-
 object Context {
 
   val changeFormGenCount = new AtomicLong()
   val changeFormGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](changeFormGenCount.incrementAndGet()))
-      formId <- strGen(32, Gen.alphaNumChar).withKey("formId")
+      _         <- Gen.delay(Gen.const[Long](changeFormGenCount.incrementAndGet()))
+      formId    <- strGen(32, Gen.alphaNumChar).withKey("formId")
       elementId <- strGen(32, Gen.alphaNumChar).withKey("elementId")
-      nodeName <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT")).withKey("nodeName")
-      `type` <- Gen.option(Gen.oneOf(List("button", "checkbox", "color", "date", "datetime", "datetime-local", "email", "file", "hidden", "image", "month", "number", "password", "radio", "range", "reset", "search", "submit", "tel", "text", "time", "url", "week"))).withKeyOpt("type")
+      nodeName  <- Gen.oneOf(List("INPUT", "TEXTAREA", "SELECT")).withKey("nodeName")
+      `type` <- Gen
+        .option(
+          Gen.oneOf(
+            List(
+              "button",
+              "checkbox",
+              "color",
+              "date",
+              "datetime",
+              "datetime-local",
+              "email",
+              "file",
+              "hidden",
+              "image",
+              "month",
+              "number",
+              "password",
+              "radio",
+              "range",
+              "reset",
+              "search",
+              "submit",
+              "tel",
+              "text",
+              "time",
+              "url",
+              "week"
+            )
+          )
+        )
+        .withKeyOpt("type")
       value <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("value")
     } yield SelfDescribingData(
       SchemaKey("com.snowplowanalytics.snowplow", "change_form", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -42,10 +71,10 @@ object Context {
   val clientSessionGenCount = new AtomicLong()
   val clientSessionGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](clientSessionGenCount.incrementAndGet()))
-      userId <- Gen.uuid.withKey("userId")
-      sessionId <- Gen.uuid.withKey("sessionId")
-      sessionIndex <- Gen.choose(0, 2147483647).withKey("sessionIndex")
+      _                 <- Gen.delay(Gen.const[Long](clientSessionGenCount.incrementAndGet()))
+      userId            <- Gen.uuid.withKey("userId")
+      sessionId         <- Gen.uuid.withKey("sessionId")
+      sessionIndex      <- Gen.choose(0, 2147483647).withKey("sessionIndex")
       previousSessionId <- Gen.option(Gen.uuid).withKeyNull("previousSessionId")
       storageMechanism <- Gen
         .oneOf(List("SQLITE", "COOKIE_1", "COOKIE_3", "LOCAL_STORAGE", "FLASH_LSO"))
@@ -58,10 +87,10 @@ object Context {
   val consentDocumentCount = new AtomicLong()
   val consentDocumentGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](consentDocumentCount.incrementAndGet()))
-      id <- strGen(36, Gen.alphaNumChar).withKey("id")
-      version <- strGen(36, Gen.alphaNumChar).withKey("version")
-      name <- Gen.option(strGen(60, Gen.alphaNumChar)).withKeyOpt("name")
+      _           <- Gen.delay(Gen.const[Long](consentDocumentCount.incrementAndGet()))
+      id          <- strGen(36, Gen.alphaNumChar).withKey("id")
+      version     <- strGen(36, Gen.alphaNumChar).withKey("version")
+      name        <- Gen.option(strGen(60, Gen.alphaNumChar)).withKeyOpt("name")
       description <- Gen.option(strGen(1000, Gen.alphaNumChar)).withKeyOpt("description")
     } yield SelfDescribingData(
       SchemaKey("com.snowplowanalytics.snowplow", "consent_document", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -71,13 +100,13 @@ object Context {
   val desktopContextCount = new AtomicLong()
   val desktopContextGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](desktopContextCount.incrementAndGet()))
-      osType <- Gen.oneOf(List("Windows", "Linux", "macOS", "Solaris")).withKey("osType")
-      osVersion <- strGen(36, Gen.numChar).withKey("osVersion")
-      osServicePack <- Gen.option(strGen(48, Gen.alphaNumChar)).withKeyOpt("osServicePack")
-      osIs64Bit <- Gen.option(Gen.oneOf(List(true, false))).withKeyOpt("osIs64Bit")
-      deviceManufacturer <- Gen.option(strGen(36, Gen.numChar)).withKeyOpt("deviceManufacturer")
-      deviceModel <- Gen.option(strGen(36, Gen.numChar)).withKeyOpt("deviceModel")
+      _                    <- Gen.delay(Gen.const[Long](desktopContextCount.incrementAndGet()))
+      osType               <- Gen.oneOf(List("Windows", "Linux", "macOS", "Solaris")).withKey("osType")
+      osVersion            <- strGen(36, Gen.numChar).withKey("osVersion")
+      osServicePack        <- Gen.option(strGen(48, Gen.alphaNumChar)).withKeyOpt("osServicePack")
+      osIs64Bit            <- Gen.option(Gen.oneOf(List(true, false))).withKeyOpt("osIs64Bit")
+      deviceManufacturer   <- Gen.option(strGen(36, Gen.numChar)).withKeyOpt("deviceManufacturer")
+      deviceModel          <- Gen.option(strGen(36, Gen.numChar)).withKeyOpt("deviceModel")
       deviceProcessorCount <- Gen.option(Gen.choose(1, 32)).withKeyOpt("deviceProcessorCount")
     } yield SelfDescribingData(
       SchemaKey("com.snowplowanalytics.snowplow", "desktop_context", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -87,8 +116,8 @@ object Context {
   val httpCookieCount = new AtomicLong()
   val httpCookieGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](httpCookieCount.incrementAndGet()))
-      name <- strGen(32, Gen.alphaNumChar).withKey("name")
+      _     <- Gen.delay(Gen.const[Long](httpCookieCount.incrementAndGet()))
+      name  <- strGen(32, Gen.alphaNumChar).withKey("name")
       value <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("value")
     } yield SelfDescribingData(
       SchemaKey("org.ietf", "http_cookie", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -98,8 +127,8 @@ object Context {
   val httpHeaderCount = new AtomicLong()
   val httpHeaderGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](httpHeaderCount.incrementAndGet()))
-      name <- strGen(16, Gen.alphaNumChar).withKey("name")
+      _     <- Gen.delay(Gen.const[Long](httpHeaderCount.incrementAndGet()))
+      name  <- strGen(16, Gen.alphaNumChar).withKey("name")
       value <- strGen(16, Gen.alphaNumChar).withKey("value")
     } yield SelfDescribingData(
       SchemaKey("org.ietf", "http_header", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -109,7 +138,7 @@ object Context {
   val googleCookiesCount = new AtomicLong()
   val googleCookiesGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](googleCookiesCount.incrementAndGet()))
+      _    <- Gen.delay(Gen.const[Long](googleCookiesCount.incrementAndGet()))
       utma <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utma")
       utmb <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utmb")
       utmc <- Gen.option(strGen(12, Gen.alphaNumChar)).withKeyOpt("__utmc")
@@ -124,10 +153,10 @@ object Context {
   val googlePrivateCount = new AtomicLong()
   val googlePrivateGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](googlePrivateCount.incrementAndGet()))
-      v <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("v")
-      s <- Gen.option(Gen.choose(-128000, 1000000)).withKeyNull("s")
-      u <- Gen.option(strGen(256, Gen.alphaNumChar)).withKeyNull("u") // exceeds 256 on purpose
+      _   <- Gen.delay(Gen.const[Long](googlePrivateCount.incrementAndGet()))
+      v   <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("v")
+      s   <- Gen.option(Gen.choose(-128000, 1000000)).withKeyNull("s")
+      u   <- Gen.option(strGen(256, Gen.alphaNumChar)).withKeyNull("u") // exceeds 256 on purpose
       gid <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("gid")
       r   <- Gen.option(Gen.choose(-128000, 1000000)).withKeyNull("r")
     } yield SelfDescribingData(
@@ -138,8 +167,8 @@ object Context {
   val optimizelyVisitorCount = new AtomicLong()
   val optimizelyVisitorGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](optimizelyVisitorCount.incrementAndGet()))
-      browser <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("browser")
+      _              <- Gen.delay(Gen.const[Long](optimizelyVisitorCount.incrementAndGet()))
+      browser        <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("browser")
       browserVersion <- Gen.option(strGen(4, Gen.alphaNumChar)).withKeyNull("browserVersion")
       device         <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("device")
       deviceType     <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("deviceType")
@@ -152,9 +181,9 @@ object Context {
   val optimizelyStateCount = new AtomicLong()
   val optimizelyStateGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](optimizelyStateCount.incrementAndGet()))
-      experimentId <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("experimentId")
-      isActive <- Gen.option(Gen.oneOf(true, false)).withKeyNull("isActive")
+      _              <- Gen.delay(Gen.const[Long](optimizelyStateCount.incrementAndGet()))
+      experimentId   <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("experimentId")
+      isActive       <- Gen.option(Gen.oneOf(true, false)).withKeyNull("isActive")
       variationIndex <- Gen.option(Gen.choose(-100, 32767)).withKeyNull("variationIndex")
       variationId    <- Gen.option(strGen(16, Gen.alphaNumChar)).withKeyNull("variationId")
       variationName  <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("variationName")
@@ -166,8 +195,8 @@ object Context {
   val optimizelyVariationCount = new AtomicLong()
   val optimizelyVariationGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](optimizelyVariationCount.incrementAndGet()))
-      id <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("id")
+      _    <- Gen.delay(Gen.const[Long](optimizelyVariationCount.incrementAndGet()))
+      id   <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("id")
       name <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("name")
       code <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("code")
     } yield SelfDescribingData(
@@ -178,8 +207,8 @@ object Context {
   val optimizelySummaryCount = new AtomicLong()
   val optimizelySummaryGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](optimizelySummaryCount.incrementAndGet()))
-      experimentId <- Gen.option(Gen.choose(-10, 100000)).withKeyNull("experimentId")
+      _             <- Gen.delay(Gen.const[Long](optimizelySummaryCount.incrementAndGet()))
+      experimentId  <- Gen.option(Gen.choose(-10, 100000)).withKeyNull("experimentId")
       variationName <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyNull("variationName")
       variation     <- Gen.option(Gen.choose(-10, 100000)).withKeyOpt("variation")
       visitorId     <- Gen.option(Gen.option(strGen(32, Gen.alphaNumChar))).withKeyOpt("visitorId")
@@ -191,7 +220,7 @@ object Context {
   val sessionContextCount = new AtomicLong()
   val sessionContextGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](sessionContextCount.incrementAndGet()))
+      _  <- Gen.delay(Gen.const[Long](sessionContextCount.incrementAndGet()))
       id <- strGen(32, Gen.alphaNumChar).withKey("id")
     } yield SelfDescribingData(
       SchemaKey("com.mparticle.snowplow", "session_context", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -201,7 +230,7 @@ object Context {
   val consentWithdrawnCount = new AtomicLong()
   val consentWithdrawnGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](consentWithdrawnCount.incrementAndGet()))
+      _   <- Gen.delay(Gen.const[Long](consentWithdrawnCount.incrementAndGet()))
       all <- Gen.oneOf(true, false).withKey("all")
     } yield SelfDescribingData(
       SchemaKey("com.snowplowanalytics.snowplow", "consent_withdrawn", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -211,7 +240,7 @@ object Context {
   val segmentScreenCount = new AtomicLong()
   val segmentScreenGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](segmentScreenCount.incrementAndGet()))
+      _    <- Gen.delay(Gen.const[Long](segmentScreenCount.incrementAndGet()))
       name <- strGen(32, Gen.alphaNumChar).withKey("name")
     } yield SelfDescribingData(
       SchemaKey("com.segment", "screen", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -221,8 +250,8 @@ object Context {
   val pushRegistrationCount = new AtomicLong()
   val pushRegistrationGen =
     for {
-      _ <- Gen.delay(Gen.const[Long](pushRegistrationCount.incrementAndGet()))
-      name <- strGen(32, Gen.alphaNumChar).withKey("name")
+      _                 <- Gen.delay(Gen.const[Long](pushRegistrationCount.incrementAndGet()))
+      name              <- strGen(32, Gen.alphaNumChar).withKey("name")
       registrationToken <- Gen.option(strGen(32, Gen.alphaNumChar)).withKeyOpt("registrationToken")
     } yield SelfDescribingData(
       SchemaKey("com.mparticle.snowplow", "pushregistration_event", "jsonschema", SchemaVer.Full(1, 0, 0)),
@@ -238,7 +267,7 @@ object Context {
   var uaParserContextCount = new AtomicLong()
 
   val uaParserContextGen: Gen[SelfDescribingData[Json]] = for {
-    _ <- Gen.delay(Gen.const[Long](uaParserContextCount.incrementAndGet()))
+    _        <- Gen.delay(Gen.const[Long](uaParserContextCount.incrementAndGet()))
     uaFamily <- useragentFamilyGen
     uaMaj    <- Gen.chooseNum[Int](0, 10)
     uaMin    <- Gen.chooseNum[Int](0, 10)

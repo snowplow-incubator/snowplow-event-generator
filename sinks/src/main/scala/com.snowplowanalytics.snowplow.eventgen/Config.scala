@@ -24,6 +24,9 @@ import io.circe.config.parser
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEventFrequencies
+
 final case class Config(
   payloadsTotal: Int,
   seed: Long,
@@ -36,7 +39,8 @@ final case class Config(
   withEnrichedJson: Boolean,
   payloadsPerFile: Int,
   duplicates: Option[Config.Duplicates],
-  timestamps: Config.Timestamps
+  timestamps: Config.Timestamps,
+  eventFrequencies: EventFrequencies
 )
 
 object Config {
@@ -75,6 +79,12 @@ object Config {
 
   implicit val duplicatesDecoder: Decoder[Duplicates] =
     deriveConfiguredDecoder[Duplicates]
+
+  implicit val frequenciesDecoder: Decoder[EventFrequencies] =
+    deriveConfiguredDecoder[EventFrequencies]
+
+  implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
+    deriveConfiguredDecoder[UnstructEventFrequencies]
 
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]

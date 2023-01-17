@@ -16,6 +16,7 @@ import com.snowplowanalytics.snowplow.eventgen.collector.Api
 import com.snowplowanalytics.snowplow.eventgen.collector.Api._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.Method
 import org.scalacheck.Gen
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 
 import java.time.Instant
 
@@ -43,16 +44,16 @@ object HttpRequest {
     private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
   }
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[HttpRequest] =
-    genWithParts(HttpRequestQuerystring.gen(now), HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now))
+  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[HttpRequest] =
+    genWithParts(HttpRequestQuerystring.gen(now, frequencies), HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies))
 
   private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody]) =
     for {
-      method      <- Method.gen
-      qs          <- Gen.option(qsGen)
-      body        <- method match {
+      method <- Method.gen
+      qs     <- Gen.option(qsGen)
+      body <- method match {
         case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
-        case _ => Gen.option(bodyGen)
+        case _              => Gen.option(bodyGen)
       }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
       raw = HttpRequestHeaders.rawReqUriHeader(qs)
