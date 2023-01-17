@@ -12,11 +12,18 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.{ChangeForm, LinkClick, UnstructEventData}
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.{
+  ChangeForm,
+  FunnelInteraction,
+  LinkClick,
+  UnstructEventData
+}
 import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
+
+case class UnstructEventFrequencies(changeForm: Int, funnelInteraction: Int, linkClick: Int)
 
 final case class UnstructEventWrapper(
   event: UnstructEventData,
@@ -30,6 +37,12 @@ final case class UnstructEventWrapper(
 }
 
 object UnstructEventWrapper {
-  val gen: Gen[UnstructEventWrapper] =
-    Gen.oneOf(LinkClick.gen, ChangeForm.gen).map(l => UnstructEventWrapper(l, b64 = true))
+  def gen(frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] = 
+      Gen
+        .frequency(
+          frequencies.linkClick -> LinkClick.gen,
+          frequencies.changeForm   -> ChangeForm.gen,
+          frequencies.funnelInteraction     -> FunnelInteraction.gen
+        )
+        .map(l => UnstructEventWrapper(l, b64 = true))
 }

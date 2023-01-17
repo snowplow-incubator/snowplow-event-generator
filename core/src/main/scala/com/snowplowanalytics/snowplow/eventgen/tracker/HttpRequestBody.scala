@@ -14,6 +14,7 @@ package com.snowplowanalytics.snowplow.eventgen.tracker
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SelfDescribingData}
 import com.snowplowanalytics.snowplow.eventgen.protocol.Body
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import io.circe.Json
@@ -36,10 +37,15 @@ object HttpRequestBody {
     synTotal: Int,
     min: Int,
     max: Int,
-    now: Instant
-  ): Gen[HttpRequestBody] = genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now))
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[HttpRequestBody] = genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies))
 
-  def gen(min: Int, max: Int, now: Instant): Gen[HttpRequestBody] = genWithBody(min, max, Body.gen(now))
+  def gen(
+    min: Int, 
+    max: Int, 
+    now: Instant,     
+    frequencies: EventFrequencies): Gen[HttpRequestBody] = genWithBody(min, max, Body.gen(now, frequencies))
 
   private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
     for {

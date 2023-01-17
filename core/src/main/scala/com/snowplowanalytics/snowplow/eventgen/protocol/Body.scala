@@ -56,8 +56,8 @@ object Body {
 
   lazy val dupRng = new Random(20000L)
 
-  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, now: Instant): Gen[Body] =
-    genWithEt(EventTransaction.genDup(synProb, synTotal), now).withPerturb(in =>
+  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, now: Instant, frequencies: EventFrequencies): Gen[Body] =
+    genWithEt(EventTransaction.genDup(synProb, synTotal), now, frequencies).withPerturb(in =>
       if (natProb == 0f | natTotal == 0)
         in
       else if (dupRng.nextInt(10000) < (natProb * 10000))
@@ -65,10 +65,10 @@ object Body {
       else
         in
     )
-
-  private def genWithEt(etGen: Gen[EventTransaction], now: Instant) =
+;
+  private def genWithEt(etGen: Gen[EventTransaction], now: Instant, frequencies: EventFrequencies) =
     for {
-      e   <- EventType.gen
+      e   <- EventType.gen(frequencies)
       app <- Application.gen
       et  <- etGen
       dt  <- DateTime.genOpt(now)
@@ -77,14 +77,14 @@ object Body {
       u   <- User.genOpt
       event <- e match {
         case EventType.Struct   => StructEvent.gen
-        case EventType.Unstruct => UnstructEventWrapper.gen
+        case EventType.Unstruct => UnstructEventWrapper.gen(frequencies.unstructEventFrequencies)
         case EventType.PageView => PageView.gen
         case EventType.PagePing => PagePing.gen
       }
       context <- Context.ContextsWrapper.genOps
     } yield Body(e, app, dt, dev, tv, et, u, event, context)
 
-  def gen(now: Instant): Gen[Body] = genWithEt(EventTransaction.gen, now)
+  def gen(now: Instant, frequencies: EventFrequencies): Gen[Body] = genWithEt(EventTransaction.gen, now, frequencies)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }
