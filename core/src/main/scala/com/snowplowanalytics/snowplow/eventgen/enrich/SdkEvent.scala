@@ -19,6 +19,7 @@ import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.protocol.Body
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.{
+  EventFrequencies,
   EventType,
   LegacyEvent,
   PagePing,
@@ -212,8 +213,8 @@ object SdkEvent {
       )
     }
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax, now).map(_._2)
+  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[List[Event]] =
+    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies).map(_._2)
 
   def genPairDup(
     natProb: Float,
@@ -222,16 +223,17 @@ object SdkEvent {
     synTotal: Int,
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant
+    now: Instant,
+    frequencies: EventFrequencies
   ): Gen[(CollectorPayload, List[Event])] =
     for {
-      cp  <- CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now)
+      cp  <- CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
       eid <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid))
 
-  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant): Gen[(CollectorPayload, List[Event])] =
+  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[(CollectorPayload, List[Event])] =
     for {
-      cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now)
+      cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
       eid <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid))
 
