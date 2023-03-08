@@ -32,26 +32,25 @@ object Main extends IOApp {
     Config.parse(args) match {
       case Right(Config.Cli(config, outputUri)) =>
         sink[IO](outputUri, config) >>
-          IO.println(
-            s"""changeFormGenCount  = ${Context.changeFormGenCount}
-               |clientSessionGenCount  = ${Context.clientSessionGenCount}
-               |consentDocumentCount  = ${Context.consentDocumentCount}
-               |desktopContextCount  = ${Context.desktopContextCount}
-               |httpCookieCount  = ${Context.httpCookieCount}
-               |httpHeaderCount  = ${Context.httpHeaderCount}
-               |googleCookiesCount  = ${Context.googleCookiesCount}
-               |googlePrivateCount  = ${Context.googlePrivateCount}
-               |optimizelyVisitorCount  = ${Context.optimizelyVisitorCount}
-               |optimizelyStateCount  = ${Context.optimizelyStateCount}
-               |optimizelyVariationCount  = ${Context.optimizelyVariationCount}
-               |optimizelySummaryCount  = ${Context.optimizelySummaryCount}
-               |sessionContextCount  = ${Context.sessionContextCount}
-               |consentWithdrawnCount  = ${Context.consentWithdrawnCount}
-               |segmentScreenCount  = ${Context.segmentScreenCount}
-               |pushRegistrationCount  = ${Context.pushRegistrationCount}
-               |uaParserContextCount  = ${Context.uaParserContextCount}
-               |unstuctEventCount = ${UnstructEvent.unstuctEventCount}
-               |""".stripMargin)
+          IO.println(s"""changeFormGenCount  = ${Context.changeFormGenCount}
+                        |clientSessionGenCount  = ${Context.clientSessionGenCount}
+                        |consentDocumentCount  = ${Context.consentDocumentCount}
+                        |desktopContextCount  = ${Context.desktopContextCount}
+                        |httpCookieCount  = ${Context.httpCookieCount}
+                        |httpHeaderCount  = ${Context.httpHeaderCount}
+                        |googleCookiesCount  = ${Context.googleCookiesCount}
+                        |googlePrivateCount  = ${Context.googlePrivateCount}
+                        |optimizelyVisitorCount  = ${Context.optimizelyVisitorCount}
+                        |optimizelyStateCount  = ${Context.optimizelyStateCount}
+                        |optimizelyVariationCount  = ${Context.optimizelyVariationCount}
+                        |optimizelySummaryCount  = ${Context.optimizelySummaryCount}
+                        |sessionContextCount  = ${Context.sessionContextCount}
+                        |consentWithdrawnCount  = ${Context.consentWithdrawnCount}
+                        |segmentScreenCount  = ${Context.segmentScreenCount}
+                        |pushRegistrationCount  = ${Context.pushRegistrationCount}
+                        |uaParserContextCount  = ${Context.uaParserContextCount}
+                        |unstuctEventCount = ${UnstructEvent.unstuctEventCount}
+                        |""".stripMargin)
             .as(ExitCode.Success)
       case Left(error) =>
         IO(System.err.println(error)).as(ExitCode.Error)
@@ -67,8 +66,8 @@ object Main extends IOApp {
     }
       
     val timeF = config.timestamps match {
-      case Config.Timestamps.Now => Clock[F].realTimeInstant flatTap (t => Sync[F].delay(println(s"time: $t")))
-      case Config.Timestamps.Fixed(time) => Async[F].pure(time) flatTap (t => Sync[F].delay(println(s"time: $t")))
+      case Config.Timestamps.Now         => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
+      case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
     }
 
     val eventStream: Stream[F, GenOutput] =
@@ -123,7 +122,8 @@ object Main extends IOApp {
         }
         val kinesisClient: KinesisAsyncClient = KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
 
-        def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest.builder()
+        def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
+          .builder()
           .streamName(outputDir.getRawAuthority)
           .partitionKey(event.event_id.toString)
           .data(SdkBytes.fromUtf8String(event.toTsv))
@@ -133,14 +133,12 @@ object Main extends IOApp {
           st.map(_._2)
             .flatMap(Stream.emits)
             .map(reqBuilder)
-            .parEvalMap(10)(e =>
-              Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e)))
-            ).void
+            .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
+            .void
       } else {
         RotatingSink.rotate(config.payloadsPerFile) { idx =>
-          val pipe1: Pipe[F, GenOutput, INothing] = _.map(_._1)
-            .through(Serializers.rawSerializer(config.compress))
-            .through(sinkFor("raw", idx, config.withRaw))
+          val pipe1: Pipe[F, GenOutput, INothing] =
+            _.map(_._1).through(Serializers.rawSerializer(config.compress)).through(sinkFor("raw", idx, config.withRaw))
           val pipe2: Pipe[F, GenOutput, INothing] = _.flatMap(in => Stream.emits(in._2))
             .through(Serializers.enrichedTsvSerializer(config.compress))
             .through(sinkFor("enriched", idx, config.withEnrichedTsv))
@@ -154,18 +152,15 @@ object Main extends IOApp {
     eventStream
       .take(config.payloadsTotal.toLong)
       .zipWithScan1((0, 0)) { case (idx, el) => (el._2.length + idx._1, 1 + idx._2) }
-      .evalTap {
-        case (_, idx) =>
-          if (idx._2 == config.payloadsTotal.toLong) {
-            Sync[F].delay(println(
-              s"""Payloads = ${idx._2}
-                 |Events = ${idx._1}""".stripMargin))
-          }
-          else if (idx._1 % 10000 == 0 && idx._1 != 0) {
-            Sync[F].delay(println(s"processed events: ${idx._1}..."))
-          } else {
-            Sync[F].unit
-          }
+      .evalTap { case (_, idx) =>
+        if (idx._2 == config.payloadsTotal.toLong) {
+          Sync[F].delay(println(s"""Payloads = ${idx._2}
+                                   |Events = ${idx._1}""".stripMargin))
+        } else if (idx._1 % 10000 == 0 && idx._1 != 0) {
+          Sync[F].delay(println(s"processed events: ${idx._1}..."))
+        } else {
+          Sync[F].unit
+        }
       }
       .map(_._1)
       .through(makeOutput)
