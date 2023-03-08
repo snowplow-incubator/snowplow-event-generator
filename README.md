@@ -76,7 +76,10 @@ All fields in the configuration file are optional:
 {
     // Seed for random generation. Change the seed to generate a different set of events
     "seed": 1
-  
+
+    // Generate a random seed on initialisation. If true "seed" will be ignored, and a random integer will be used for seed.
+    "randomisedSeed": false
+
     // Number of collector payloads to generate. 
     // Total number of event get multiplied by eventPerPayload* setting. 
     "payloadsTotal": 1000
