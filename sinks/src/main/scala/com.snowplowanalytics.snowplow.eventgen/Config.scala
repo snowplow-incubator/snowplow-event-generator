@@ -27,6 +27,7 @@ import io.circe.generic.extras.semiauto._
 final case class Config(
   payloadsTotal: Int,
   seed: Long,
+  randomisedSeed: Boolean,
   compress: Boolean,
   eventPerPayloadMax: Int,
   eventPerPayloadMin: Int,

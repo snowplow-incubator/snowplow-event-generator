@@ -60,7 +60,11 @@ object Main extends IOApp {
   type GenOutput = (collector.CollectorPayload, List[Event])
 
   def sink[F[_]: Async](outputDir: URI, config: Config): F[Unit] = {
-    val rng = new scala.util.Random(config.seed)
+    val rng = config.randomisedSeed match {
+      case true => new scala.util.Random(scala.util.Random.nextInt())
+      case false => new scala.util.Random(config.seed)
+    }
+      
     val timeF = config.timestamps match {
       case Config.Timestamps.Now         => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
       case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
