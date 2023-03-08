@@ -48,11 +48,11 @@ object HttpRequest {
 
   private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody]) =
     for {
-      method      <- Method.gen
-      qs          <- Gen.option(qsGen)
-      body        <- method match {
+      method <- Method.gen
+      qs     <- Gen.option(qsGen)
+      body <- method match {
         case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
-        case _ => Gen.option(bodyGen)
+        case _              => Gen.option(bodyGen)
       }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
       raw = HttpRequestHeaders.rawReqUriHeader(qs)

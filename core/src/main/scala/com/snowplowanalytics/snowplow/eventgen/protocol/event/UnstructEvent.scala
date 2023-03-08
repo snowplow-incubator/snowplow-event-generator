@@ -23,7 +23,6 @@ import org.scalacheck.Gen
 
 import java.util.concurrent.atomic.AtomicLong
 
-
 object UnstructEvent {
   trait UnstructEventData {
     def schema: SchemaKey
