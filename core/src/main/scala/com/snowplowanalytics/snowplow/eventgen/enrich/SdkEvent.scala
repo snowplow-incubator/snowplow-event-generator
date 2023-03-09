@@ -51,12 +51,20 @@ object SdkEvent {
 
   private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] =
     p.payload.map { el =>
-      val (ue, ueName, ueVendor, ueFormat, ueVersion) = el.event match {
+
+      val evnt =  Some(el.e match {
+          case EventType.Struct   => "struct"
+          case EventType.Unstruct => "unstruct"
+          case EventType.PageView => "page_view"
+          case EventType.PagePing => "page_ping"
+        })
+
+      val (ue, eName, ueVendor, ueFormat, ueVersion) = el.event match {
         case UnstructEventWrapper(event, _) =>
           val sk = event.schema
           (event.toUnstructEvent, Some(sk.name), Some(sk.vendor), Some(sk.format), Some(sk.version.asString))
         case _ =>
-          (UnstructEvent(data = None), None, None, None, None)
+          (UnstructEvent(data = None), e, None, None, None)
       }
 
       Event(
@@ -68,12 +76,7 @@ object SdkEvent {
         //  case "ad" => "ad_impression".asRight
         //  case "tr" => "transaction".asRight
         //  case "ti" => "transaction_item".asRight
-        event = Some(el.e match {
-          case EventType.Struct   => "struct"
-          case EventType.Unstruct => "unstruct"
-          case EventType.PageView => "page_view"
-          case EventType.PagePing => "page_ping"
-        }),
+        event = evnt, 
         event_id = el.et.eid.getOrElse(fallbackEid),
         txn_id = el.et.tid,
         name_tracker = el.app.tna,
@@ -200,7 +203,7 @@ object SdkEvent {
         domain_sessionid = el.u.flatMap(_.sid.map(_.toString)),
         derived_tstamp = None,
         event_vendor = ueVendor,
-        event_name = ueName,
+        event_name = eName,
         event_format = ueFormat,
         event_version = ueVersion,
         event_fingerprint = None,
