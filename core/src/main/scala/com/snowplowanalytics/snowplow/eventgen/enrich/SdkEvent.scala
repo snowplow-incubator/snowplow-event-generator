@@ -64,7 +64,7 @@ object SdkEvent {
           val sk = event.schema
           (event.toUnstructEvent, Some(sk.name), Some(sk.vendor), Some(sk.format), Some(sk.version.asString))
         case _ =>
-          (UnstructEvent(data = None), e, None, None, None)
+          (UnstructEvent(data = None), evnt, None, None, None)
       }
 
       Event(
