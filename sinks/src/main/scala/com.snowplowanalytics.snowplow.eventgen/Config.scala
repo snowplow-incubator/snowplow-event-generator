@@ -40,7 +40,7 @@ final case class Config(
   payloadsPerFile: Int,
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
-  frequencies: EventFrequencies
+  eventFrequencies: EventFrequencies
 )
 
 object Config {

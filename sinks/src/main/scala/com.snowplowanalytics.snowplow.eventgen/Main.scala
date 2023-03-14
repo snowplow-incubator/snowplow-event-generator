@@ -85,7 +85,7 @@ object Main extends IOApp {
                     config.eventPerPayloadMin,
                     config.eventPerPayloadMax,
                     time,
-                    config.frequencies
+                    config.eventFrequencies
                   ),
                   rng
                 )
@@ -93,7 +93,7 @@ object Main extends IOApp {
             )
           case None =>
             Stream.repeatEval(
-              Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.frequencies), rng))
+              Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies), rng))
             )
         }
       }
