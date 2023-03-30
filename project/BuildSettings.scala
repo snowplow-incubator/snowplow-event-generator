@@ -96,6 +96,8 @@ object BuildSettings {
       case x if x.contains("javax")             => MergeStrategy.first
       case PathList("scala", "annotation", "nowarn.class" | "nowarn$.class") => MergeStrategy.first // http4s, 2.13 shim
       case x if x.endsWith(".proto") => MergeStrategy.first // proto files
+      case x if x.endsWith(".properties") => MergeStrategy.first
+      case x if x.endsWith("reflection-config.json") => MergeStrategy.first
       case x =>
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
