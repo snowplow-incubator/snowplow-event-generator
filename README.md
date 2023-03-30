@@ -28,10 +28,16 @@ Alternatively you can write events directly to a S3 bucket:
 ./snowplow-event-generator --output s3://my-bucket/my-events
 ```
 
-Alternatively you can write events directly to a Kinesis stream:
+...or directly to a Kinesis stream:
 
 ```bash
 ./snowplow-event-generator --output kinesis://my-kinesis-stream
+```
+
+...or directly to a Pubsub topic:
+
+```bash
+./snowplow-event-generator --output pubsub://projects/my-project/topics/my-topic
 ```
 
 By default, it generates 1000 events with no duplicates. The generated events are _deterministic_, which means if you re-run the app multiple times with the same configuration then you will generate the same events each time.
