@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
-import fs2.{Chunk, INothing, Pipe, Pull, Stream}
+import fs2.{Chunk, Pipe, Pull, Stream}
 import fs2.io.file.{Files, Flags, Path}
 import fs2.concurrent.Channel
 
@@ -35,7 +35,7 @@ object RotatingSink {
    * @param toPipe Generates a new inner pipe when one is needed. It is called with an integer
    * representing an increasing 1-based pipe index.
    */
-  def rotate[F[_]: Async, A](max: Int)(toPipe: Int => Pipe[F, A, INothing]): Pipe[F, A, INothing] = {
+  def rotate[F[_]: Async, A](max: Int)(toPipe: Int => Pipe[F, A, Nothing]): Pipe[F, A, Nothing] = {
     def newChannel = Channel.synchronous[F, Chunk[A]]
 
     // Adds sub-streams to the outputs channels, with each sub-stream receiving `max` elements
@@ -45,7 +45,7 @@ object RotatingSink {
       streamCount: Int,
       outputs: Channel[F, (Int, Stream[F, A])],
       chan: Channel[F, Chunk[A]]
-    ): Pull[F, INothing, Unit] =
+    ): Pull[F, Nothing, Unit] =
       in.pull.uncons.flatMap {
         case None => Pull.eval(outputs.close *> chan.close) *> Pull.done
         case Some((chunk, rest)) =>
@@ -78,10 +78,10 @@ object RotatingSink {
 
         // Run them concurrently
         s1.merge(s2)
-      }).flatMap(identity[Stream[F, INothing]])
+      }).flatMap(identity[Stream[F, Nothing]])
   }
 
-  def s3[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] =
+  def s3[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, Nothing] =
     in =>
       Stream
         .eval(Url.parseF[F](s"$baseDir/$prefix/${prefix}_${pad(idx)}$suffix"))
@@ -91,7 +91,7 @@ object RotatingSink {
         }
         .drain
 
-  def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, INothing] = { in =>
+  def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, Nothing] = { in =>
     val catDir = Path.fromNioPath(JPaths.get(baseDir).resolve(prefix))
     Stream.eval(Files[F].createDirectories(catDir)) *>
       in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))

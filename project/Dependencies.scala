@@ -31,6 +31,7 @@ object Dependencies {
     val slf4j          = "1.7.32"
     val circeConfig    = "0.8.0"
     val circe          = "0.14.1"
+    val fs2Pubsub      = "0.21.0"
     // Scala (test only)
     val specs2           = "4.12.3"
     val scalaCheck       = "1.14.0"
@@ -48,6 +49,7 @@ object Dependencies {
     val analyticsSdk   = "com.snowplowanalytics"    %% "snowplow-scala-analytics-sdk" % V.analyticsSdk
     val fs2            = "co.fs2"                   %% "fs2-core"                     % V.fs2
     val fs2file        = "co.fs2"                   %% "fs2-io"                       % V.fs2
+    val fs2Pubsub      = "com.permutive"            %% "fs2-google-pubsub-grpc"       % V.fs2Pubsub
     val decline        = "com.monovore"             %% "decline"                      % V.decline
     val blobstore      = "com.github.fs2-blobstore" %% "s3"                           % V.blobstore
     val circeCore      = "io.circe"                 %% "circe-core"                   % V.circe

@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
-import fs2.{INothing, Pipe, Stream}
+import fs2.{Pipe, Stream}
 import cats.syntax.all._
 import cats.effect.kernel.Sync
 import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
@@ -24,8 +24,13 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
 import software.amazon.kinesis.common.KinesisClientUtil
+import com.permutive.pubsub.producer.grpc.{GooglePubsubProducer, PubsubProducerConfig}
+import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
+import com.permutive.pubsub.producer.encoder.MessageEncoder
+import scala.concurrent.duration.DurationInt
 
 import java.net.URI
+import java.nio.charset.StandardCharsets
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
@@ -98,7 +103,7 @@ object Main extends IOApp {
         }
       }
 
-    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, INothing] = {
+    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, Nothing] = {
       val suffix = if (config.compress) ".gz" else ""
       if (outputDir.toString.startsWith("file:")) {
         RotatingSink.file(prefix, suffix, idx, outputDir)
@@ -109,44 +114,78 @@ object Main extends IOApp {
       }
     }
 
-    def sinkFor(name: String, idx: Int, predicate: Boolean): Pipe[F, Byte, INothing] =
+    def sinkFor(name: String, idx: Int, predicate: Boolean): Pipe[F, Byte, Nothing] =
       if (predicate) sinkBuilder(name, idx)
       else _.drain
 
+    def fileSink: Pipe[F, GenOutput, Unit] =
+      RotatingSink.rotate(config.payloadsPerFile) { idx =>
+        val pipe1: Pipe[F, GenOutput, Nothing] =
+          _.map(_._1).through(Serializers.rawSerializer(config.compress)).through(sinkFor("raw", idx, config.withRaw))
+        val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
+          .through(Serializers.enrichedTsvSerializer(config.compress))
+          .through(sinkFor("enriched", idx, config.withEnrichedTsv))
+        val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
+          .through(Serializers.enrichedJsonSerializer(config.compress))
+          .through(sinkFor("transformed", idx, config.withEnrichedJson))
+        in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
+      }
+
+    def kinesisSink: Pipe[F, GenOutput, Unit] = {
+      if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
+        throw new RuntimeException(s"Kinesis could only output in single format")
+      if (config.compress) {
+        throw new RuntimeException(s"Kinesis doesn't support compression")
+      }
+      val kinesisClient: KinesisAsyncClient = KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
+
+      def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
+        .builder()
+        .streamName(outputDir.getRawAuthority)
+        .partitionKey(event.event_id.toString)
+        .data(SdkBytes.fromUtf8String(event.toTsv))
+        .build()
+
+      st: Stream[F, GenOutput] =>
+        st.map(_._2)
+          .flatMap(Stream.emits)
+          .map(reqBuilder)
+          .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
+          .void
+    }
+
+    def pubsubSink: Pipe[F, GenOutput, Unit] = {
+      if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
+        throw new RuntimeException(s"Pubsub could only output in single format")
+      if (config.compress) {
+        throw new RuntimeException(s"Pubsub doesn't support compression")
+      }
+      val producerConfig = PubsubProducerConfig[F](
+          batchSize = 100,
+          delayThreshold = 1.second,
+          onFailedTerminate = _ => Sync[F].unit
+        )
+      val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
+      val (projectId, topic) = outputDir.getSchemeSpecificPart match {
+        case topicRegex(p, t) => (ProjectId(p), Topic(t))
+        case _ => throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
+      }
+      implicit val encoder: MessageEncoder[Event] = new MessageEncoder[Event] {
+        def encode(e: Event): Either[Throwable, Array[Byte]] =
+          e.toTsv.getBytes(StandardCharsets.UTF_8).asRight
+      }
+      st: Stream[F, GenOutput] =>
+        for {
+          producer <- Stream.resource(GooglePubsubProducer.of[F, Event](projectId, topic, producerConfig))
+          _ <- st.parEvalMapUnordered(1000)(e => e._2.traverse_(producer.produce(_)))
+        } yield ()
+    }
+
     def makeOutput: Pipe[F, GenOutput, Unit] =
-      if (outputDir.toString.startsWith("kinesis:")) {
-        if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
-          throw new RuntimeException(s"Kinesis could only output in single format")
-        if (config.compress) {
-          throw new RuntimeException(s"Kinesis doesn't support compression")
-        }
-        val kinesisClient: KinesisAsyncClient = KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
-
-        def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
-          .builder()
-          .streamName(outputDir.getRawAuthority)
-          .partitionKey(event.event_id.toString)
-          .data(SdkBytes.fromUtf8String(event.toTsv))
-          .build()
-
-        st: Stream[F, GenOutput] =>
-          st.map(_._2)
-            .flatMap(Stream.emits)
-            .map(reqBuilder)
-            .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
-            .void
-      } else {
-        RotatingSink.rotate(config.payloadsPerFile) { idx =>
-          val pipe1: Pipe[F, GenOutput, INothing] =
-            _.map(_._1).through(Serializers.rawSerializer(config.compress)).through(sinkFor("raw", idx, config.withRaw))
-          val pipe2: Pipe[F, GenOutput, INothing] = _.flatMap(in => Stream.emits(in._2))
-            .through(Serializers.enrichedTsvSerializer(config.compress))
-            .through(sinkFor("enriched", idx, config.withEnrichedTsv))
-          val pipe3: Pipe[F, GenOutput, INothing] = _.flatMap(in => Stream.emits(in._2))
-            .through(Serializers.enrichedJsonSerializer(config.compress))
-            .through(sinkFor("transformed", idx, config.withEnrichedJson))
-          in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
-        }
+      outputDir.getScheme match {
+        case "kinesis" => kinesisSink
+        case "pubsub" => pubsubSink
+        case _ => fileSink
       }
 
     eventStream
