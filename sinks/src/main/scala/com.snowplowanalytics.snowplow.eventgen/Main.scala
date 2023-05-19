@@ -66,10 +66,10 @@ object Main extends IOApp {
 
   def sink[F[_]: Async](outputDir: URI, config: Config): F[Unit] = {
     val rng = config.randomisedSeed match {
-      case true => new scala.util.Random(scala.util.Random.nextInt())
+      case true  => new scala.util.Random(scala.util.Random.nextInt())
       case false => new scala.util.Random(config.seed)
     }
-      
+
     val timeF = config.timestamps match {
       case Config.Timestamps.Now         => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
       case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
@@ -98,7 +98,12 @@ object Main extends IOApp {
             )
           case None =>
             Stream.repeatEval(
-              Sync[F].delay(runGen(SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies), rng))
+              Sync[F].delay(
+                runGen(
+                  SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies),
+                  rng
+                )
+              )
             )
         }
       }
@@ -161,14 +166,15 @@ object Main extends IOApp {
         throw new RuntimeException(s"Pubsub doesn't support compression")
       }
       val producerConfig = PubsubProducerConfig[F](
-          batchSize = 100,
-          delayThreshold = 1.second,
-          onFailedTerminate = _ => Sync[F].unit
-        )
+        batchSize = 100,
+        delayThreshold = 1.second,
+        onFailedTerminate = _ => Sync[F].unit
+      )
       val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
       val (projectId, topic) = outputDir.getSchemeSpecificPart match {
         case topicRegex(p, t) => (ProjectId(p), Topic(t))
-        case _ => throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
+        case _ =>
+          throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
       }
       implicit val encoder: MessageEncoder[Event] = new MessageEncoder[Event] {
         def encode(e: Event): Either[Throwable, Array[Byte]] =
@@ -177,15 +183,15 @@ object Main extends IOApp {
       st: Stream[F, GenOutput] =>
         for {
           producer <- Stream.resource(GooglePubsubProducer.of[F, Event](projectId, topic, producerConfig))
-          _ <- st.parEvalMapUnordered(1000)(e => e._2.traverse_(producer.produce(_)))
+          _        <- st.parEvalMapUnordered(1000)(e => e._2.traverse_(producer.produce(_)))
         } yield ()
     }
 
     def makeOutput: Pipe[F, GenOutput, Unit] =
       outputDir.getScheme match {
         case "kinesis" => kinesisSink
-        case "pubsub" => pubsubSink
-        case _ => fileSink
+        case "pubsub"  => pubsubSink
+        case _         => fileSink
       }
 
     eventStream

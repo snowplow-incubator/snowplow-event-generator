@@ -123,13 +123,14 @@ object CollectorPayload {
     now: Instant,
     frequencies: EventFrequencies
   ): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies), now)
+    genWithBody(
+      eventPerPayloadMin,
+      eventPerPayloadMax,
+      Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies),
+      now
+    )
 
-  private def genWithBody(
-    eventPerPayloadMin: Int, 
-    eventPerPayloadMax: Int, 
-    bodyGen: Gen[Body], 
-    now: Instant) =
+  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
     for {
       n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
       api     <- Api.genApi(n)
@@ -139,10 +140,11 @@ object CollectorPayload {
     } yield CollectorPayload(api, payload, src, cc)
 
   def gen(
-    eventPerPayloadMin: Int, 
-    eventPerPayloadMax: Int, 
-    now: Instant,     
-    frequencies: EventFrequencies): Gen[CollectorPayload] =
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[CollectorPayload] =
     genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now, frequencies), now)
 
   val IgluUri: SchemaKey =

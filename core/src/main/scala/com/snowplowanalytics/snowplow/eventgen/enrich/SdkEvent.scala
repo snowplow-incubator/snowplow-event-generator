@@ -52,13 +52,12 @@ object SdkEvent {
 
   private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] =
     p.payload.map { el =>
-
-      val evnt =  Some(el.e match {
-          case EventType.Struct   => "struct"
-          case EventType.Unstruct => "unstruct"
-          case EventType.PageView => "page_view"
-          case EventType.PagePing => "page_ping"
-        })
+      val evnt = Some(el.e match {
+        case EventType.Struct   => "struct"
+        case EventType.Unstruct => "unstruct"
+        case EventType.PageView => "page_view"
+        case EventType.PagePing => "page_ping"
+      })
 
       val (ue, eName, ueVendor, ueFormat, ueVersion) = el.event match {
         case UnstructEventWrapper(event, _) =>
@@ -209,7 +208,12 @@ object SdkEvent {
       )
     }
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[List[Event]] =
+  def gen(
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[List[Event]] =
     genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies).map(_._2)
 
   def genPairDup(
@@ -223,11 +227,25 @@ object SdkEvent {
     frequencies: EventFrequencies
   ): Gen[(CollectorPayload, List[Event])] =
     for {
-      cp  <- CollectorPayload.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
+      cp <- CollectorPayload.genDup(
+        natProb,
+        synProb,
+        natTotal,
+        synTotal,
+        eventPerPayloadMin,
+        eventPerPayloadMax,
+        now,
+        frequencies
+      )
       eid <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid))
 
-  def genPair(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[(CollectorPayload, List[Event])] =
+  def genPair(
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[(CollectorPayload, List[Event])] =
     for {
       cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
       eid <- Gen.uuid

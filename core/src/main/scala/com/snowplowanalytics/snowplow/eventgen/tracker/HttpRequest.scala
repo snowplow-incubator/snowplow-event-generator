@@ -44,8 +44,16 @@ object HttpRequest {
     private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
   }
 
-  def gen(eventPerPayloadMin: Int, eventPerPayloadMax: Int, now: Instant, frequencies: EventFrequencies): Gen[HttpRequest] =
-    genWithParts(HttpRequestQuerystring.gen(now, frequencies), HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies))
+  def gen(
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[HttpRequest] =
+    genWithParts(
+      HttpRequestQuerystring.gen(now, frequencies),
+      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
+    )
 
   private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody]) =
     for {

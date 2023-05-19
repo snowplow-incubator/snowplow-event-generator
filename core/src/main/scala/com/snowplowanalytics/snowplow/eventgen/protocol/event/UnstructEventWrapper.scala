@@ -37,12 +37,12 @@ final case class UnstructEventWrapper(
 }
 
 object UnstructEventWrapper {
-  def gen(frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] = 
-      Gen
-        .frequency(
-          frequencies.linkClick -> LinkClick.gen,
-          frequencies.changeForm   -> ChangeForm.gen,
-          frequencies.funnelInteraction     -> FunnelInteraction.gen
-        )
-        .map(l => UnstructEventWrapper(l, b64 = true))
+  def gen(frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] =
+    Gen
+      .frequency(
+        frequencies.linkClick         -> LinkClick.gen,
+        frequencies.changeForm        -> ChangeForm.gen,
+        frequencies.funnelInteraction -> FunnelInteraction.gen
+      )
+      .map(l => UnstructEventWrapper(l, b64 = true))
 }
