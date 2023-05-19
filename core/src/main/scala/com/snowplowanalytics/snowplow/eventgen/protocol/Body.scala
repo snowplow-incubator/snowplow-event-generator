@@ -56,7 +56,14 @@ object Body {
 
   lazy val dupRng = new Random(20000L)
 
-  def genDup(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int, now: Instant, frequencies: EventFrequencies): Gen[Body] =
+  def genDup(
+    natProb: Float,
+    synProb: Float,
+    natTotal: Int,
+    synTotal: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[Body] =
     genWithEt(EventTransaction.genDup(synProb, synTotal), now, frequencies).withPerturb(in =>
       if (natProb == 0f | natTotal == 0)
         in
@@ -64,8 +71,7 @@ object Body {
         Seed(dupRng.nextInt(natTotal).toLong)
       else
         in
-    )
-;
+    );
   private def genWithEt(etGen: Gen[EventTransaction], now: Instant, frequencies: EventFrequencies) =
     for {
       e   <- EventType.gen(frequencies)

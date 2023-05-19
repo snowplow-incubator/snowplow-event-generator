@@ -26,7 +26,9 @@ final case class HttpRequestQuerystring(qs: List[BasicNameValuePair]) extends Pr
 }
 
 object HttpRequestQuerystring {
-  def gen(now: Instant, frequencies: EventFrequencies): Gen[HttpRequestQuerystring] = genWithBody(Body.gen(now, frequencies))
+  def gen(now: Instant, frequencies: EventFrequencies): Gen[HttpRequestQuerystring] = genWithBody(
+    Body.gen(now, frequencies)
+  )
 
   private def genWithBody(bodyGen: Gen[Body]) =
     bodyGen.flatMap(qs =>
