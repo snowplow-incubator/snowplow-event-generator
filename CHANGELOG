@@ -1,3 +1,12 @@
+Version 0.4.0 (2023-05-19)
+--------------------------
+Make event frequencies configurable (#40)
+Populate event_name fields from unstructured event (#24)
+Add randomised Seed option (#34)
+Add Kinesis sink (#21)
+Count generated entities (#33)
+Add pubsub sink (#41)
+
 Version 0.3.1 (2022-11-08)
 --------------------------
 Ensure HEAD requests don't have a body (#29)

@@ -9,11 +9,11 @@ We provide [a command line tool](#quickstart-cli) to output events to a file, an
 
 ## Quickstart CLI
 
-Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.3.1/snowplow-event-generator-0.3.1.tar.gz). You need java installed to run it.
+Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.4.0/snowplow-event-generator-0.4.0.tar.gz). You need java installed to run it.
 
 ```bash
-wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.3.1/snowplow-event-generator-0.3.1.tar.gz
-tar -xzf snowplow-event-generator-0.3.1.tar.gz
+wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.4.0/snowplow-event-generator-0.4.0.tar.gz
+tar -xzf snowplow-event-generator-0.4.0.tar.gz
 ```
 
 And start generating events in your `my-events` directory:
@@ -150,7 +150,7 @@ All fields in the configuration file are optional:
 Core is a scala library for generating snowplow events.
 
 ```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.3.1" % Test
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.4.0" % Test
 ```
 
 ```scala
