@@ -32,6 +32,7 @@ object Dependencies {
     val circeConfig    = "0.8.0"
     val circe          = "0.14.1"
     val fs2Pubsub      = "0.21.0"
+    val awsRegions     = "2.20.69"
     // Scala (test only)
     val specs2           = "4.12.3"
     val scalaCheck       = "1.14.0"
@@ -61,6 +62,9 @@ object Dependencies {
     val scalaCheckCats = "io.chrisdavenport"        %% "cats-scalacheck"              % V.scalaCheckCats
     val httpClient     = "org.apache.httpcomponents" % "httpclient"                   % V.httpClient
     val slf4j          = "org.slf4j"                 % "slf4j-simple"                 % V.slf4j
+    val kcl            = "software.amazon.kinesis"   % "amazon-kinesis-client"        % V.kcl
+    val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsRegions
+
     // Scala (test only)
     val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test
     val specs2Cats       = "org.specs2" %% "specs2-cats"       % V.specs2 % Test
@@ -71,7 +75,6 @@ object Dependencies {
     // raw output
     val snowplowRawEvent = "com.snowplowanalytics"  % "snowplow-thrift-raw-event" % V.snowplowRawEvent
     val collectorPayload = "com.snowplowanalytics"  % "collector-payload-1"       % V.collectorPayload
-    val badRows          = "com.snowplowanalytics" %% "snowplow-badrows"          % V.badRows
-     val kcl = "software.amazon.kinesis" % "amazon-kinesis-client" % V.kcl
+    val badRows          = "com.snowplowanalytics"  %% "snowplow-badrows"          % V.badRows
   }
 }
