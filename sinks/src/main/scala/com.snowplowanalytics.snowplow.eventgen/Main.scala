@@ -28,6 +28,7 @@ import com.permutive.pubsub.producer.grpc.{GooglePubsubProducer, PubsubProducerC
 import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.encoder.MessageEncoder
 import scala.concurrent.duration.DurationInt
+import software.amazon.awssdk.regions.Region
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
@@ -35,8 +36,8 @@ import java.nio.charset.StandardCharsets
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     Config.parse(args) match {
-      case Right(Config.Cli(config, outputUri)) =>
-        sink[IO](outputUri, config) >>
+      case Right(Config.Cli(config, outputUri, region)) =>
+        sink[IO](outputUri, config, region) >>
           IO.println(s"""changeFormGenCount  = ${Context.changeFormGenCount}
                         |clientSessionGenCount  = ${Context.clientSessionGenCount}
                         |consentDocumentCount  = ${Context.consentDocumentCount}
@@ -64,7 +65,7 @@ object Main extends IOApp {
 
   type GenOutput = (collector.CollectorPayload, List[Event])
 
-  def sink[F[_]: Async](outputDir: URI, config: Config): F[Unit] = {
+  def sink[F[_]: Async](outputDir: URI, config: Config, region: Option[String]): F[Unit] = {
     val rng = config.randomisedSeed match {
       case true  => new scala.util.Random(scala.util.Random.nextInt())
       case false => new scala.util.Random(config.seed)
@@ -142,7 +143,12 @@ object Main extends IOApp {
       if (config.compress) {
         throw new RuntimeException(s"Kinesis doesn't support compression")
       }
-      val kinesisClient: KinesisAsyncClient = KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
+      val kinesisClient: KinesisAsyncClient = region match {
+        case Some(region) =>
+          KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder().region(Region.of(region)))
+        case None =>
+          KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
+      }
 
       def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
         .builder()
