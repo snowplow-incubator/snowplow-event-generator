@@ -59,14 +59,15 @@ object Config {
     case class Fixed(at: Instant) extends Timestamps
   }
 
-  case class Cli(config: Config, output: URI)
+  case class Cli(config: Config, output: URI, region: Option[String])
 
   /* Temporary class for raw parameters */
-  case class RawCli(config: Option[Path], output: URI)
+  case class RawCli(config: Option[Path], output: URI, region: Option[String])
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
   val outputOpt   = Opts.option[URI]("output", "Output path")
-  val cliOpt      = (configOpt, outputOpt).mapN(RawCli.apply)
+  val regionOpt   = Opts.option[String]("aws-region", "AWS region").orNone
+  val cliOpt      = (configOpt, outputOpt, regionOpt).mapN(RawCli.apply)
   val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(cliOpt)
 
   // This is needed when providing parameters via system properties
@@ -100,17 +101,17 @@ object Config {
     */
   def parse(argv: Seq[String]): Either[String, Cli] =
     application.parse(argv).leftMap(_.show).flatMap {
-      case RawCli(Some(path), output) =>
+      case RawCli(Some(path), output, region) =>
         for {
           raw    <- loadFromFile(path)
           parsed <- parser.decode[Config](raw).leftMap(e => s"Could not parse config $path: ${e.show}")
-        } yield Cli(parsed, output)
-      case RawCli(None, output) =>
+        } yield Cli(parsed, output, region)
+      case RawCli(None, output, region) =>
         val raw = namespaced(ConfigFactory.load())
         parser
           .decode[Config](raw)
           .leftMap(e => s"Could not resolve config without a provided hocon file: ${e.show}")
-          .map(Cli(_, output))
+          .map(Cli(_, output, region))
     }
 
   /** Uses the typesafe config layering approach. Loads configurations in the following priority order:

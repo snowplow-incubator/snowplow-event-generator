@@ -68,7 +68,8 @@ lazy val sinks = project
       Dependencies.Libraries.blobstore,
       Dependencies.Libraries.specs2,
       Dependencies.Libraries.kcl,
-      Dependencies.Libraries.fs2Pubsub
+      Dependencies.Libraries.fs2Pubsub,
+      Dependencies.Libraries.awsRegions
     )
   )
   .dependsOn(core)
