@@ -31,7 +31,7 @@ object Dependencies {
     val slf4j          = "1.7.32"
     val circeConfig    = "0.8.0"
     val circe          = "0.14.1"
-    val fs2Pubsub      = "0.21.0"
+    val fs2Pubsub      = "0.22.0"
     val awsRegions     = "2.20.69"
     // Scala (test only)
     val specs2           = "4.12.3"
