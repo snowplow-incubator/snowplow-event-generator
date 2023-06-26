@@ -40,6 +40,13 @@ Alternatively you can write events directly to a S3 bucket:
 ./snowplow-event-generator --output pubsub://projects/my-project/topics/my-topic
 ```
 
+...or directly to a Kafka topic:
+
+```bash
+./snowplow-event-generator --output kafka://my-topic?brokers=my-broker:9092,my-broker-2:9092&my-property=my-value
+```
+
+
 By default, it generates 1000 events with no duplicates. The generated events are _deterministic_, which means if you re-run the app multiple times with the same configuration then you will generate the same events each time.
 
 #### Configuration
