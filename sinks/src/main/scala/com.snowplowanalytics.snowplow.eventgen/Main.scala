@@ -137,6 +137,14 @@ object Main extends IOApp {
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
       }
 
+    def kafkaSink: Pipe[F, GenOutput, Unit] = {
+      val properties = Kafka.Properties(outputDir.toString())
+
+      properties match {
+        case Right(p)  => Kafka.sink(p)
+        case Left(err) => throw new RuntimeException(err)
+      }
+    }
     def kinesisSink: Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
         throw new RuntimeException(s"Kinesis could only output in single format")
@@ -197,6 +205,7 @@ object Main extends IOApp {
       outputDir.getScheme match {
         case "kinesis" => kinesisSink
         case "pubsub"  => pubsubSink
+        case "kafka"   => kafkaSink
         case _         => fileSink
       }
 
