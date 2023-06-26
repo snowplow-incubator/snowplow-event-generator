@@ -69,7 +69,9 @@ lazy val sinks = project
       Dependencies.Libraries.specs2,
       Dependencies.Libraries.kcl,
       Dependencies.Libraries.fs2Pubsub,
-      Dependencies.Libraries.awsRegions
+      Dependencies.Libraries.fs2Kafka,
+      Dependencies.Libraries.awsRegions,
+      Dependencies.Libraries.scalaParsec
     )
   )
   .dependsOn(core)
