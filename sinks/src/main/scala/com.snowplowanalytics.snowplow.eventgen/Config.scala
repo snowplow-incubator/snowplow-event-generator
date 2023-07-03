@@ -40,7 +40,8 @@ final case class Config(
   payloadsPerFile: Int,
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
-  eventFrequencies: EventFrequencies
+  eventFrequencies: EventFrequencies,
+  output: Config.Output
 )
 
 object Config {
@@ -59,16 +60,23 @@ object Config {
     case class Fixed(at: Instant) extends Timestamps
   }
 
-  case class Cli(config: Config, output: URI, region: Option[String])
+  case class Cli(config: Config)
 
-  /* Temporary class for raw parameters */
-  case class RawCli(config: Option[Path], output: URI, region: Option[String])
+  case class Output(
+    file: Option[File] = None,
+    kinesis: Option[Kinesis] = None,
+    kafka: Option[Kafka] = None,
+    pubsub: Option[PubSub] = None
+  )
+
+  sealed trait Target
+  case class Kinesis(uri: URI, region: Option[String]) extends Target
+  case class File(uri: URI) extends Target
+  case class PubSub(uri: URI) extends Target
+  case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Target
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
-  val outputOpt   = Opts.option[URI]("output", "Output path")
-  val regionOpt   = Opts.option[String]("aws-region", "AWS region").orNone
-  val cliOpt      = (configOpt, outputOpt, regionOpt).mapN(RawCli.apply)
-  val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(cliOpt)
+  val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(configOpt)
 
   // This is needed when providing parameters via system properties
   // e.g. -Dsnowplow.compress=false
@@ -87,6 +95,27 @@ object Config {
   implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
     deriveConfiguredDecoder[UnstructEventFrequencies]
 
+  implicit val mapDecoder: Decoder[Map[String, String]] = Decoder.decodeMap[String, String]
+
+  implicit val uriDecoder: Decoder[URI] = Decoder[String].emap { str =>
+    Either.catchOnly[IllegalArgumentException](URI.create(str)).leftMap(_.getMessage)
+  }
+
+  implicit val kafkaDecoder: Decoder[Kafka] =
+    deriveConfiguredDecoder[Kafka]
+
+  implicit val kinesisDecoder: Decoder[Kinesis] =
+    deriveConfiguredDecoder[Kinesis]
+
+  implicit val fileDecoder: Decoder[File] =
+    deriveConfiguredDecoder[File]
+
+  implicit val pubSubDecoder: Decoder[PubSub] =
+    deriveConfiguredDecoder[PubSub]
+
+  implicit val outputDecoder: Decoder[Output] =
+    deriveConfiguredDecoder[Output]
+
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]
 
@@ -101,17 +130,12 @@ object Config {
     */
   def parse(argv: Seq[String]): Either[String, Cli] =
     application.parse(argv).leftMap(_.show).flatMap {
-      case RawCli(Some(path), output, region) =>
+      case Some(path) =>
         for {
           raw    <- loadFromFile(path)
           parsed <- parser.decode[Config](raw).leftMap(e => s"Could not parse config $path: ${e.show}")
-        } yield Cli(parsed, output, region)
-      case RawCli(None, output, region) =>
-        val raw = namespaced(ConfigFactory.load())
-        parser
-          .decode[Config](raw)
-          .leftMap(e => s"Could not resolve config without a provided hocon file: ${e.show}")
-          .map(Cli(_, output, region))
+        } yield Cli(parsed)
+      case _ => Left(s"Could not resolve config without a provided hocon file")
     }
 
   /** Uses the typesafe config layering approach. Loads configurations in the following priority order:

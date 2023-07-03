@@ -34,7 +34,6 @@ object Dependencies {
     val fs2Pubsub      = "0.22.0"
     val fs2Kafka       = "3.0.1"
     val awsRegions     = "2.20.69"
-    val scalaParsec    = "2.3.0"
     // Scala (test only)
     val specs2           = "4.12.3"
     val scalaCheck       = "1.14.0"
@@ -67,7 +66,6 @@ object Dependencies {
     val slf4j          = "org.slf4j"                 % "slf4j-simple"                 % V.slf4j
     val kcl            = "software.amazon.kinesis"   % "amazon-kinesis-client"        % V.kcl
     val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsRegions
-    val scalaParsec    = "org.scala-lang.modules"    %% "scala-parser-combinators"    % V.scalaParsec
 
     // Scala (test only)
     val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test

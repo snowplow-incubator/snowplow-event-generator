@@ -18,4 +18,9 @@
     "type": "Fixed"
     "at": "2022-02-01T01:01:01z"
   }
+  "output": {
+    "file": {
+      "uri": "file:///tmp"
+    }
+  }
 }

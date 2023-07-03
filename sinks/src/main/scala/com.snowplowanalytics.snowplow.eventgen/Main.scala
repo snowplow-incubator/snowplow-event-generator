@@ -36,8 +36,8 @@ import java.nio.charset.StandardCharsets
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     Config.parse(args) match {
-      case Right(Config.Cli(config, outputUri, region)) =>
-        sink[IO](outputUri, config, region) >>
+      case Right(Config.Cli(config)) =>
+        sink[IO](config) >>
           IO.println(s"""changeFormGenCount  = ${Context.changeFormGenCount}
                         |clientSessionGenCount  = ${Context.clientSessionGenCount}
                         |consentDocumentCount  = ${Context.consentDocumentCount}
@@ -65,7 +65,7 @@ object Main extends IOApp {
 
   type GenOutput = (collector.CollectorPayload, List[Event])
 
-  def sink[F[_]: Async](outputDir: URI, config: Config, region: Option[String]): F[Unit] = {
+  def sink[F[_]: Async](config: Config): F[Unit] = {
     val rng = config.randomisedSeed match {
       case true  => new scala.util.Random(scala.util.Random.nextInt())
       case false => new scala.util.Random(config.seed)
@@ -109,49 +109,45 @@ object Main extends IOApp {
         }
       }
 
-    def sinkBuilder(prefix: String, idx: Int): Pipe[F, Byte, Nothing] = {
+    def sinkBuilder(prefix: String, idx: Int, uri: URI): Pipe[F, Byte, Nothing] = {
       val suffix = if (config.compress) ".gz" else ""
-      if (outputDir.toString.startsWith("file:")) {
-        RotatingSink.file(prefix, suffix, idx, outputDir)
-      } else if (outputDir.toString.startsWith("s3:")) {
-        RotatingSink.s3(prefix, suffix, idx, outputDir)
+      if (uri.toString.startsWith("s3:")) {
+        RotatingSink.s3(prefix, suffix, idx, uri)
+      } else if (uri.toString.startsWith("file:")) {
+        RotatingSink.file(prefix, suffix, idx, uri)
       } else {
-        throw new RuntimeException(s"Unknown scheme in $outputDir")
+        throw new RuntimeException(s"Unknown scheme in $uri")
       }
     }
 
-    def sinkFor(name: String, idx: Int, predicate: Boolean): Pipe[F, Byte, Nothing] =
-      if (predicate) sinkBuilder(name, idx)
+    def sinkFor(name: String, idx: Int, predicate: Boolean, uri: URI): Pipe[F, Byte, Nothing] =
+      if (predicate) sinkBuilder(name, idx, uri)
       else _.drain
 
-    def fileSink: Pipe[F, GenOutput, Unit] =
+    def fileSink(fileConfig: Config.File): Pipe[F, GenOutput, Unit] =
       RotatingSink.rotate(config.payloadsPerFile) { idx =>
         val pipe1: Pipe[F, GenOutput, Nothing] =
-          _.map(_._1).through(Serializers.rawSerializer(config.compress)).through(sinkFor("raw", idx, config.withRaw))
+          _.map(_._1)
+            .through(Serializers.rawSerializer(config.compress))
+            .through(sinkFor("raw", idx, config.withRaw, fileConfig.uri))
         val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedTsvSerializer(config.compress))
-          .through(sinkFor("enriched", idx, config.withEnrichedTsv))
+          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.uri))
         val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedJsonSerializer(config.compress))
-          .through(sinkFor("transformed", idx, config.withEnrichedJson))
+          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.uri))
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
       }
 
-    def kafkaSink: Pipe[F, GenOutput, Unit] = {
-      val properties = Kafka.Properties(outputDir.toString())
+    def kafkaSink(output: Config.Kafka): Pipe[F, GenOutput, Unit] = Kafka.sink(output)
 
-      properties match {
-        case Right(p)  => Kafka.sink(p)
-        case Left(err) => throw new RuntimeException(err)
-      }
-    }
-    def kinesisSink: Pipe[F, GenOutput, Unit] = {
+    def kinesisSink(output: Config.Kinesis): Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
         throw new RuntimeException(s"Kinesis could only output in single format")
       if (config.compress) {
         throw new RuntimeException(s"Kinesis doesn't support compression")
       }
-      val kinesisClient: KinesisAsyncClient = region match {
+      val kinesisClient: KinesisAsyncClient = output.region match {
         case Some(region) =>
           KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder().region(Region.of(region)))
         case None =>
@@ -160,7 +156,7 @@ object Main extends IOApp {
 
       def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
         .builder()
-        .streamName(outputDir.getRawAuthority)
+        .streamName(output.uri.getRawAuthority)
         .partitionKey(event.event_id.toString)
         .data(SdkBytes.fromUtf8String(event.toTsv))
         .build()
@@ -173,7 +169,7 @@ object Main extends IOApp {
           .void
     }
 
-    def pubsubSink: Pipe[F, GenOutput, Unit] = {
+    def pubsubSink(output: Config.PubSub): Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
         throw new RuntimeException(s"Pubsub could only output in single format")
       if (config.compress) {
@@ -185,7 +181,7 @@ object Main extends IOApp {
         onFailedTerminate = _ => Sync[F].unit
       )
       val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
-      val (projectId, topic) = outputDir.getSchemeSpecificPart match {
+      val (projectId, topic) = output.uri.getSchemeSpecificPart match {
         case topicRegex(p, t) => (ProjectId(p), Topic(t))
         case _ =>
           throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
@@ -201,13 +197,20 @@ object Main extends IOApp {
         } yield ()
     }
 
-    def makeOutput: Pipe[F, GenOutput, Unit] =
-      outputDir.getScheme match {
-        case "kinesis" => kinesisSink
-        case "pubsub"  => pubsubSink
-        case "kafka"   => kafkaSink
-        case _         => fileSink
-      }
+    def makeOutput: Pipe[F, GenOutput, Unit] = config.output match {
+      case Config.Output(Some(fileConfig), None, None, None) =>
+        fileSink(fileConfig)
+      case Config.Output(None, Some(kinesisConfig), None, None) =>
+        kinesisSink(kinesisConfig)
+      case Config.Output(None, None, Some(kafkaConfig), None) =>
+        kafkaSink(kafkaConfig)
+      case Config.Output(None, None, None, Some(pubsubConfig)) =>
+        pubsubSink(pubsubConfig)
+      case _ =>
+        throw new RuntimeException(
+          "Event generator support exactly one sink at a time. Check your output configuration"
+        )
+    }
 
     eventStream
       .take(config.payloadsTotal.toLong)

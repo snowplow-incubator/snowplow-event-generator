@@ -16,36 +16,78 @@ wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/dow
 tar -xzf snowplow-event-generator-0.4.0.tar.gz
 ```
 
-And start generating events in your `my-events` directory:
-
-```bash
-./snowplow-event-generator --output file:/path/to/my-events
+And start generating events in your `my-events` directory, in configuration file set:
+```
+"output": {
+  "file": {
+    "uri": "file:/path/to/my-events"
+  }
+}
 ```
 
 Alternatively you can write events directly to a S3 bucket:
 
-```bash
-./snowplow-event-generator --output s3://my-bucket/my-events
+```
+"output": {
+  "file": {
+    "uri": "s3://my-bucket/my-events"
+  }
+}
 ```
 
 ...or directly to a Kinesis stream:
 
-```bash
-./snowplow-event-generator --output kinesis://my-kinesis-stream
 ```
+"output": {
+  "kinesis": {
+    "uri": "kinesis://my-kinesis-stream"
+  }
+}
+```
+
 
 ...or directly to a Pubsub topic:
 
-```bash
-./snowplow-event-generator --output pubsub://projects/my-project/topics/my-topic
+
+```
+"output": {
+  "kinesis": {
+    "uri": "pubsub://projects/my-project/topics/my-topic"
+  }
+}
 ```
 
 ...or directly to a Kafka topic:
 
-```bash
-./snowplow-event-generator --output kafka://my-topic?brokers=my-broker:9092,my-broker-2:9092&my-property=my-value
+```
+"output": {
+  "kinesis": {
+    "brokers": "my-broker:9092,my-broker-2:9092",
+    "topic": "my-topic"
+  }
+}
 ```
 
+...or directly to an EventHubs topic:
+
+```
+"output": {
+  "kinesis": {
+    "brokers": "PLACEHOLDER.servicebus.windows.net:443",
+    "topic": "enriched-topic",
+    "producerConfig": {
+    "security.protocol": "SASL_SSL",
+    "sasl.mechanism": "PLAIN",
+    "sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"Endpoint=sb://PLACEHOLDER.servicebus.windows.net/;SharedAccessKeyName=enriched-topic-read-write;SharedAccessKey=PLACEHOLDER;EntityPath=enriched-topic\";"
+    }
+  }
+}
+```
+
+Then run:
+```bash
+./snowplow-event-generator --config my-config.hocon
+```
 
 By default, it generates 1000 events with no duplicates. The generated events are _deterministic_, which means if you re-run the app multiple times with the same configuration then you will generate the same events each time.
 
@@ -54,7 +96,7 @@ By default, it generates 1000 events with no duplicates. The generated events ar
 The app can be configured by providing a HOCON file, like [the one in this example](./config/config.example.hocon):
 
 ```bash
-./snowplow-event-generator --config /path/to/config.hocon --output file:/path/to/my-events
+./snowplow-event-generator --config /path/to/config.hocon
 ```
 
 Generator will print following output, which could be used for verification:
@@ -82,7 +124,7 @@ uaParserContextCount  = 439
 unstuctEventCount = 140
 ```
 
-All fields in the configuration file are optional:
+Aside from "output" configuration, all fields in the configuration file are optional:
 
 
 ```
@@ -148,6 +190,37 @@ All fields in the configuration file are optional:
 
       // Only used for "Fixed" timestamps.  Change this to generate more recent or more historic events.
       "at": "2022-02-01T01:01:01z"
+    },
+
+    // Required: Storage to sink generated events into
+    // Currently only a single output at a time is supported
+    "output": {
+      "file": {
+        // Generate files locally
+        "uri": "file:/path/to/my-events"
+        // Generate files into an S3 bucket
+        //"uri": "s3://my-bucket/my-events"
+      }
+      // "kafka": {
+        // Required: Seed brokers to use
+        // "brokers": "my-broker:9092,my-other-broker:9092",
+        // Required: Topic to deliver messages into
+        // "topic": "my-topic",
+        // Optional: Additional properties like authentication configuration
+        // "producerConfig": {
+        //  "additional-parameter": "value"
+        // }
+      // }
+      // "kinesis": {
+        // Required: Kinesis stream URI
+        // "uri": "kinesis://my-kinesis-stream",
+        // Optional: Region where Kinesis stream runs
+        // "region": "eu-central-1"
+      // }
+      // "pubsub": {
+        // Required: PubSub stream URI
+        // "uri": "pubsub://projects/my-project/topics/my-topic"
+      // }
     }
 }
 ```
