@@ -19,41 +19,15 @@ import cats.effect.Async
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import scala.util.parsing.combinator.RegexParsers
 
 object Kafka {
-  case class Config(topic: String, brokers: String, producerConf: Map[String, String])
-  object Properties extends RegexParsers {
-    def topic: Parser[String]   = "[^?]+".r
-    def brokers: Parser[String] = "brokers=" ~> value
-    def key: Parser[String]     = "[^=]+".r
-    def value: Parser[String]   = opt("\"") ~> """([^"\\&]|\\.)*""".r <~ opt("\"")
-    def custom: Parser[Map[String, String]] = key ~ "=" ~ value ^^ { case k ~ _ ~ v =>
-      Map(k -> v)
-    }
-    def config: Parser[Config] = "kafka://" ~ topic ~ "?" ~ brokers ~ opt("&") ~ repsep(custom, "&") ^^ {
-      case _ ~ t ~ _ ~ b ~ _ ~ c =>
-        Config(t, b, c.flatten.toMap)
-    }
-    def apply(s: String) = {
-      println(s)
-      parseAll(config, s) match {
-        case Success(p, _) => Right(p)
-        case Failure(f, b) => Left(s"Incomplete or invalid Kafka URI at ${b.pos}: $f")
-
-        case Error(e, _) => Left(s"Unable to parse Kafka URI: $e")
-
-      }
-    }
-  }
-
   def toProducerRecord(topicName: String, record: Event): ProducerRecord[String, Event] =
     ProducerRecord(topicName, UUID.randomUUID().toString, record)
 
-  def sink[F[_]: Async](properties: Config): Pipe[F, Main.GenOutput, Unit] = {
+  def sink[F[_]: Async](properties: Config.Kafka): Pipe[F, Main.GenOutput, Unit] = {
     implicit val serializer = Serializer.lift[F, Event](e => Async[F].pure(e.toTsv.getBytes(StandardCharsets.UTF_8)))
 
-    def writeKafka(properties: Config): Pipe[F, Event, Unit] = {
+    def write(properties: Config.Kafka): Pipe[F, Event, Unit] = {
       val batchSize = 100
       _.map(toProducerRecord(properties.topic, _))
         .chunkN(batchSize, allowFewer = true)
@@ -71,7 +45,7 @@ object Kafka {
         .void
     }
 
-    st: Stream[F, Main.GenOutput] => st.map(_._2).flatMap(Stream.emits).through(writeKafka(properties))
+    st: Stream[F, Main.GenOutput] => st.map(_._2).flatMap(Stream.emits).through(write(properties))
   }
 
 }

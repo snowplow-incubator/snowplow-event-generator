@@ -19,7 +19,7 @@ import java.nio.file.Paths
 class ConfigSpec extends Specification {
   "Config.loadFromFile" should {
     "succeed with the default application.conf" in {
-      val valid = Paths.get("sinks/src/main/resources/application.conf")
+      val valid  = Paths.get("sinks/src/main/resources/application.conf")
       val result = Config.loadFromFile(valid)
 
       result must beRight()
@@ -27,7 +27,7 @@ class ConfigSpec extends Specification {
 
     "fail with invalid HOCON" in {
       val invalid = Paths.get("sinks/src/test/resources/invalid.conf")
-      val result = Config.loadFromFile(invalid)
+      val result  = Config.loadFromFile(invalid)
 
       result must beLeft()
     }
