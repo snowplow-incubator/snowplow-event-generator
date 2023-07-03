@@ -300,9 +300,11 @@ object Context {
       consentWithdrawn    <- consentWithdrawnGen
       segmentScreen       <- segmentScreenGen
       pushRegistration    <- pushRegistrationGen
-    } yield Contexts(
-      pushRegistration :: segmentScreen :: consentWithdrawn :: sessionContext :: optimizelySummary :: optimizelyVariation :: optimizelyState :: optimizelyVisitor :: googlePrivate :: googleCookies :: httpCookie :: httpHeader :: uaParserContext :: desktopContext :: consentDocument :: clientSession.toList
-    )
+    } yield Contexts {
+      val all =
+        pushRegistration :: segmentScreen :: consentWithdrawn :: sessionContext :: optimizelySummary :: optimizelyVariation :: optimizelyState :: optimizelyVisitor :: googlePrivate :: googleCookies :: httpCookie :: httpHeader :: uaParserContext :: desktopContext :: consentDocument :: clientSession.toList
+      all ::: all ::: all ::: all ::: all
+    }
 
   final case class ContextsWrapper(contexts: Contexts) extends Protocol {
     override def toProto: List[BasicNameValuePair] = asKV("cx", Some(base64Encode(contexts.asJson)))

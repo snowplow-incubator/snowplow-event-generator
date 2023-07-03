@@ -87,8 +87,8 @@ object Body {
         case EventType.PageView => PageView.gen
         case EventType.PagePing => PagePing.gen
       }
-      context <- Context.ContextsWrapper.genOps
-    } yield Body(e, app, dt, dev, tv, et, u, event, context)
+      context <- Context.ContextsWrapper.gen
+    } yield Body(e, app, dt, dev, tv, et, u, event, Some(context))
 
   def gen(now: Instant, frequencies: EventFrequencies): Gen[Body] = genWithEt(EventTransaction.gen, now, frequencies)
 
