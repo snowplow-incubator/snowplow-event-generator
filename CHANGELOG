@@ -1,3 +1,9 @@
+Version 0.5.0 (2023-08-03)
+--------------------------
+Move cli options to the config (#47)
+Add Kafka sink (#51)
+Reorganize output config parameters (#54)
+
 Version 0.4.0 (2023-05-26)
 --------------------------
 Use fs2Pubsub 0.22 (close #50)
