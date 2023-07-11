@@ -124,24 +124,24 @@ object Main extends IOApp {
       if (predicate) sinkBuilder(name, idx, uri)
       else _.drain
 
-    def fileSink(fileConfig: Config.File): Pipe[F, GenOutput, Unit] =
+    def fileSink(fileConfig: Config.Output.File): Pipe[F, GenOutput, Unit] =
       RotatingSink.rotate(config.payloadsPerFile) { idx =>
         val pipe1: Pipe[F, GenOutput, Nothing] =
           _.map(_._1)
             .through(Serializers.rawSerializer(config.compress))
-            .through(sinkFor("raw", idx, config.withRaw, fileConfig.uri))
+            .through(sinkFor("raw", idx, config.withRaw, fileConfig.path))
         val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedTsvSerializer(config.compress))
-          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.uri))
+          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.path))
         val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedJsonSerializer(config.compress))
-          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.uri))
+          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.path))
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
       }
 
-    def kafkaSink(output: Config.Kafka): Pipe[F, GenOutput, Unit] = Kafka.sink(output)
+    def kafkaSink(output: Config.Output.Kafka): Pipe[F, GenOutput, Unit] = Kafka.sink(output)
 
-    def kinesisSink(output: Config.Kinesis): Pipe[F, GenOutput, Unit] = {
+    def kinesisSink(output: Config.Output.Kinesis): Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
         throw new RuntimeException(s"Kinesis could only output in single format")
       if (config.compress) {
@@ -156,7 +156,7 @@ object Main extends IOApp {
 
       def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
         .builder()
-        .streamName(output.uri.getRawAuthority)
+        .streamName(output.streamName)
         .partitionKey(event.event_id.toString)
         .data(SdkBytes.fromUtf8String(event.toTsv))
         .build()
@@ -169,7 +169,7 @@ object Main extends IOApp {
           .void
     }
 
-    def pubsubSink(output: Config.PubSub): Pipe[F, GenOutput, Unit] = {
+    def pubsubSink(output: Config.Output.PubSub): Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
         throw new RuntimeException(s"Pubsub could only output in single format")
       if (config.compress) {
@@ -181,7 +181,7 @@ object Main extends IOApp {
         onFailedTerminate = _ => Sync[F].unit
       )
       val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
-      val (projectId, topic) = output.uri.getSchemeSpecificPart match {
+      val (projectId, topic) = output.subscription match {
         case topicRegex(p, t) => (ProjectId(p), Topic(t))
         case _ =>
           throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
@@ -198,18 +198,14 @@ object Main extends IOApp {
     }
 
     def makeOutput: Pipe[F, GenOutput, Unit] = config.output match {
-      case Config.Output(Some(fileConfig), None, None, None) =>
+      case fileConfig: Config.Output.File =>
         fileSink(fileConfig)
-      case Config.Output(None, Some(kinesisConfig), None, None) =>
+      case kinesisConfig: Config.Output.Kinesis =>
         kinesisSink(kinesisConfig)
-      case Config.Output(None, None, Some(kafkaConfig), None) =>
+      case kafkaConfig: Config.Output.Kafka =>
         kafkaSink(kafkaConfig)
-      case Config.Output(None, None, None, Some(pubsubConfig)) =>
+      case pubsubConfig: Config.Output.PubSub =>
         pubsubSink(pubsubConfig)
-      case _ =>
-        throw new RuntimeException(
-          "Event generator support exactly one sink at a time. Check your output configuration"
-        )
     }
 
     eventStream

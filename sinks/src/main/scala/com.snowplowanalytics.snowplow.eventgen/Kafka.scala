@@ -24,10 +24,10 @@ object Kafka {
   def toProducerRecord(topicName: String, record: Event): ProducerRecord[String, Event] =
     ProducerRecord(topicName, UUID.randomUUID().toString, record)
 
-  def sink[F[_]: Async](properties: Config.Kafka): Pipe[F, Main.GenOutput, Unit] = {
+  def sink[F[_]: Async](properties: Config.Output.Kafka): Pipe[F, Main.GenOutput, Unit] = {
     implicit val serializer = Serializer.lift[F, Event](e => Async[F].pure(e.toTsv.getBytes(StandardCharsets.UTF_8)))
 
-    def write(properties: Config.Kafka): Pipe[F, Event, Unit] = {
+    def write(properties: Config.Output.Kafka): Pipe[F, Event, Unit] = {
       val batchSize = 100
       _.map(toProducerRecord(properties.topic, _))
         .chunkN(batchSize, allowFewer = true)
