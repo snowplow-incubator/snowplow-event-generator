@@ -129,13 +129,13 @@ object Main extends IOApp {
         val pipe1: Pipe[F, GenOutput, Nothing] =
           _.map(_._1)
             .through(Serializers.rawSerializer(config.compress))
-            .through(sinkFor("raw", idx, config.withRaw, fileConfig.uri))
+            .through(sinkFor("raw", idx, config.withRaw, fileConfig.path))
         val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedTsvSerializer(config.compress))
-          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.uri))
+          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.path))
         val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
           .through(Serializers.enrichedJsonSerializer(config.compress))
-          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.uri))
+          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.path))
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
       }
 
@@ -156,7 +156,7 @@ object Main extends IOApp {
 
       def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
         .builder()
-        .streamName(output.uri.getRawAuthority)
+        .streamName(output.streamName)
         .partitionKey(event.event_id.toString)
         .data(SdkBytes.fromUtf8String(event.toTsv))
         .build()
@@ -181,7 +181,7 @@ object Main extends IOApp {
         onFailedTerminate = _ => Sync[F].unit
       )
       val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
-      val (projectId, topic) = output.uri.getSchemeSpecificPart match {
+      val (projectId, topic) = output.subscription match {
         case topicRegex(p, t) => (ProjectId(p), Topic(t))
         case _ =>
           throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")

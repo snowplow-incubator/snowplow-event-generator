@@ -70,9 +70,9 @@ object Config {
   )
 
   sealed trait Target
-  case class Kinesis(uri: URI, region: Option[String]) extends Target
-  case class File(uri: URI) extends Target
-  case class PubSub(uri: URI) extends Target
+  case class Kinesis(streamName: String, region: Option[String]) extends Target
+  case class File(path: URI) extends Target
+  case class PubSub(subscription: String) extends Target
   case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Target
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
