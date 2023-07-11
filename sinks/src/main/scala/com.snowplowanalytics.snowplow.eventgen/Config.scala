@@ -62,18 +62,14 @@ object Config {
 
   case class Cli(config: Config)
 
-  case class Output(
-    file: Option[File] = None,
-    kinesis: Option[Kinesis] = None,
-    kafka: Option[Kafka] = None,
-    pubsub: Option[PubSub] = None
-  )
+  sealed trait Output
 
-  sealed trait Target
-  case class Kinesis(uri: URI, region: Option[String]) extends Target
-  case class File(uri: URI) extends Target
-  case class PubSub(uri: URI) extends Target
-  case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Target
+  object Output {
+    case class Kinesis(streamName: String, region: Option[String]) extends Output
+    case class File(path: URI) extends Output
+    case class PubSub(subscription: String) extends Output
+    case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Output
+  }
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
   val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(configOpt)
@@ -101,17 +97,17 @@ object Config {
     Either.catchOnly[IllegalArgumentException](URI.create(str)).leftMap(_.getMessage)
   }
 
-  implicit val kafkaDecoder: Decoder[Kafka] =
-    deriveConfiguredDecoder[Kafka]
+  implicit val kafkaDecoder: Decoder[Output.Kafka] =
+    deriveConfiguredDecoder[Output.Kafka]
 
-  implicit val kinesisDecoder: Decoder[Kinesis] =
-    deriveConfiguredDecoder[Kinesis]
+  implicit val kinesisDecoder: Decoder[Output.Kinesis] =
+    deriveConfiguredDecoder[Output.Kinesis]
 
-  implicit val fileDecoder: Decoder[File] =
-    deriveConfiguredDecoder[File]
+  implicit val fileDecoder: Decoder[Output.File] =
+    deriveConfiguredDecoder[Output.File]
 
-  implicit val pubSubDecoder: Decoder[PubSub] =
-    deriveConfiguredDecoder[PubSub]
+  implicit val pubSubDecoder: Decoder[Output.PubSub] =
+    deriveConfiguredDecoder[Output.PubSub]
 
   implicit val outputDecoder: Decoder[Output] =
     deriveConfiguredDecoder[Output]
@@ -135,7 +131,7 @@ object Config {
           raw    <- loadFromFile(path)
           parsed <- parser.decode[Config](raw).leftMap(e => s"Could not parse config $path: ${e.show}")
         } yield Cli(parsed)
-      case _ => Left(s"Could not resolve config without a provided hocon file")
+      case _ => Left("Could not resolve config without a provided hocon file")
     }
 
   /** Uses the typesafe config layering approach. Loads configurations in the following priority order:
