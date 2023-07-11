@@ -20,7 +20,7 @@ And start generating events in your `my-events` directory, in configuration file
 ```
 "output": {
   "file": {
-    "uri": "file:/path/to/my-events"
+    "path": "file:/path/to/my-events"
   }
 }
 ```
@@ -30,7 +30,7 @@ Alternatively you can write events directly to a S3 bucket:
 ```
 "output": {
   "file": {
-    "uri": "s3://my-bucket/my-events"
+    "path": "s3://my-bucket/my-events"
   }
 }
 ```
@@ -40,7 +40,8 @@ Alternatively you can write events directly to a S3 bucket:
 ```
 "output": {
   "kinesis": {
-    "uri": "kinesis://my-kinesis-stream"
+    "streamName": "my-stream",
+    "region": "eu-central-1"
   }
 }
 ```
@@ -51,8 +52,8 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kinesis": {
-    "uri": "pubsub://projects/my-project/topics/my-topic"
+  "pubsub": {
+    "subscription": "projects/my-project/topics/my-topic"
   }
 }
 ```
