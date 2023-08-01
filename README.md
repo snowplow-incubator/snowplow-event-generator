@@ -62,7 +62,7 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kinesis": {
+  "kafka": {
     "brokers": "my-broker:9092,my-broker-2:9092",
     "topic": "my-topic"
   }
@@ -73,7 +73,7 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kinesis": {
+  "kafka": {
     "brokers": "PLACEHOLDER.servicebus.windows.net:443",
     "topic": "enriched-topic",
     "producerConfig": {
