@@ -214,7 +214,7 @@ Aside from "output" configuration, all fields in the configuration file are opti
       // }
       // "kinesis": {
         // Required: Kinesis stream URI
-        // "uri": "kinesis://my-kinesis-stream",
+        // "uri": "my-kinesis-stream",
         // Optional: Region where Kinesis stream runs
         // "region": "eu-central-1"
       // }
