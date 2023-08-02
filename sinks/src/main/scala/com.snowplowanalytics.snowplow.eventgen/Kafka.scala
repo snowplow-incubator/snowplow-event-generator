@@ -42,7 +42,6 @@ object Kafka {
               .withProperties(properties.producerConf)
           )
         )
-        .chunkLimit(batchSize)
         .void
     }
 
