@@ -29,9 +29,8 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "file": {
-    "path": "s3://my-bucket/my-events"
-  }
+  "type": "File"
+  "path": "file:path/to/my/file"
 }
 ```
 
@@ -39,10 +38,9 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kinesis": {
-    "streamName": "my-stream",
-    "region": "eu-central-1"
-  }
+  "type": "Kinesis"
+  "streamName": "my-stream",
+  "region": "eu-central-1"
 }
 ```
 
@@ -52,9 +50,8 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "pubsub": {
-    "subscription": "projects/my-project/topics/my-topic"
-  }
+  "type": "PubSub"
+  "subscription": "projects/my-project/topics/my-topic"
 }
 ```
 
@@ -62,10 +59,9 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kafka": {
-    "brokers": "my-broker:9092,my-broker-2:9092",
-    "topic": "my-topic"
-  }
+  "type": "Kafka"
+  "brokers": "my-broker:9092,my-broker-2:9092",
+  "topic": "my-topic"
 }
 ```
 
@@ -73,14 +69,13 @@ Alternatively you can write events directly to a S3 bucket:
 
 ```
 "output": {
-  "kafka": {
-    "brokers": "PLACEHOLDER.servicebus.windows.net:443",
-    "topic": "enriched-topic",
-    "producerConfig": {
-    "security.protocol": "SASL_SSL",
-    "sasl.mechanism": "PLAIN",
-    "sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"Endpoint=sb://PLACEHOLDER.servicebus.windows.net/;SharedAccessKeyName=enriched-topic-read-write;SharedAccessKey=PLACEHOLDER;EntityPath=enriched-topic\";"
-    }
+  "type": "Kafka"
+  "brokers": "PLACEHOLDER.servicebus.windows.net:443",
+  "topic": "enriched-topic",
+  "producerConfig": {
+  "security.protocol": "SASL_SSL",
+  "sasl.mechanism": "PLAIN",
+  "sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$ConnectionString\" password=\"Endpoint=sb://PLACEHOLDER.servicebus.windows.net/;SharedAccessKeyName=enriched-topic-read-write;SharedAccessKey=PLACEHOLDER;EntityPath=enriched-topic\";"
   }
 }
 ```
@@ -196,32 +191,31 @@ Aside from "output" configuration, all fields in the configuration file are opti
     // Required: Storage to sink generated events into
     // Currently only a single output at a time is supported
     "output": {
-      "file": {
-        // Generate files locally
-        "uri": "file:/path/to/my-events"
-        // Generate files into an S3 bucket
-        //"uri": "s3://my-bucket/my-events"
-      }
-      // "kafka": {
-        // Required: Seed brokers to use
-        // "brokers": "my-broker:9092,my-other-broker:9092",
-        // Required: Topic to deliver messages into
-        // "topic": "my-topic",
-        // Optional: Additional properties like authentication configuration
-        // "producerConfig": {
-        //  "additional-parameter": "value"
+      "type": "File"
+      // Generate files locally
+      "uri": "file:/path/to/my-events"
+      // Generate files into an S3 bucket
+      //"uri": "s3://my-bucket/my-events"
+      
+      // "type": "Kafka"
+      // Required: Seed brokers to use
+      // "brokers": "my-broker:9092,my-other-broker:9092",
+      // Required: Topic to deliver messages into
+      // "topic": "my-topic",
+      // Optional: Additional properties like authentication configuration
+      // "producerConfig": {
+      //  "additional-parameter": "value"
         // }
-      // }
-      // "kinesis": {
-        // Required: Kinesis stream URI
-        // "uri": "my-kinesis-stream",
-        // Optional: Region where Kinesis stream runs
-        // "region": "eu-central-1"
-      // }
-      // "pubsub": {
-        // Required: PubSub stream URI
-        // "uri": "pubsub://projects/my-project/topics/my-topic"
-      // }
+
+      // "type": "Kinesis"
+      // Required: Kinesis stream URI
+      // "uri": "my-kinesis-stream",
+      // Optional: Region where Kinesis stream runs
+      // "region": "eu-central-1"
+
+      // "type": "PubSub"
+      // Required: PubSub stream URI
+      // "uri": "pubsub://projects/my-project/topics/my-topic"
     }
 }
 ```
