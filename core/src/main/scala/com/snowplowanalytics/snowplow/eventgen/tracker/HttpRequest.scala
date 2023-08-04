@@ -55,6 +55,22 @@ object HttpRequest {
       HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
     )
 
+  def genDup(
+    natProb: Float,
+    synProb: Float,
+    natTotal: Int,
+    synTotal: Int,
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    now: Instant,
+    frequencies: EventFrequencies
+  ): Gen[HttpRequest] =
+    genWithParts(
+      // qs doesn't do duplicates?
+      HttpRequestQuerystring.gen(now, frequencies),
+      HttpRequestBody.genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
+    )
+
   private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody]) =
     for {
       method <- Method.gen
