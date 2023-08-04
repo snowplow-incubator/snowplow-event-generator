@@ -26,6 +26,7 @@ import io.circe.generic.extras.semiauto._
 
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
 
 final case class Config(
   payloadsTotal: Int,
@@ -41,6 +42,7 @@ final case class Config(
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
+  methodFrequencies: Option[MethodFrequencies],
   output: Config.Output
 )
 
@@ -69,6 +71,7 @@ object Config {
     case class File(path: URI) extends Output
     case class PubSub(subscription: String) extends Output
     case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Output
+    case class Http(endpoint: String) extends Output
   }
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
@@ -85,8 +88,11 @@ object Config {
   implicit val duplicatesDecoder: Decoder[Duplicates] =
     deriveConfiguredDecoder[Duplicates]
 
-  implicit val frequenciesDecoder: Decoder[EventFrequencies] =
+  implicit val eventFrequenciesDecoder: Decoder[EventFrequencies] =
     deriveConfiguredDecoder[EventFrequencies]
+
+  implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
+    deriveConfiguredDecoder [MethodFrequencies]
 
   implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
     deriveConfiguredDecoder[UnstructEventFrequencies]
