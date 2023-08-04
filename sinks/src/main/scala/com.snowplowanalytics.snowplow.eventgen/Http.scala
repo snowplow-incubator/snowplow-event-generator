@@ -17,36 +17,33 @@ package com.snowplowanalytics.snowplow.eventgen
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 
 import fs2.{Pipe, Stream}
-import cats.effect.{ContextShift, IO, Async}
+
 import cats.effect.kernel.Sync
 
-// import org.http4s.{Request, Response, Status}
-import org.http4s.{Request, Method, Uri}
-// import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
+import scalaj.http.{Http => HttpClient}
 
-import scala.concurrent.ExecutionContext
+import cats.effect.Async
+
+
+// TODO: This is wrecking my head.
+// This client might be simpler: https://stackoverflow.com/questions/11719373/doing-http-request-in-scala
+
+
+
 
 object Http {
-
-    private val executionContext = ExecutionContext.global
-    implicit val ioContextShift: ContextShift[IO] = IO.contextShift(executionContext)
-    //def mkClient: Resource[IO, Client[IO]] =
-    val client = BlazeClientBuilder[IO](executionContext).resource
-
-   
 
     def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
          def mkTp2(
             generatedRequest: HttpRequest
-        ) = {
+        ): (String, String) = {
             val endpoint = properties.endpoint
-            val uri = Uri.unsafeFromString(s"http://$endpoint/com.snowplowanalytics.snowplow/tp2")
+            val uri = "http://%s/com.snowplowanalytics.snowplow/tp2".format(endpoint)
             val body = generatedRequest.body match {
                 case Some(b) => b.toString()
                 case _ => ""
             }
-            Request[IO](Method.POST, uri).withEntity(body)
+            (uri, body)
         }
 
         /*
@@ -57,16 +54,22 @@ object Http {
         */
         
         st: Stream[F, Main.GenOutput] => 
-            st.map(_._3)
+            st.map(_._2)
             .flatMap(Stream.emits)
             .map(mkTp2(_))
-            .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(client.run(e))))
+            .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(
+                HttpClient(e._1).postData(e._2)
+                )))
             //.map(client.run(_))
             // .map(client.use(c => c.run(_)))
             .void
-
     }
-
+    /*
+   val result = Http("http://example.com/url").postData("""{"id":"12","json":"data"}""")
+    .header("Content-Type", "application/json")
+    .header("Charset", "UTF-8")
+    .option(HttpOptions.readTimeout(10000)).asString
+*/
 }
 
 

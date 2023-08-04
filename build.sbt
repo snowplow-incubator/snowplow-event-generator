@@ -71,7 +71,8 @@ lazy val sinks = project
       Dependencies.Libraries.fs2Pubsub,
       Dependencies.Libraries.fs2Kafka,
       Dependencies.Libraries.awsRegions,
-      Dependencies.Libraries.http4sClient
+      Dependencies.Libraries.http4sClient,
+      "org.scalaj" % "scalaj-http_2.11" % "2.3.0"
     )
   )
   .dependsOn(core)
