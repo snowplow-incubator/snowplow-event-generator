@@ -16,6 +16,6 @@ jobs:
         uses: snyk/actions/scala@master
         with:
           command: monitor
-          args: --project-name=snowplow-event-generator
+          args: --project-name=snowplow-event-generator --prune-repeated-subdependencies
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

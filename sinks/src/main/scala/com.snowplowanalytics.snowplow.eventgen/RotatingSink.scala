@@ -13,7 +13,8 @@
 package com.snowplowanalytics.snowplow.eventgen
 
 import fs2.{Chunk, Pipe, Pull, Stream}
-import fs2.io.file.{Files, Flags, Path}
+import fs2.io.file.{Flags, Path}
+import fs2.io.file.Files.forAsync
 import fs2.concurrent.Channel
 
 import java.nio.file.{Paths => JPaths}
@@ -93,8 +94,8 @@ object RotatingSink {
 
   def file[F[_]: Async](prefix: String, suffix: String, idx: Int, baseDir: URI): Pipe[F, Byte, Nothing] = { in =>
     val catDir = Path.fromNioPath(JPaths.get(baseDir).resolve(prefix))
-    Stream.eval(Files[F].createDirectories(catDir)) *>
-      in.through(Files[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
+    Stream.eval(forAsync[F].createDirectories(catDir)) *>
+      in.through(forAsync[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }
 
   private def pad(idx: Int): String = f"$idx%10d"
