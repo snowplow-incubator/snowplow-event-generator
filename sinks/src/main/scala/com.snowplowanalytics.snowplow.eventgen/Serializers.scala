@@ -15,7 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen
 import cats.effect.Sync
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import fs2.{Pipe, Stream}
-import fs2.compression.Compression
+import fs2.compression.Compression.forSync
 import fs2.text.{base64, utf8}
 
 object Serializers {
@@ -23,7 +23,7 @@ object Serializers {
   def stringSerializer[F[_]: Sync](compress: Boolean): Pipe[F, String, Byte] = {
     val pipe: Pipe[F, String, Byte] = _.flatMap(x => Stream(x, "\n")).through(utf8.encode)
     if (compress)
-      pipe.andThen(Compression[F].gzip())
+      pipe.andThen(forSync[F].gzip())
     else
       pipe
   }

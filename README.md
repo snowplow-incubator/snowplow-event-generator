@@ -80,6 +80,15 @@ Alternatively you can write events directly to a S3 bucket:
 }
 ```
 
+...or a Snowplow collector:
+
+```
+"output": {
+  "type": "Http"
+  "endpoint": "https://my.collector.endpoint.com"
+}
+```
+
 Then run:
 ```bash
 ./snowplow-event-generator --config my-config.hocon
@@ -186,7 +195,31 @@ Aside from "output" configuration, all fields in the configuration file are opti
 
       // Only used for "Fixed" timestamps.  Change this to generate more recent or more historic events.
       "at": "2022-02-01T01:01:01z"
-    },
+    }
+
+    // Set weights for the distributions of event types. 
+    // Setting a fequency to 0 results in that event type not being produced at all
+    // Setting equal values results in an even distribution of event types.
+    "eventFrequencies": {
+      "struct": 1
+      "unstruct": 1
+      "pageView": 1
+      "pagePing": 1
+      "unstructEventFrequencies": {
+        "changeForm": 1
+        "funnelInteraction": 1
+        "linkClick": 1
+      }
+    }
+
+    // HTTP output only - set weights for the distributions of request methods.
+    // Setting a fequency to 0 results in that method not being produced at all
+    // Note that head requests are currently not implemented and will result in an exception.
+    "methodFrequencies": {
+        "post": 1
+        "get": 1
+        "head": 0
+    }
 
     // Required: Storage to sink generated events into
     // Currently only a single output at a time is supported
@@ -216,6 +249,10 @@ Aside from "output" configuration, all fields in the configuration file are opti
       // "type": "PubSub"
       // Required: PubSub stream URI
       // "uri": "pubsub://projects/my-project/topics/my-topic"
+
+      // "type": "Http"
+      // Required: Snowplow collector endpoint, including protocol
+      // "endpoint": "https://my.collector.endpoint.com"
     }
 }
 ```
