@@ -70,8 +70,14 @@ lazy val sinks = project
       Dependencies.Libraries.kcl,
       Dependencies.Libraries.fs2Pubsub,
       Dependencies.Libraries.fs2Kafka,
-      Dependencies.Libraries.awsRegions
-    )
+      Dependencies.Libraries.awsRegions,
+      "org.http4s" %% "http4s-ember-client" % "0.23.15",
+      "org.http4s" %% "http4s-circe" % "0.23.15"
+      // TODO move this
+    ),
+    //libraryDependencies += "org.typelevel" %% "cats-effect" % "3.4.6",
+    // libraryDependencies += "org.http4s"    %% "http4s-ember-client" % "0.23.15",
+    // libraryDependencies += "org.http4s" %% "http4s-circe" % "0.23.15"
   )
   .dependsOn(core)
 

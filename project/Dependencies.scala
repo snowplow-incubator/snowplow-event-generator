@@ -44,6 +44,7 @@ object Dependencies {
     val badRows          = "2.1.1"
     val httpClient       = "4.5.13"
     val thrift           = "0.15.0" // override transitive dependency to mitigate security vulnerabilities
+    val http4s = "0.23.15"
   }
 
   object Libraries {
@@ -66,6 +67,7 @@ object Dependencies {
     val slf4j          = "org.slf4j"                 % "slf4j-simple"                 % V.slf4j
     val kcl            = "software.amazon.kinesis"   % "amazon-kinesis-client"        % V.kcl
     val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsRegions
+    val http4sClient    = "org.http4s"        %% "http4s-blaze-client"           % V.http4s         
 
     // Scala (test only)
     val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test

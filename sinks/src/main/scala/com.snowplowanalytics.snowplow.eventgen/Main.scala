@@ -18,6 +18,7 @@ import cats.effect.kernel.Sync
 import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
+import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent
 import software.amazon.awssdk.core.SdkBytes
@@ -63,7 +64,7 @@ object Main extends IOApp {
 
     }
 
-  type GenOutput = (collector.CollectorPayload, List[Event])
+  type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
 
   def sink[F[_]: Async](config: Config): F[Unit] = {
     val rng = config.randomisedSeed match {
@@ -76,33 +77,61 @@ object Main extends IOApp {
       case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
     }
 
+    // function to wrangle outputs into the format I want
+    def makeGenOutput(nested: (collector.CollectorPayload, List[Event]), http: HttpRequest): GenOutput =
+      return (nested._1, nested._2, http)
+
     val eventStream: Stream[F, GenOutput] =
       Stream.eval(timeF).flatMap { time =>
         config.duplicates match {
           case Some(dups) =>
             Stream.repeatEval(
               Sync[F].delay(
-                runGen(
-                  SdkEvent.genPairDup(
-                    dups.natProb,
-                    dups.synProb,
-                    dups.natTotal,
-                    dups.synTotal,
-                    config.eventPerPayloadMin,
-                    config.eventPerPayloadMax,
-                    time,
-                    config.eventFrequencies
+                makeGenOutput(
+                  runGen(
+                    SdkEvent.genPairDup(
+                      dups.natProb,
+                      dups.synProb,
+                      dups.natTotal,
+                      dups.synTotal,
+                      config.eventPerPayloadMin,
+                      config.eventPerPayloadMax,
+                      time,
+                      config.eventFrequencies
+                    ),
+                    rng
                   ),
-                  rng
+                  runGen(
+                    HttpRequest.genDup(
+                      dups.natProb,
+                      dups.synProb,
+                      dups.natTotal,
+                      dups.synTotal,
+                      config.eventPerPayloadMin,
+                      config.eventPerPayloadMax,
+                      time,
+                      config.eventFrequencies,
+                      config.methodFrequencies
+                    ),
+                    rng
+                  )
                 )
               )
             )
           case None =>
             Stream.repeatEval(
               Sync[F].delay(
-                runGen(
-                  SdkEvent.genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies),
-                  rng
+                makeGenOutput(
+                  runGen(
+                    SdkEvent
+                      .genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies),
+                    rng
+                  ),
+                  runGen(
+                    HttpRequest
+                      .gen(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.methodFrequencies),
+                    rng
+                  )
                 )
               )
             )
@@ -140,6 +169,8 @@ object Main extends IOApp {
       }
 
     def kafkaSink(output: Config.Output.Kafka): Pipe[F, GenOutput, Unit] = Kafka.sink(output)
+
+    def httpSink(output: Config.Output.Http): Pipe[F, GenOutput, Unit] = Http.sink(output)
 
     def kinesisSink(output: Config.Output.Kinesis): Pipe[F, GenOutput, Unit] = {
       if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
@@ -206,6 +237,8 @@ object Main extends IOApp {
         kafkaSink(kafkaConfig)
       case pubsubConfig: Config.Output.PubSub =>
         pubsubSink(pubsubConfig)
+      case httpConfig: Config.Output.Http =>
+        httpSink(httpConfig)
     }
 
     eventStream
