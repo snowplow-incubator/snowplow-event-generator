@@ -25,10 +25,6 @@ import scalaj.http.{Http => HttpClient}
 
 import cats.effect.Async
 
-
-// TODO: This is wrecking my head.
-// This client might be simpler to start with: https://stackoverflow.com/questions/11719373/doing-http-request-in-scala
-
 object Http {
 
     def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
@@ -43,36 +39,30 @@ object Http {
                 case _ => ""
             }
 
-                
             (uri, body)
         }
-
-        /*
-        def write(properties: Config.Output.Http, data: HttpRequest): Pipe[F, HttpRequest, Unit] = {
-            client.run()
-            //use(c => c.run(mkTp2(properties.endpoint, data)))
-            }
-        */
-
-        //   type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
 
         st: Stream[F, Main.GenOutput] => 
           st.map(_._3)
             .map(mkTp2)
             .evalMap(e => 
               Sync[F].delay(
-                HttpClient(e._1)
-                  .postData(e._2)
-                  .header("Content-Type", "application/json")
-                  .asString
+                e._2 match {
+                  case "" => // Do nothing if the body is empty
+                  case _  => HttpClient(e._1)
+                    .postData(e._2)
+                    .header("Content-Type", "application/json")
+                    .asString
+                }
+                
               )
             ).map(println)
             .void
     }
-    /*
-   val result = Http("http://example.com/url").postData("""{"id":"12","json":"data"}""")
-    .header("Content-Type", "application/json")
-    .header("Charset", "UTF-8")
-    .option(HttpOptions.readTimeout(10000)).asString
-*/
 }
+
+// TODO:
+  // Use a client that's not deprecated (http4s?)
+  // Figure out how to parse the headers that are provided in the gen method
+  // Do soemthing with qs requests
+  // Maybe make it configurable how much of each we produce?
