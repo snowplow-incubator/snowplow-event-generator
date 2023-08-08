@@ -29,8 +29,6 @@ import cats.effect.Async
 // This client might be simpler: https://stackoverflow.com/questions/11719373/doing-http-request-in-scala
 
 
-
-
 object Http {
 
     def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
@@ -52,10 +50,12 @@ object Http {
             //use(c => c.run(mkTp2(properties.endpoint, data)))
             }
         */
+
+        //   type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
+
         
         st: Stream[F, Main.GenOutput] => 
-            st.map(_._2)
-            .flatMap(Stream.emits)
+            st.map(_._3)
             .map(mkTp2(_))
             .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(
                 HttpClient(e._1).postData(e._2)

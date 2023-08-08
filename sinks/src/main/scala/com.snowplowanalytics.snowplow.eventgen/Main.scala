@@ -82,7 +82,6 @@ object Main extends IOApp {
       return (nested._1, nested._2, http)
     }
 
-    // This returns ((_, _), _) - need to either extract the first tuple or change the format and be suuuper jank. Ideally the former.
     val eventStream: Stream[F, GenOutput] =
       Stream.eval(timeF).flatMap { time =>
         config.duplicates match {
