@@ -18,6 +18,7 @@ import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 
 import fs2.{Pipe, Stream}
 
+import cats.syntax.all._
 import cats.effect.kernel.Sync
 
 import scalaj.http.{Http => HttpClient}
@@ -53,16 +54,16 @@ object Http {
 
         //   type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
 
-        
-        st: Stream[F, Main.GenOutput] => 
-            st.map(_._3)
-            .map(mkTp2(_))
-            .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(
+        st: Stream[F, Main.GenOutput] =>
+          st.map(_._3)
+            .map(mkTp2)
+            .parEvalMap(10)(e =>
+              Sync[F].delay(
                 HttpClient(e._1).postData(e._2)
-                )))
+              )
+            ).void
             //.map(client.run(_))
             // .map(client.use(c => c.run(_)))
-            .void
     }
     /*
    val result = Http("http://example.com/url").postData("""{"id":"12","json":"data"}""")
