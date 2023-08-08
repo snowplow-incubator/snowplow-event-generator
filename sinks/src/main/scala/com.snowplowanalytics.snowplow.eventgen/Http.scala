@@ -27,21 +27,23 @@ import cats.effect.Async
 
 
 // TODO: This is wrecking my head.
-// This client might be simpler: https://stackoverflow.com/questions/11719373/doing-http-request-in-scala
-
+// This client might be simpler to start with: https://stackoverflow.com/questions/11719373/doing-http-request-in-scala
 
 object Http {
 
     def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
+         
          def mkTp2(
             generatedRequest: HttpRequest
         ): (String, String) = {
-            val endpoint = properties.endpoint
-            val uri = "http://%s/com.snowplowanalytics.snowplow/tp2".format(endpoint)
+            // val endpoint = properties.endpoint
+            val uri = "http://%s/com.snowplowanalytics.snowplow/tp2".format(properties.endpoint)
             val body = generatedRequest.body match {
                 case Some(b) => b.toString()
                 case _ => ""
             }
+
+                
             (uri, body)
         }
 
@@ -54,16 +56,18 @@ object Http {
 
         //   type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
 
-        st: Stream[F, Main.GenOutput] =>
+        st: Stream[F, Main.GenOutput] => 
           st.map(_._3)
             .map(mkTp2)
-            .parEvalMap(10)(e =>
+            .evalMap(e => 
               Sync[F].delay(
-                HttpClient(e._1).postData(e._2)
+                HttpClient(e._1)
+                  .postData(e._2)
+                  .header("Content-Type", "application/json")
+                  .asString
               )
-            ).void
-            //.map(client.run(_))
-            // .map(client.use(c => c.run(_)))
+            ).map(println)
+            .void
     }
     /*
    val result = Http("http://example.com/url").postData("""{"id":"12","json":"data"}""")
@@ -72,22 +76,3 @@ object Http {
     .option(HttpOptions.readTimeout(10000)).asString
 */
 }
-
-
-/*
-
-def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
-        .builder()
-        .streamName(output.streamName)
-        .partitionKey(event.event_id.toString)
-        .data(SdkBytes.fromUtf8String(event.toTsv))
-        .build()
-
-      st: Stream[F, GenOutput] =>
-        st.map(_._2)
-          .flatMap(Stream.emits)
-          .map(reqBuilder)
-          .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
-          .void
-
-          */
