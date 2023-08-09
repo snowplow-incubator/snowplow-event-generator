@@ -23,7 +23,7 @@ lazy val core = project
   .settings(
     moduleName := "snowplow-event-generator-core",
     description := "Generate random enriched events",
-    crossScalaVersions := Seq("2.12.14", "2.13.6")
+    crossScalaVersions := Seq("2.13.6")
   )
   .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)
@@ -71,9 +71,13 @@ lazy val sinks = project
       Dependencies.Libraries.fs2Pubsub,
       Dependencies.Libraries.fs2Kafka,
       Dependencies.Libraries.awsRegions,
-      "org.scalaj" %% "scalaj-http" % "2.4.2"
+      "org.http4s" %% "http4s-ember-client" % "0.23.15",
+      "org.http4s" %% "http4s-circe" % "0.23.15"
       // TODO move this
-    )
+    ),
+    //libraryDependencies += "org.typelevel" %% "cats-effect" % "3.4.6",
+    // libraryDependencies += "org.http4s"    %% "http4s-ember-client" % "0.23.15",
+    // libraryDependencies += "org.http4s" %% "http4s-circe" % "0.23.15"
   )
   .dependsOn(core)
 
