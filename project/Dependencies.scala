@@ -33,7 +33,7 @@ object Dependencies {
     val circe          = "0.14.1"
     val fs2Pubsub      = "0.22.0"
     val fs2Kafka       = "3.0.1"
-    val awsRegions     = "2.20.69"
+    val awsSdk         = "2.20.123"
     // Scala (test only)
     val specs2           = "4.12.3"
     val scalaCheck       = "1.14.0"
@@ -65,8 +65,8 @@ object Dependencies {
     val scalaCheckCats = "io.chrisdavenport"        %% "cats-scalacheck"              % V.scalaCheckCats
     val httpClient     = "org.apache.httpcomponents" % "httpclient"                   % V.httpClient
     val slf4j          = "org.slf4j"                 % "slf4j-simple"                 % V.slf4j
-    val kcl            = "software.amazon.kinesis"   % "amazon-kinesis-client"        % V.kcl
-    val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsRegions
+    val kcl            = "software.amazon.awssdk"    % "kinesis"                      % V.awsSdk
+    val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsSdk
     val http4sClient    = "org.http4s"        %% "http4s-blaze-client"           % V.http4s         
 
     // Scala (test only)
