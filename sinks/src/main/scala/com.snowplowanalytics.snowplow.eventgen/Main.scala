@@ -24,7 +24,6 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
-import software.amazon.kinesis.common.KinesisClientUtil
 import com.permutive.pubsub.producer.grpc.{GooglePubsubProducer, PubsubProducerConfig}
 import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
 import com.permutive.pubsub.producer.encoder.MessageEncoder
@@ -180,9 +179,9 @@ object Main extends IOApp {
       }
       val kinesisClient: KinesisAsyncClient = output.region match {
         case Some(region) =>
-          KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder().region(Region.of(region)))
+          KinesisAsyncClient.builder.region(Region.of(region)).build
         case None =>
-          KinesisClientUtil.createKinesisAsyncClient(KinesisAsyncClient.builder())
+          KinesisAsyncClient.builder.build
       }
 
       def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
