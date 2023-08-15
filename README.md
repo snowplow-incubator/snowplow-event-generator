@@ -226,9 +226,9 @@ Aside from "output" configuration, all fields in the configuration file are opti
     "output": {
       "type": "File"
       // Generate files locally
-      "uri": "file:/path/to/my-events"
+      "path": "file:/path/to/my-events"
       // Generate files into an S3 bucket
-      //"uri": "s3://my-bucket/my-events"
+      //"path": "s3://my-bucket/my-events"
       
       // "type": "Kafka"
       // Required: Seed brokers to use
