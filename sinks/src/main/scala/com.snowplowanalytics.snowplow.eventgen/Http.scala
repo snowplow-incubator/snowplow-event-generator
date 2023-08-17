@@ -135,7 +135,7 @@ object Http {
         Stream
           .resource(httpClient)
           .flatMap(client => 
-            st.map(_._3).map(buildRequesst).evalMap(req => client.expect[String](req)).void)
+            st.map(_._3).map(buildRequesst).evalMap(req => client.status(req).map(println)).void)
     }
   }
 }
