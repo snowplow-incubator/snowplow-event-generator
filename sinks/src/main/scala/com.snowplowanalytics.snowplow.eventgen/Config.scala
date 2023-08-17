@@ -26,7 +26,7 @@ import io.circe.generic.extras.semiauto._
 
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEventFrequencies
-import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
+import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.{MethodFrequencies, PathFrequencies, ProvidedPathFrequency}
 
 final case class Config(
   payloadsTotal: Int,
@@ -43,6 +43,7 @@ final case class Config(
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
   methodFrequencies: Option[MethodFrequencies],
+  pathFrequencies: Option[PathFrequencies],
   output: Config.Output
 )
 
@@ -93,6 +94,12 @@ object Config {
 
   implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
     deriveConfiguredDecoder [MethodFrequencies]
+
+  implicit val providedPathFrequencyDecoder: Decoder[ProvidedPathFrequency] =
+    deriveConfiguredDecoder [ProvidedPathFrequency]
+
+  implicit val pathFrequenciesDecoder: Decoder[PathFrequencies] =
+    deriveConfiguredDecoder [PathFrequencies]
 
   implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
     deriveConfiguredDecoder[UnstructEventFrequencies]

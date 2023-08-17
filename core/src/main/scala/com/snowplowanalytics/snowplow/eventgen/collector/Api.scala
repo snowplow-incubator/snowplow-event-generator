@@ -25,19 +25,19 @@ final case class Api(vendor: String, version: String) {
 }
 
 object Api {
-  private val GenI   = Gen.const(Api("i", ""))
-  private val GenIce = Gen.const(Api("ice", ".png"))
+  val GenI   = Gen.const(Api("i", ""))
+  val GenIce = Gen.const(Api("ice", ".png"))
 
   def fixedApis: Gen[Api] = Gen.oneOf(GenI, GenIce)
 
-  def genApi(nEvents: Int): Gen[Api] =
-    (nEvents match {
+  def genApi(apiType: Int): Gen[Api] =
+    (apiType match {
       case 0 => (genVendor, genVersion)
-      case 1 => (Gen.const("com.snowplowanalytics.snowplow"), Gen.oneOf("tp1", "tp2"))
-      case _ => (Gen.const("com.snowplowanalytics.snowplow"), Gen.const("tp2"))
+      case 1 => (Gen.const("com.snowplowanalytics.snowplow"), Gen.const("tp1"))
+      case 2 => (Gen.const("com.snowplowanalytics.snowplow"), Gen.const("tp2"))
     }).mapN(Api.apply)
 
-  private def genVendor =
+  def genVendor =
     for {
       venPartsN   <- Gen.chooseNum(1, 5)
       venNs       <- Gen.listOfN(venPartsN, Gen.chooseNum(1, 10))
@@ -45,7 +45,7 @@ object Api {
       sep         <- Gen.oneOf("-", ".", "_", "~")
     } yield vendorParts.mkString(sep)
 
-  private def genVersion =
+  def genVersion =
     for {
       verN    <- Gen.chooseNum(1, 10)
       version <- Gen.stringOfN(verN, Gen.alphaNumChar)
