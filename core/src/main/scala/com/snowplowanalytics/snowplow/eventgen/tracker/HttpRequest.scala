@@ -44,8 +44,6 @@ object HttpRequest {
     final case class Head(path: Api) extends Method
 
     def gen(freq: MethodFrequencies): Gen[Method] = {
-      // if not provided, distribute evenly
-      // val freq = frequencies.getOrElse(new MethodFrequencies(1,1,1))
       Gen.frequency(
         (freq.post, genPost), 
         (freq.get, genGet),
