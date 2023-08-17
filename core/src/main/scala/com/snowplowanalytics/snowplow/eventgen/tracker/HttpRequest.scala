@@ -33,27 +33,74 @@ object HttpRequest {
   }
 
   case class MethodFrequencies(
-  get: Int,
-  post: Int,
-  head: Int
-)
+    get: Int,
+    post: Int,
+    head: Int
+  )
+
+  case class PathFrequencies(
+    i: Int,
+    ice: Int,
+    tp1: Int,
+    tp2: Int,
+    random: Int,
+    providedPath: Option[ProvidedPathFrequency]
+  )
+
+  case class ProvidedPathFrequency(
+    vendor: String,
+    version: String,
+    frequency: Int
+  )
 
   object Method {
     final case class Post(path: Api) extends Method
     final case class Get(path: Api) extends Method
     final case class Head(path: Api) extends Method
 
-    def gen(freq: MethodFrequencies): Gen[Method] = {
+    def gen(methodFreq: MethodFrequencies, pathFreq: PathFrequencies): Gen[Method] = {
       Gen.frequency(
-        (freq.post, genPost), 
-        (freq.get, genGet),
-        (freq.head, genHead)
+        (methodFreq.post, genPost(pathFreq)), 
+        (methodFreq.get, genGet(pathFreq)),
+        (methodFreq.head, genHead(pathFreq))
         )
           }
 
-    private def genPost: Gen[Method.Post] = Gen.oneOf(genApi(0), genApi(200)).map(Method.Post)
-    private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Get)
-    private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
+    private def genPost(pathFreq: PathFrequencies): Gen[Method.Post] = 
+      Gen.frequency(
+        pathFreq.providedPath match {
+          case Some(provided) => (provided.frequency, Api(provided.vendor, provided.version))
+          case None => (0, Api("", ""))
+        },
+        (pathFreq.random, genApi(0)), 
+        (pathFreq.tp2, genApi(2)),
+        ).map(Method.Post)
+
+    private def genGet(pathFreq: PathFrequencies): Gen[Method.Get]   = 
+      Gen.frequency(
+          pathFreq.providedPath match {
+            case Some(provided) => (provided.frequency, Api(provided.vendor, provided.version))
+            case None => (0, Api("", ""))
+          },
+          (pathFreq.i, Api.GenI),         // /i 
+          (pathFreq.ice, Api.GenIce),     // /ice.png 
+          (pathFreq.random, genApi(0)),   // randomly generated path
+          (pathFreq.tp1, genApi(1)),      // /com.snowplowanalytics.snowplow/tp1
+          (pathFreq.tp2, genApi(2))       // /com.snowplowanalytics.snowplow/tp2
+          ).map(Method.Get)
+
+    private def genHead(pathFreq: PathFrequencies): Gen[Method.Head] = 
+      Gen.frequency(
+        pathFreq.providedPath match {
+          case Some(provided) => (provided.frequency, Api(provided.vendor, provided.version))
+          case None => (0, Api("", ""))
+        },
+        (pathFreq.i, Api.GenI), 
+        (pathFreq.ice, Api.GenIce), 
+        (pathFreq.random, genApi(0)), 
+        (pathFreq.tp1, genApi(1)), 
+        (pathFreq.tp2, genApi(2))
+        ).map(Method.Head)
   }
 
   def gen(
@@ -61,16 +108,19 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    methodFrequencies: Option[MethodFrequencies]
+    methodFrequencies: Option[MethodFrequencies],
+    pathFrequencies: Option[PathFrequencies]
   ): Gen[HttpRequest] = {
-    // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
+    // MethodFrequencies and pathFrequencies are options here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
     // From here in it's not an option, just to make the code a bit cleaner
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
+    val pathFreq = pathFrequencies.getOrElse(new PathFrequencies(1,1,1,1,1, None))
     genWithParts(
       HttpRequestQuerystring.gen(now, frequencies),
       HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies),
-      methodFreq      
+      methodFreq,
+      pathFreq   
     )
   }
 
@@ -83,25 +133,28 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    methodFrequencies: Option[MethodFrequencies]
+    methodFrequencies: Option[MethodFrequencies],
+    pathFrequencies: Option[PathFrequencies]
   ): Gen[HttpRequest] = {
-    // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
+    // MethodFrequencies and pathFrequencies are options here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
     // From here in it's not an option, just to make the code a bit cleaner
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
+    val pathFreq = pathFrequencies.getOrElse(new PathFrequencies(1,1,1,1,1, None))
     genWithParts(
       // qs doesn't do duplicates?
       HttpRequestQuerystring.gen(now, frequencies),
       HttpRequestBody
         .genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now, frequencies),
-      methodFreq
+      methodFreq,
+      pathFreq
     )
   }
     
 
-  private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody], methodFreq: MethodFrequencies) =
+  private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody], methodFreq: MethodFrequencies, pathFreq: PathFrequencies) =
     for {
-      method <- Method.gen(methodFreq)
+      method <- Method.gen(methodFreq, pathFreq)
       qs     <- Gen.option(qsGen)
       body <- method match {
         case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
