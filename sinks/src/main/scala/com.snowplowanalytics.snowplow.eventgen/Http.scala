@@ -106,7 +106,11 @@ object Http {
         Stream
           .resource(httpClient)
           .flatMap(client => 
-            st.map(_._3).map(buildRequesst).evalMap(req => client.status(req)).void)
+            st
+            .map(_._3)
+            .map(_.getOrElse(throw new RuntimeException("Http sink received no data")))
+            .map(buildRequesst)
+            .evalMap(req => client.status(req)).void)
     }
   }
 }

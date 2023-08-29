@@ -30,7 +30,7 @@ object HttpRequestQuerystring {
     Body.gen(now, frequencies)
   )
 
-  private def genWithBody(bodyGen: Gen[Body]) =
+  def genWithBody(bodyGen: Gen[Body]) =
     bodyGen.flatMap(qs =>
       HttpRequestQuerystring(qs.toProto.map(kv => new BasicNameValuePair(kv.getName, encodeValue(kv.getValue))))
     )

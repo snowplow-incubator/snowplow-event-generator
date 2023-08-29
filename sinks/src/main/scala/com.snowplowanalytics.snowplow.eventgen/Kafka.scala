@@ -45,7 +45,7 @@ object Kafka {
         .void
     }
 
-    st: Stream[F, Main.GenOutput] => st.map(_._2).flatMap(Stream.emits).through(write(properties))
+    st: Stream[F, Main.GenOutput] => st.map(_._2.getOrElse(throw new RuntimeException("Kafka sink received no sdk data"))).flatMap(Stream.emits).through(write(properties))
   }
 
 }
