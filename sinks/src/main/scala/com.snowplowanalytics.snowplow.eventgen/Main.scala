@@ -82,60 +82,42 @@ object Main extends IOApp {
 
     val eventStream: Stream[F, GenOutput] =
       Stream.eval(timeF).flatMap { time =>
-        config.duplicates match {
-          case Some(dups) =>
-            Stream.repeatEval(
-              Sync[F].delay(
-                makeGenOutput(
-                  runGen(
-                    SdkEvent.genPairDup(
-                      dups.natProb,
-                      dups.synProb,
-                      dups.natTotal,
-                      dups.synTotal,
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies
-                    ),
-                    rng
-                  ),
-                  runGen(
-                    HttpRequest.genDup(
-                      dups.natProb,
-                      dups.synProb,
-                      dups.natTotal,
-                      dups.synTotal,
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies,
-                      config.methodFrequencies,
-                      config.pathFrequencies
-                    ),
-                    rng
-                  )
-                )
+        // If no duplicate config is provided, profide a configuration that produces no duplicates.
+        val dups = config.duplicates.getOrElse(Config.Duplicates(0,0,0,0))
+        Stream.repeatEval(
+          Sync[F].delay(
+            makeGenOutput(
+              runGen(
+                SdkEvent.genPairDup(
+                  dups.natProb,
+                  dups.synProb,
+                  dups.natTotal,
+                  dups.synTotal,
+                  config.eventPerPayloadMin,
+                  config.eventPerPayloadMax,
+                  time,
+                  config.eventFrequencies
+                ),
+                rng
+              ),
+              runGen(
+                HttpRequest.genDup(
+                  dups.natProb,
+                  dups.synProb,
+                  dups.natTotal,
+                  dups.synTotal,
+                  config.eventPerPayloadMin,
+                  config.eventPerPayloadMax,
+                  time,
+                  config.eventFrequencies,
+                  config.methodFrequencies,
+                  config.pathFrequencies
+                ),
+                rng
               )
             )
-          case None =>
-            Stream.repeatEval(
-              Sync[F].delay(
-                makeGenOutput(
-                  runGen(
-                    SdkEvent
-                      .genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies),
-                    rng
-                  ),
-                  runGen(
-                    HttpRequest
-                      .gen(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.methodFrequencies, config.pathFrequencies),
-                    rng
-                  )
-                )
-              )
-            )
-        }
+          )
+        )
       }
 
     def sinkBuilder(prefix: String, idx: Int, uri: URI): Pipe[F, Byte, Nothing] = {
