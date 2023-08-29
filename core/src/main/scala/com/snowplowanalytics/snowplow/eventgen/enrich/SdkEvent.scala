@@ -50,7 +50,7 @@ object SdkEvent {
     case _ => None
   }
 
-  private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] =
+  def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] =
     p.payload.map { el =>
       val evnt = Some(el.e match {
         case EventType.Struct   => "struct"

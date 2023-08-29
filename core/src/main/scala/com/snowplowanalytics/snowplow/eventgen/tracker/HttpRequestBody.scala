@@ -44,7 +44,7 @@ object HttpRequestBody {
   def gen(min: Int, max: Int, now: Instant, frequencies: EventFrequencies): Gen[HttpRequestBody] =
     genWithBody(min, max, Body.gen(now, frequencies))
 
-  private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
+  def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
     for {
       n       <- Gen.chooseNum(min, max)
       payload <- Gen.listOfN(n, bodyGen)

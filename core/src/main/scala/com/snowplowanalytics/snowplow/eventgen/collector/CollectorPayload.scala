@@ -130,7 +130,7 @@ object CollectorPayload {
       now
     )
 
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
+  def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
     for {
       n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
       api     <- Api.genApi(n)

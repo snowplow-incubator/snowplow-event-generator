@@ -16,11 +16,14 @@ import fs2.{Pipe, Stream}
 import cats.syntax.all._
 import cats.effect.kernel.Sync
 import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
+import com.snowplowanalytics.snowplow.eventgen.protocol.Body
+import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent
+import org.scalacheck.Gen
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
@@ -63,7 +66,7 @@ object Main extends IOApp {
 
     }
 
-  type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
+  type GenOutput = (Option[collector.CollectorPayload], Option[List[Event]], Option[HttpRequest])
 
   def sink[F[_]: Async](config: Config): F[Unit] = {
     val rng = config.randomisedSeed match {
@@ -76,47 +79,79 @@ object Main extends IOApp {
       case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
     }
 
-    // function to wrangle outputs into the format I want
-    def makeGenOutput(nested: (collector.CollectorPayload, List[Event]), http: HttpRequest): GenOutput =
-      return (nested._1, nested._2, http)
-
     val eventStream: Stream[F, GenOutput] =
       Stream.eval(timeF).flatMap { time =>
         // If no duplicate config is provided, profide a configuration that produces no duplicates.
         val dups = config.duplicates.getOrElse(Config.Duplicates(0,0,0,0))
         Stream.repeatEval(
-          Sync[F].delay(
-            makeGenOutput(
-              runGen(
-                SdkEvent.genPairDup(
-                  dups.natProb,
-                  dups.synProb,
-                  dups.natTotal,
-                  dups.synTotal,
-                  config.eventPerPayloadMin,
-                  config.eventPerPayloadMax,
-                  time,
-                  config.eventFrequencies
-                ),
-                rng
-              ),
-              runGen(
-                HttpRequest.genDup(
-                  dups.natProb,
-                  dups.synProb,
-                  dups.natTotal,
-                  dups.synTotal,
-                  config.eventPerPayloadMin,
-                  config.eventPerPayloadMax,
-                  time,
-                  config.eventFrequencies,
-                  config.methodFrequencies,
-                  config.pathFrequencies
-                ),
-                rng
+          Sync[F].delay( {
+            val body = Body.genDup(
+              dups.natProb,
+              dups.synProb,
+              dups.natTotal,
+              dups.synTotal, 
+              time, 
+              config.eventFrequencies)
+              
+            val collPayload = 
+              CollectorPayload.genWithBody(
+                config.eventPerPayloadMin,
+                config.eventPerPayloadMax,
+                body,
+                time
               )
+
+            // For now, we only output the collector payload for file output
+            // We should change this! But for the moment let's just refactor existing behaviour
+            val collPayloadNeeded = config.output match {
+              case Config.Output.File(_) => config.withRaw
+              case _ => false
+            }
+
+            val sdkNeeded = config.output match {
+              // File output if configured for one of the formats that needs it
+              case Config.Output.File(_) => config.withEnrichedJson || config.withEnrichedTsv
+              // Never for http
+              case Config.Output.Http(_) => false
+              // All other outputs depend on it
+              case _ => true
+            }
+
+            // TODO: There must be some shorthand to return an option on a bool match - look up when back online
+            // In fact there's likely a simpler pattern for this whole chunk o logic
+            // I think ideally the config might be refactored to make this simpler
+            (
+              collPayloadNeeded match {
+                case true => Some(runGen(collPayload, rng))
+                case false => None
+              },
+              sdkNeeded match {
+                case true => Some(runGen(
+                  for {
+                    cp <- collPayload
+                    eid <- Gen.uuid
+                  } yield (SdkEvent.eventFromColPayload(cp, eid)),
+                  rng))
+                case false => None
+
+              },
+              // only generate http data when output is Http
+              config.output match {
+                case Config.Output.Http(_) => 
+                  Some(runGen(
+                    HttpRequest.genDupFromBody(
+                      body, 
+                      config.eventPerPayloadMin,
+                      config.eventPerPayloadMax,
+                      config.methodFrequencies,
+                      config.pathFrequencies
+                    ),
+                    rng
+                  ))
+                case _ => None
+              }
             )
-          )
+      })
         )
       }
 
@@ -138,13 +173,15 @@ object Main extends IOApp {
     def fileSink(fileConfig: Config.Output.File): Pipe[F, GenOutput, Unit] =
       RotatingSink.rotate(config.payloadsPerFile) { idx =>
         val pipe1: Pipe[F, GenOutput, Nothing] =
-          _.map(_._1)
+          _.map(_._1.getOrElse(throw new RuntimeException("File sink receieved no collector payload data")))
             .through(Serializers.rawSerializer(config.compress))
             .through(sinkFor("raw", idx, config.withRaw, fileConfig.path))
-        val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
+        val pipe2: Pipe[F, GenOutput, Nothing] = 
+          _.flatMap(in => Stream.emits(in._2.getOrElse(throw new RuntimeException("File sink received no sdk data"))))
           .through(Serializers.enrichedTsvSerializer(config.compress))
           .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.path))
-        val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
+        val pipe3: Pipe[F, GenOutput, Nothing] = 
+          _.flatMap(in => Stream.emits(in._2.getOrElse(throw new RuntimeException("File sink received no sdk data"))))
           .through(Serializers.enrichedJsonSerializer(config.compress))
           .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.path))
         in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
@@ -175,7 +212,7 @@ object Main extends IOApp {
         .build()
 
       st: Stream[F, GenOutput] =>
-        st.map(_._2)
+        st.map(_._2.getOrElse(throw new RuntimeException("Kinesis sink received no sdk data")))
           .flatMap(Stream.emits)
           .map(reqBuilder)
           .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
@@ -206,7 +243,7 @@ object Main extends IOApp {
       st: Stream[F, GenOutput] =>
         for {
           producer <- Stream.resource(GooglePubsubProducer.of[F, Event](projectId, topic, producerConfig))
-          _        <- st.parEvalMapUnordered(1000)(e => e._2.traverse_(producer.produce(_)))
+          _        <- st.parEvalMapUnordered(1000)(e => e._2.getOrElse(throw new RuntimeException("PubSub sink received no sdk data")).traverse_(producer.produce(_)))
         } yield ()
     }
 
@@ -225,7 +262,7 @@ object Main extends IOApp {
 
     eventStream
       .take(config.payloadsTotal.toLong)
-      .zipWithScan1((0, 0)) { case (idx, el) => (el._2.length + idx._1, 1 + idx._2) }
+      .zipWithScan1((0, 0)) { case (idx, el) => (el._2.getOrElse(Seq()).length + idx._1, 1 + idx._2) }
       .evalTap { case (_, idx) =>
         if (idx._2 == config.payloadsTotal.toLong) {
           Sync[F].delay(println(s"""Payloads = ${idx._2}

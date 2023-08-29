@@ -19,6 +19,7 @@ import org.scalacheck.Gen
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 
 import java.time.Instant
+import com.snowplowanalytics.snowplow.eventgen.protocol.Body
 
 final case class HttpRequest(
   method: Method,
@@ -150,7 +151,24 @@ object HttpRequest {
       pathFreq
     )
   }
-    
+
+  def genDupFromBody(
+    body: Gen[Body],
+    eventPerPayloadMin: Int,
+    eventPerPayloadMax: Int,
+    methodFrequencies: Option[MethodFrequencies],
+    pathFrequencies: Option[PathFrequencies]
+    ): Gen[HttpRequest]  = {
+    val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
+    val pathFreq = pathFrequencies.getOrElse(new PathFrequencies(1,1,1,1,1, None))
+   genWithParts(
+      HttpRequestQuerystring.genWithBody(body),
+      HttpRequestBody
+        .genWithBody(eventPerPayloadMin, eventPerPayloadMax, body),
+      methodFreq,
+      pathFreq
+    )
+  }    
 
   private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody], methodFreq: MethodFrequencies, pathFreq: PathFrequencies) =
     for {
