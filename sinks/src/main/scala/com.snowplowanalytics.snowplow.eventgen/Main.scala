@@ -110,7 +110,8 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
-                      config.methodFrequencies
+                      config.methodFrequencies,
+                      config.pathFrequencies
                     ),
                     rng
                   )
@@ -128,7 +129,7 @@ object Main extends IOApp {
                   ),
                   runGen(
                     HttpRequest
-                      .gen(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.methodFrequencies),
+                      .gen(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.methodFrequencies, config.pathFrequencies),
                     rng
                   )
                 )
