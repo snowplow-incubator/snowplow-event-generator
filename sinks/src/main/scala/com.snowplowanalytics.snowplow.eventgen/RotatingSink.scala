@@ -98,5 +98,5 @@ object RotatingSink {
       in.through(forAsync[F].writeAll(catDir.resolve(s"${prefix}_${pad(idx)}$suffix"), Flags.Write))
   }
 
-  private def pad(idx: Int): String = f"$idx%10d"
+  private def pad(idx: Int): String = f"$idx%04d"
 }
