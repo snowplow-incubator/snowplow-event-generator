@@ -71,7 +71,7 @@ object Config {
     case class File(path: URI) extends Output
     case class PubSub(subscription: String) extends Output
     case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Output
-    case class Http(endpoint: org.http4s.Uri) extends Output
+    case class Http(endpoint: org.http4s.Uri, gzip: Option[Boolean]) extends Output
   }
 
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
