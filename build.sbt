@@ -71,6 +71,7 @@ lazy val sinks = project
       Dependencies.Libraries.fs2Pubsub,
       Dependencies.Libraries.fs2Kafka,
       Dependencies.Libraries.awsRegions,
+      Dependencies.Libraries.sts % Runtime,
       "org.http4s" %% "http4s-ember-client" % "0.23.15",
       "org.http4s" %% "http4s-circe" % "0.23.15"
       // TODO move this
