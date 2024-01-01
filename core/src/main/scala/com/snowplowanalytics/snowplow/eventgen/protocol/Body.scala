@@ -82,10 +82,11 @@ object Body {
       tv  <- TrackerVersion.gen
       u   <- User.genOpt
       event <- e match {
-        case EventType.Struct   => StructEvent.gen
-        case EventType.Unstruct => UnstructEventWrapper.gen(frequencies.unstructEventFrequencies)
-        case EventType.PageView => PageView.gen
-        case EventType.PagePing => PagePing.gen
+        case EventType.Struct    => StructEvent.gen
+        case EventType.Unstruct  => UnstructEventWrapper.gen(frequencies.unstructEventFrequencies)
+        case EventType.PageView  => PageView.gen
+        case EventType.PagePing  => PagePing.gen
+        case EventType.RemainingFields => RemainingFields.gen
       }
       context <- Context.ContextsWrapper.genOps
     } yield Body(e, app, dt, dev, tv, et, u, event, context)

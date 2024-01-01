@@ -19,12 +19,13 @@ case class EventFrequencies(
   unstruct: Int,
   pageView: Int,
   pagePing: Int,
+  remainingFields: Int,
   unstructEventFrequencies: UnstructEventFrequencies
 )
 
 sealed trait EventType {
   override def toString: String = this match {
-    case EventType.Struct   => "se"
+    case EventType.Struct | EventType.RemainingFields => "se"
     case EventType.Unstruct => "ue"
     case EventType.PageView => "pv"
     case EventType.PagePing => "pp"
@@ -45,6 +46,8 @@ object EventType {
 
   case object PagePing extends EventType
 
+  case object RemainingFields extends EventType
+
   // Commented ADT are not implemented in generator
   //  case object StructLegacy extends EventType
   //  case object AdImpression extends EventType
@@ -55,7 +58,8 @@ object EventType {
     (frequencies.struct, Struct),
     (frequencies.unstruct, Unstruct),
     (frequencies.pageView, PageView),
-    (frequencies.pagePing, PagePing)
+    (frequencies.pagePing, PagePing),
+    (frequencies.remainingFields, RemainingFields)
     //      AdImpression, Transaction, TransactionItem,
   )
 }
