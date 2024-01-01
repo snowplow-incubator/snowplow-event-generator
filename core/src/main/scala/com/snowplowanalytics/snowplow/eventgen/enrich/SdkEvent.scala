@@ -18,14 +18,8 @@ import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{Contexts
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.protocol.Body
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.{
-  EventFrequencies,
-  EventType,
-  LegacyEvent,
-  PagePing,
-  PageView,
-  UnstructEventWrapper
-}
+import com.snowplowanalytics.snowplow.eventgen.protocol.event._
+import com.snowplowanalytics.snowplow.eventgen.protocol.enrichment.Enrichments
 import io.circe.Json
 import org.scalacheck.Gen
 
@@ -50,13 +44,15 @@ object SdkEvent {
     case _ => None
   }
 
-  private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID): List[Event] =
+  private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID, enrichments: Option[Enrichments]): List[Event] =
     p.payload.map { el =>
       val evnt = Some(el.e match {
-        case EventType.Struct   => "struct"
+        case EventType.Struct => "struct"
         case EventType.Unstruct => "unstruct"
         case EventType.PageView => "page_view"
         case EventType.PagePing => "page_ping"
+        case EventType.Transaction => "transaction"
+        case EventType.TransactionItem => "transaction_item"
       })
 
       val (ue, eName, ueVendor, ueFormat, ueVersion) = el.event match {
@@ -66,6 +62,36 @@ object SdkEvent {
         case _ =>
           (UnstructEvent(data = None), evnt, None, None, None)
       }
+
+      val structEventOpt = el.event match {
+        case s: StructEvent => Some(s)
+        case _              => None
+      }
+
+      val pagePingOpt = el.event match {
+        case p: PagePing => Some(p)
+        case _           => None
+      }
+
+      val transactionEvent = el.event match {
+        case t: TransactionEvent => Some(t)
+        case _                   => None
+      }
+
+      val transactionItemEvent = el.event match {
+        case t: TransactionItemEvent => Some(t)
+        case _                       => None
+      }
+
+      val defaultEnrichment = enrichments.flatMap(_.defaultEnrichment)
+      val ipEnrichment = enrichments.flatMap(_.ipEnrichment)
+      val urlEnrichment = enrichments.flatMap(_.urlEnrichment)
+      val refererEnrichment = enrichments.flatMap(_.refererEnrichment)
+      val campaignAttributionEnrichment = enrichments.flatMap(_.campaignAttributionEnrichment)
+      val currencyConversionEnrichment = enrichments.flatMap(_.currencyConversionEnrichment)
+      val crossDomainEnrichment = enrichments.flatMap(_.crossDomainEnrichment)
+      val eventFingerprintEnrichment = enrichments.flatMap(_.eventFingerprintEnrichment)
+      val deprecatedFields = enrichments.flatMap(_.deprecatedFields)
 
       Event(
         app_id = el.app.aid,
@@ -91,17 +117,17 @@ object SdkEvent {
           .orElse(p.context.userId)
           .orElse(p.context.headers.cookie)
           .map(_.toString),
-        geo_country = None,
-        geo_region = None,
-        geo_city = None,
-        geo_zipcode = None,
-        geo_latitude = None,
-        geo_longitude = None,
-        geo_region_name = None,
-        ip_isp = None,
-        ip_organization = None,
-        ip_domain = None,
-        ip_netspeed = None,
+        geo_country = ipEnrichment.flatMap(_.geo_country),
+        geo_region = ipEnrichment.flatMap(_.geo_region),
+        geo_city = ipEnrichment.flatMap(_.geo_city),
+        geo_zipcode = ipEnrichment.flatMap(_.geo_zipcode),
+        geo_latitude = ipEnrichment.flatMap(_.geo_latitude),
+        geo_longitude = ipEnrichment.flatMap(_.geo_longitude),
+        geo_region_name = ipEnrichment.flatMap(_.geo_region_name),
+        ip_isp = ipEnrichment.flatMap(_.ip_isp),
+        ip_organization = ipEnrichment.flatMap(_.ip_organization),
+        ip_domain = ipEnrichment.flatMap(_.ip_domain),
+        ip_netspeed = ipEnrichment.flatMap(_.ip_netspeed),
         page_url = extractWeb(el, _.url.map(_.toString)),
         page_title = extractWeb(el, _.page),
         page_referrer = extractWeb(el, _.refr.map(_.toString)),
@@ -109,53 +135,53 @@ object SdkEvent {
         page_urlhost = extractWeb(el, _.url.map(_.host)),
         page_urlport = extractWeb(el, _.url.map(_.sdkPort)),
         page_urlpath = extractWeb(el, _.url.map(_.path)),
-        page_urlquery = None,
-        page_urlfragment = None,
+        page_urlquery = urlEnrichment.flatMap(_.page_urlquery),
+        page_urlfragment = urlEnrichment.flatMap(_.page_urlfragment),
         refr_urlscheme = extractWeb(el, _.refr.map(_.scheme)),
         refr_urlhost = extractWeb(el, _.refr.map(_.host)),
         refr_urlport = extractWeb(el, _.refr.map(_.sdkPort)),
         refr_urlpath = extractWeb(el, _.refr.map(_.path)),
-        refr_urlquery = None,
-        refr_urlfragment = None,
-        refr_medium = None,
-        refr_source = None,
-        refr_term = None,
-        mkt_medium = None,
-        mkt_source = None,
-        mkt_term = None,
-        mkt_content = None,
-        mkt_campaign = None,
+        refr_urlquery = refererEnrichment.flatMap(_.refr_urlquery),
+        refr_urlfragment = refererEnrichment.flatMap(_.refr_urlfragment),
+        refr_medium = refererEnrichment.flatMap(_.refr_medium),
+        refr_source = refererEnrichment.flatMap(_.refr_source),
+        refr_term = refererEnrichment.flatMap(_.refr_term),
+        mkt_medium = campaignAttributionEnrichment.flatMap(_.mkt_medium),
+        mkt_source = campaignAttributionEnrichment.flatMap(_.mkt_source),
+        mkt_term = campaignAttributionEnrichment.flatMap(_.mkt_term),
+        mkt_content = campaignAttributionEnrichment.flatMap(_.mkt_content),
+        mkt_campaign = campaignAttributionEnrichment.flatMap(_.mkt_campaign),
         contexts = el.context.map(_.contexts).getOrElse(Contexts(List.empty[SelfDescribingData[Json]])),
-        se_category = None,
-        se_action = None,
-        se_label = None,
-        se_property = None,
-        se_value = None,
+        se_category = structEventOpt.flatMap(_.se_ca),
+        se_action = structEventOpt.flatMap(_.se_ac),
+        se_label = structEventOpt.flatMap(_.se_la),
+        se_property = structEventOpt.flatMap(_.se_pr),
+        se_value = structEventOpt.flatMap(_.se_va),
         unstruct_event = ue,
-        tr_orderid = None,
-        tr_affiliation = None,
-        tr_total = None,
-        tr_tax = None,
-        tr_shipping = None,
-        tr_city = None,
-        tr_state = None,
-        tr_country = None,
-        ti_orderid = None,
-        ti_sku = None,
-        ti_name = None,
-        ti_category = None,
-        ti_price = None,
-        ti_quantity = None,
-        pp_xoffset_min = None,
-        pp_xoffset_max = None,
-        pp_yoffset_min = None,
-        pp_yoffset_max = None,
+        tr_orderid = transactionEvent.map(_.tr_id),
+        tr_affiliation = transactionEvent.flatMap(_.tr_af),
+        tr_total = transactionEvent.map(_.tr_tt),
+        tr_tax = transactionEvent.flatMap(_.tr_tx),
+        tr_shipping = transactionEvent.flatMap(_.tr_sh),
+        tr_city = transactionEvent.flatMap(_.tr_ci),
+        tr_state = transactionEvent.flatMap(_.tr_st),
+        tr_country = transactionEvent.flatMap(_.tr_co),
+        ti_orderid = transactionItemEvent.map(_.ti_id),
+        ti_sku = transactionItemEvent.map(_.ti_sk),
+        ti_name = transactionItemEvent.flatMap(_.ti_nm),
+        ti_category = transactionItemEvent.flatMap(_.ti_ca),
+        ti_price = transactionItemEvent.map(_.ti_pr),
+        ti_quantity = transactionItemEvent.map(_.ti_qu),
+        pp_xoffset_min = pagePingOpt.flatMap(_.pp_mix),
+        pp_xoffset_max = pagePingOpt.flatMap(_.pp_max),
+        pp_yoffset_min = pagePingOpt.flatMap(_.pp_miy),
+        pp_yoffset_max = pagePingOpt.flatMap(_.pp_may),
         useragent = extractWeb(el, _.ua).orElse(p.context.headers.ua),
-        br_name = None,
-        br_family = None,
-        br_version = None,
-        br_type = None,
-        br_renderengine = None,
+        br_name = deprecatedFields.flatMap(_.br_name),
+        br_family = deprecatedFields.flatMap(_.br_family),
+        br_version = deprecatedFields.flatMap(_.br_version),
+        br_type = deprecatedFields.flatMap(_.br_type),
+        br_renderengine = deprecatedFields.flatMap(_.br_renderengine),
         br_lang = extractWeb(el, _.lang),
         br_features_pdf = extractWeb(el, _.f_pdf),
         br_features_flash = extractWeb(el, _.f_fla),
@@ -170,41 +196,41 @@ object SdkEvent {
         br_colordepth = extractWeb(el, _.cd).map(_.toString),
         br_viewwidth = extractWeb(el, _.vp.map(_.x)),
         br_viewheight = extractWeb(el, _.vp.map(_.y)),
-        os_name = None,
-        os_family = None,
-        os_manufacturer = None,
+        os_name = deprecatedFields.flatMap(_.os_name),
+        os_family = deprecatedFields.flatMap(_.os_family),
+        os_manufacturer = deprecatedFields.flatMap(_.os_manufacturer),
         os_timezone = el.dt.flatMap(_.tz),
-        dvce_type = None,
-        dvce_ismobile = None,
+        dvce_type = deprecatedFields.flatMap(_.dvce_type),
+        dvce_ismobile = deprecatedFields.flatMap(_.dvce_ismobile),
         dvce_screenwidth = el.dev.flatMap(_.res.map(_.x)),
         dvce_screenheight = el.dev.flatMap(_.res.map(_.y)),
         doc_charset = extractWeb(el, _.cs),
         doc_width = extractWeb(el, _.ds.map(_.x)),
         doc_height = extractWeb(el, _.ds.map(_.y)),
-        tr_currency = None,
-        tr_total_base = None,
-        tr_tax_base = None,
-        tr_shipping_base = None,
-        ti_currency = None,
-        ti_price_base = None,
-        base_currency = None,
-        geo_timezone = None,
-        mkt_clickid = None,
-        mkt_network = None,
-        etl_tags = None,
+        tr_currency = transactionEvent.flatMap(_.tr_cu),
+        tr_total_base = currencyConversionEnrichment.flatMap(_.tr_total_base),
+        tr_tax_base = currencyConversionEnrichment.flatMap(_.tr_tax_base),
+        tr_shipping_base = currencyConversionEnrichment.flatMap(_.tr_shipping_base),
+        ti_currency = transactionItemEvent.flatMap(_.ti_cu),
+        ti_price_base = currencyConversionEnrichment.flatMap(_.ti_price_base),
+        base_currency = currencyConversionEnrichment.flatMap(_.base_currency),
+        geo_timezone = ipEnrichment.flatMap(_.geo_timezone),
+        mkt_clickid = campaignAttributionEnrichment.flatMap(_.mkt_clickid),
+        mkt_network = campaignAttributionEnrichment.flatMap(_.mkt_network),
+        etl_tags = deprecatedFields.flatMap(_.etl_tags),
         dvce_sent_tstamp = el.dt.flatMap(_.dtm),
-        refr_domain_userid = None,
-        refr_dvce_tstamp = None,
+        refr_domain_userid = crossDomainEnrichment.flatMap(_.refr_domain_userid),
+        refr_dvce_tstamp = crossDomainEnrichment.flatMap(_.refr_dvce_tstamp),
         derived_contexts = Contexts(List.empty[SelfDescribingData[Json]]),
         domain_sessionid = el.u.flatMap(_.sid.map(_.toString)),
-        derived_tstamp = None,
+        derived_tstamp = defaultEnrichment.flatMap(_.derived_tstamp),
         event_vendor = ueVendor,
         event_name = eName,
         event_format = ueFormat,
         event_version = ueVersion,
-        event_fingerprint = None,
-        true_tstamp = None,
-        etl_tstamp = None
+        event_fingerprint = eventFingerprintEnrichment.flatMap(_.event_fingerprint),
+        true_tstamp = el.dt.flatMap(_.ttm),
+        etl_tstamp = defaultEnrichment.flatMap(_.etl_tstamp)
       )
     }
 
@@ -212,9 +238,10 @@ object SdkEvent {
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    generateEnrichments: Boolean = false
   ): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies).map(_._2)
+    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, generateEnrichments).map(_._2)
 
   def genPairDup(
     natProb: Float,
@@ -224,7 +251,8 @@ object SdkEvent {
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
       cp <- CollectorPayload.genDup(
@@ -237,18 +265,21 @@ object SdkEvent {
         now,
         frequencies
       )
+      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid <- Gen.uuid
-    } yield (cp, eventFromColPayload(cp, eid))
+    } yield (cp, eventFromColPayload(cp, eid, enrichments))
 
   def genPair(
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
       cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
+      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid <- Gen.uuid
-    } yield (cp, eventFromColPayload(cp, eid))
+    } yield (cp, eventFromColPayload(cp, eid, enrichments))
 
 }

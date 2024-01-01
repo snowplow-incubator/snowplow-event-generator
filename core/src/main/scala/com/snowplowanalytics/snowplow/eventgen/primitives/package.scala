@@ -88,6 +88,10 @@ package object primitives {
 
   def genCharsetStrOpt: Gen[Option[String]] = Gen.option(genCharsetStr)
 
+  def genScale2Double: Gen[Double] = genInt.map(_.doubleValue / 100)
+
+  def genScale2DoubleOpt: Gen[Option[Double]] = Gen.option(genScale2Double)
+
   private val LoremIpsum: Seq[String] =
     """Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
       | Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure

@@ -42,6 +42,7 @@ final case class Config(
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
+  generateEnrichments: Boolean,
   methodFrequencies: Option[MethodFrequencies],
   output: Config.Output
 )

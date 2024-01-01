@@ -96,7 +96,8 @@ object Main extends IOApp {
                       config.eventPerPayloadMin,
                       config.eventPerPayloadMax,
                       time,
-                      config.eventFrequencies
+                      config.eventFrequencies,
+                      config.generateEnrichments
                     ),
                     rng
                   ),
@@ -123,7 +124,7 @@ object Main extends IOApp {
                 makeGenOutput(
                   runGen(
                     SdkEvent
-                      .genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies),
+                      .genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.generateEnrichments),
                     rng
                   ),
                   runGen(
