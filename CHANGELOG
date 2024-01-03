@@ -1,3 +1,7 @@
+Version 0.7.0 (2024-01-03)
+--------------------------
+Populate all event fields (#73)
+
 Version 0.6.0 (2023-09-26)
 --------------------------
 Fix bug where padding adds spaces to filenames (#70)
