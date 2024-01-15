@@ -35,7 +35,7 @@ object Http {
 
   def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
 
-    def buildRequesst(
+    def buildRequest(
       generatedRequest: HttpRequest
     ): Request[F] = {
 
@@ -97,7 +97,7 @@ object Http {
         case TrackerMethod.Head(_) => throw new NotImplementedError ( "HEAD requests not implemented" )
       }
 
-      return req
+      if (properties.gzip.getOrElse(false)) GZipMiddleware(false)(req) else req
     }
 
     val httpClient = EmberClientBuilder.default[F].build
@@ -106,7 +106,7 @@ object Http {
         Stream
           .resource(httpClient)
           .flatMap(client => 
-            st.map(_._3).map(buildRequesst).evalMap(req => client.status(req)).void)
+            st.map(_._3).map(buildRequest).evalMap(req => client.status(req)).void)
     }
   }
 }

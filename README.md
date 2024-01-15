@@ -86,6 +86,7 @@ Alternatively you can write events directly to a S3 bucket:
 "output": {
   "type": "Http"
   "endpoint": "https://my.collector.endpoint.com"
+  "gzip": true
 }
 ```
 
