@@ -49,8 +49,8 @@ package object primitives {
 
   def genStringOpt(prefix: String, len: Int): Gen[Option[String]] = Gen.option(genString(prefix, len))
 
-  def strGen(len: Int, g: Gen[Char]): Gen[String] = Gen.chooseNum(1, len).flatMap { x =>
-    Gen.stringOfN(x, g)
+  def strGen(minLength: Int, maxLength: Int): Gen[String] = Gen.chooseNum(minLength, maxLength).flatMap { x =>
+    Gen.stringOfN(x, Gen.alphaNumChar)
   }
 
   def genInstant(now: Instant): Gen[Instant] = Gen.chooseNum(0, 10000000).map(m => now.minusMillis(m.toLong))

@@ -26,11 +26,11 @@ case class EventFrequencies(
 
 sealed trait EventType {
   override def toString: String = this match {
-    case EventType.Struct => "se"
-    case EventType.Unstruct => "ue"
-    case EventType.PageView => "pv"
-    case EventType.PagePing => "pp"
-    case EventType.Transaction => "tr"
+    case EventType.Struct          => "se"
+    case EventType.Unstruct        => "ue"
+    case EventType.PageView        => "pv"
+    case EventType.PagePing        => "pp"
+    case EventType.Transaction     => "tr"
     case EventType.TransactionItem => "ti"
     // Commented types below not implemented in generator
     //    case EventType.StructLegacy => "ev"

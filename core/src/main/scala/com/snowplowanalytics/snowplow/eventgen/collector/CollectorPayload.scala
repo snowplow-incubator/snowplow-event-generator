@@ -121,12 +121,13 @@ object CollectorPayload {
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    maxContextsPerEvent: Int
   ): Gen[CollectorPayload] =
     genWithBody(
       eventPerPayloadMin,
       eventPerPayloadMax,
-      Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies),
+      Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies, maxContextsPerEvent),
       now
     )
 
@@ -143,9 +144,10 @@ object CollectorPayload {
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    maxContextsPerEvent: Int
   ): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now, frequencies), now)
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now, frequencies, maxContextsPerEvent), now)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))

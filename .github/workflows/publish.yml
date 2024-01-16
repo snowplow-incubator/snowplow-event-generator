@@ -23,9 +23,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-
       - name: Run tests
-        run: sbt clean test
+        run: sbt clean scalafmtCheckAll test
 
   docker-release:
     if: startsWith(github.ref, 'refs/tags/')

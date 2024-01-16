@@ -38,11 +38,19 @@ object HttpRequestBody {
     min: Int,
     max: Int,
     now: Instant,
-    frequencies: EventFrequencies
-  ): Gen[HttpRequestBody] = genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies))
+    frequencies: EventFrequencies,
+    maxContextsPerEvent: Int
+  ): Gen[HttpRequestBody] =
+    genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies, maxContextsPerEvent))
 
-  def gen(min: Int, max: Int, now: Instant, frequencies: EventFrequencies): Gen[HttpRequestBody] =
-    genWithBody(min, max, Body.gen(now, frequencies))
+  def gen(
+    min: Int,
+    max: Int,
+    now: Instant,
+    frequencies: EventFrequencies,
+    maxContextsPerEvent: Int
+  ): Gen[HttpRequestBody] =
+    genWithBody(min, max, Body.gen(now, frequencies, maxContextsPerEvent))
 
   private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
     for {

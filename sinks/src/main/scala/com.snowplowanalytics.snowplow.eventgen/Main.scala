@@ -19,8 +19,9 @@ import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
-import com.snowplowanalytics.snowplow.eventgen.protocol.Context
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent
+import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
+import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs._
+import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
@@ -38,30 +39,19 @@ object Main extends IOApp {
     Config.parse(args) match {
       case Right(Config.Cli(config)) =>
         sink[IO](config) >>
-          IO.println(s"""changeFormGenCount  = ${Context.changeFormGenCount}
-                        |clientSessionGenCount  = ${Context.clientSessionGenCount}
-                        |consentDocumentCount  = ${Context.consentDocumentCount}
-                        |desktopContextCount  = ${Context.desktopContextCount}
-                        |httpCookieCount  = ${Context.httpCookieCount}
-                        |httpHeaderCount  = ${Context.httpHeaderCount}
-                        |googleCookiesCount  = ${Context.googleCookiesCount}
-                        |googlePrivateCount  = ${Context.googlePrivateCount}
-                        |optimizelyVisitorCount  = ${Context.optimizelyVisitorCount}
-                        |optimizelyStateCount  = ${Context.optimizelyStateCount}
-                        |optimizelyVariationCount  = ${Context.optimizelyVariationCount}
-                        |optimizelySummaryCount  = ${Context.optimizelySummaryCount}
-                        |sessionContextCount  = ${Context.sessionContextCount}
-                        |consentWithdrawnCount  = ${Context.consentWithdrawnCount}
-                        |segmentScreenCount  = ${Context.segmentScreenCount}
-                        |pushRegistrationCount  = ${Context.pushRegistrationCount}
-                        |uaParserContextCount  = ${Context.uaParserContextCount}
-                        |unstuctEventCount = ${UnstructEvent.unstuctEventCount}
+          IO.println(s"""Contexts:
+                        |${printCounts(AllContexts.all)}
+                        |Unstruct Events:
+                        |${printCounts(List(ChangeForm, FunnelInteraction, LinkClick))}
                         |""".stripMargin)
             .as(ExitCode.Success)
       case Left(error) =>
         IO(System.err.println(error)).as(ExitCode.Error)
 
     }
+
+  def printCounts(gens: List[SelfDescribingJsonGen]): String =
+    gens.map(g => s"  ${g.schemaKey.toSchemaUri} = ${g.genCount}").mkString("\n")
 
   type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
 
@@ -97,6 +87,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
+                      config.maxContextsPerEvent,
                       config.generateEnrichments
                     ),
                     rng
@@ -111,6 +102,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
+                      config.maxContextsPerEvent,
                       config.methodFrequencies
                     ),
                     rng
@@ -123,13 +115,25 @@ object Main extends IOApp {
               Sync[F].delay(
                 makeGenOutput(
                   runGen(
-                    SdkEvent
-                      .genPair(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.generateEnrichments),
+                    SdkEvent.genPair(
+                      config.eventPerPayloadMin,
+                      config.eventPerPayloadMax,
+                      time,
+                      config.eventFrequencies,
+                      config.maxContextsPerEvent,
+                      config.generateEnrichments
+                    ),
                     rng
                   ),
                   runGen(
-                    HttpRequest
-                      .gen(config.eventPerPayloadMin, config.eventPerPayloadMax, time, config.eventFrequencies, config.methodFrequencies),
+                    HttpRequest.gen(
+                      config.eventPerPayloadMin,
+                      config.eventPerPayloadMax,
+                      time,
+                      config.eventFrequencies,
+                      config.maxContextsPerEvent,
+                      config.methodFrequencies
+                    ),
                     rng
                   )
                 )

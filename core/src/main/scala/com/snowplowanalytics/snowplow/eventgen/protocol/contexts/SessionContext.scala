@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-present Snowplow Analytics Ltd. All rights reserved.
+ * Copyright (c) 2021-2022 Snowplow Analytics Ltd. All rights reserved.
  *
  * This program is licensed to you under the Apache License Version 2.0,
  * and you may not use this file except in compliance with the Apache License Version 2.0.
@@ -10,22 +10,23 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
-package com.snowplowanalytics.snowplow.eventgen.protocol.enrichment
+package com.snowplowanalytics.snowplow.eventgen.protocol.contexts
 
-import cats.implicits._
+import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer}
+import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
+import com.snowplowanalytics.snowplow.eventgen.protocol.implicits._
 import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
-import org.scalacheck.cats.implicits._
+import io.circe.Json
+import java.time.Instant
 
-case class UrlEnrichment(
-  page_urlquery: Option[String],
-  page_urlfragment: Option[String]
-)
+object SessionContext extends SelfDescribingJsonGen {
 
-object UrlEnrichment {
-  def gen: Gen[UrlEnrichment] =
-    (
-      genStringOpt("page_urlquery", 10),
-      genStringOpt("page_urlfragment", 10)
-    ).mapN(UrlEnrichment.apply)
+  override def schemaKey: SchemaKey =
+    SchemaKey("com.mparticle.snowplow", "session_context", "jsonschema", SchemaVer.Full(1, 0, 0))
+
+  override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
+    Map(
+      "id" -> strGen(1, 32).required
+    )
 }

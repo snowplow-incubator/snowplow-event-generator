@@ -42,6 +42,7 @@ final case class Config(
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
+  maxContextsPerEvent: Int,
   generateEnrichments: Boolean,
   methodFrequencies: Option[MethodFrequencies],
   output: Config.Output
@@ -93,7 +94,7 @@ object Config {
     deriveConfiguredDecoder[EventFrequencies]
 
   implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
-    deriveConfiguredDecoder [MethodFrequencies]
+    deriveConfiguredDecoder[MethodFrequencies]
 
   implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
     deriveConfiguredDecoder[UnstructEventFrequencies]

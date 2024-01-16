@@ -36,6 +36,6 @@ object CampaignAttributionEnrichment {
       genStringOpt("mkt_content", 10),
       genStringOpt("mkt_campaign", 10),
       genStringOpt("mkt_clickid", 10),
-      genStringOpt("mkt_network", 10),
+      genStringOpt("mkt_network", 10)
     ).mapN(CampaignAttributionEnrichment.apply)
 }
