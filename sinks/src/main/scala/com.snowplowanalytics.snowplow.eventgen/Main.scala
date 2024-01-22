@@ -20,7 +20,7 @@ import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
-import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs._
+import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
@@ -38,11 +38,13 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     Config.parse(args) match {
       case Right(Config.Cli(config)) =>
+        val unstructCounts = printCounts(AllUnstructs.all)
+        val contextCounts  = printCounts(AllContexts.all)
         sink[IO](config) >>
           IO.println(s"""Contexts:
-                        |${printCounts(AllContexts.all)}
+                        |$contextCounts
                         |Unstruct Events:
-                        |${printCounts(List(ChangeForm, FunnelInteraction, LinkClick))}
+                        |$unstructCounts
                         |""".stripMargin)
             .as(ExitCode.Success)
       case Left(error) =>

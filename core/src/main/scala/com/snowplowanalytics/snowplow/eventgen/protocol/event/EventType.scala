@@ -21,7 +21,8 @@ case class EventFrequencies(
   pagePing: Int,
   transaction: Int,
   transactionItem: Int,
-  unstructEventFrequencies: UnstructEventFrequencies
+  unstructEventFrequencyDefault: Int,
+  unstructEventFrequencies: Map[String, Int]
 )
 
 sealed trait EventType {

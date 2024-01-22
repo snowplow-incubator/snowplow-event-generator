@@ -205,10 +205,11 @@ Aside from "output" configuration, all fields in the configuration file are opti
       "unstruct": 1
       "pageView": 1
       "pagePing": 1
+      "unstructEventFrequencyDefault": 1
       "unstructEventFrequencies": {
-        "changeForm": 1
-        "funnelInteraction": 1
-        "linkClick": 1
+        "change_form": 10
+        "funnel_interaction": 100
+        "link_click": 1000
       }
     }
 
