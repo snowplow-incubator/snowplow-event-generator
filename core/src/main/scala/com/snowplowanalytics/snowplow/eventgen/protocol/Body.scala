@@ -90,7 +90,7 @@ object Body {
       u   <- User.genOpt
       event <- e match {
         case EventType.Struct          => StructEvent.gen
-        case EventType.Unstruct        => UnstructEventWrapper.gen(now, frequencies.unstructEventFrequencies)
+        case EventType.Unstruct        => UnstructEventWrapper.gen(now, frequencies)
         case EventType.PageView        => PageView.gen
         case EventType.PagePing        => PagePing.gen
         case EventType.Transaction     => TransactionEvent.gen

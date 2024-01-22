@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.{ChangeForm, FunnelInteraction, LinkClick}
+import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.iglu.core.SelfDescribingData
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent
 import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
@@ -21,8 +21,6 @@ import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
 import java.time.Instant
-
-case class UnstructEventFrequencies(changeForm: Int, funnelInteraction: Int, linkClick: Int)
 
 final case class UnstructEventWrapper(
   event: SelfDescribingData[Json],
@@ -38,12 +36,17 @@ final case class UnstructEventWrapper(
 }
 
 object UnstructEventWrapper {
-  def gen(now: Instant, frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] =
-    Gen
-      .frequency(
-        frequencies.linkClick         -> LinkClick.gen(now),
-        frequencies.changeForm        -> ChangeForm.gen(now),
-        frequencies.funnelInteraction -> FunnelInteraction.gen(now)
-      )
-      .map(l => UnstructEventWrapper(l, b64 = true))
+
+  def gen(now: Instant, config: EventFrequencies): Gen[UnstructEventWrapper] = {
+    val freqToUnstruct = AllUnstructs.all.map { unstruct =>
+      val frequency =
+        config
+          .unstructEventFrequencies
+          .getOrElse(unstruct.schemaKey.name, default = config.unstructEventFrequencyDefault)
+
+      frequency -> unstruct.gen(now)
+    }
+    Gen.frequency(freqToUnstruct: _*).map(l => UnstructEventWrapper(l, b64 = true))
+  }
+
 }

@@ -24,7 +24,7 @@ import io.circe.config.parser
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.{EventFrequencies, UnstructEventFrequencies}
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
 
@@ -95,9 +95,6 @@ object Config {
 
   implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
     deriveConfiguredDecoder[MethodFrequencies]
-
-  implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
-    deriveConfiguredDecoder[UnstructEventFrequencies]
 
   implicit val mapDecoder: Decoder[Map[String, String]] = Decoder.decodeMap[String, String]
 
