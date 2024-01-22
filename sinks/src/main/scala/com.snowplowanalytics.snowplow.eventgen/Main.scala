@@ -87,7 +87,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
-                      config.maxContextsPerEvent,
+                      config.contexts,
                       config.generateEnrichments
                     ),
                     rng
@@ -102,7 +102,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
-                      config.maxContextsPerEvent,
+                      config.contexts,
                       config.methodFrequencies
                     ),
                     rng
@@ -120,7 +120,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
-                      config.maxContextsPerEvent,
+                      config.contexts,
                       config.generateEnrichments
                     ),
                     rng
@@ -131,7 +131,7 @@ object Main extends IOApp {
                       config.eventPerPayloadMax,
                       time,
                       config.eventFrequencies,
-                      config.maxContextsPerEvent,
+                      config.contexts,
                       config.methodFrequencies
                     ),
                     rng

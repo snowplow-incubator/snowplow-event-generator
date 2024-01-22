@@ -24,6 +24,8 @@ import java.time.Instant
 
 object Context {
 
+  final case class ContextsConfig(minPerEvent: Int, maxPerEvent: Int)
+
   final case class ContextsWrapper(value: List[SelfDescribingData[Json]]) extends Protocol {
     override def toProto: List[BasicNameValuePair] = value match {
       case Nil  => asKV("cx", None)
@@ -44,9 +46,9 @@ object Context {
 
   object ContextsWrapper {
 
-    def gen(now: Instant, maxContextsPerEvent: Int): Gen[ContextsWrapper] =
+    def gen(now: Instant, config: ContextsConfig): Gen[ContextsWrapper] =
       Gen
-        .chooseNum(0, maxContextsPerEvent)
+        .chooseNum(config.minPerEvent, config.maxPerEvent)
         .flatMap { numContexts =>
           Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now))
         }

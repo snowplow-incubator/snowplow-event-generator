@@ -17,6 +17,7 @@ import com.snowplowanalytics.snowplow.eventgen.collector.Api._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.Method
 import org.scalacheck.Gen
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 
 import java.time.Instant
 
@@ -60,7 +61,7 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    maxContextsPerEvent: Int,
+    contexts: Context.ContextsConfig,
     methodFrequencies: Option[MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
@@ -68,8 +69,8 @@ object HttpRequest {
     // From here in it's not an option, just to make the code a bit cleaner
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
     genWithParts(
-      HttpRequestQuerystring.gen(now, frequencies, maxContextsPerEvent),
-      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, maxContextsPerEvent),
+      HttpRequestQuerystring.gen(now, frequencies, contexts),
+      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts),
       methodFreq
     )
   }
@@ -83,7 +84,7 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    maxContextsPerEvent: Int,
+    contexts: Context.ContextsConfig,
     methodFrequencies: Option[MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
@@ -92,7 +93,7 @@ object HttpRequest {
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
     genWithParts(
       // qs doesn't do duplicates?
-      HttpRequestQuerystring.gen(now, frequencies, maxContextsPerEvent),
+      HttpRequestQuerystring.gen(now, frequencies, contexts),
       HttpRequestBody.genDup(
         natProb,
         synProb,
@@ -102,7 +103,7 @@ object HttpRequest {
         eventPerPayloadMax,
         now,
         frequencies,
-        maxContextsPerEvent
+        contexts
       ),
       methodFreq
     )

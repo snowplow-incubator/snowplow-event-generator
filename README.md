@@ -212,9 +212,12 @@ Aside from "output" configuration, all fields in the configuration file are opti
       }
     }
 
-    // Configures the limit on how many self-describing entities can be attached to each event.
+    // Configures the limits on how many self-describing entities can be attached to each event.
     // The actual number will be randomly chosen for each event.
-    "maxContextsPerEvent": 10
+    "contexts": {
+      "minPerEvent": 0
+      "maxPerEvent": 10
+    }
 
     // HTTP output only - set weights for the distributions of request methods.
     // Setting a fequency to 0 results in that method not being produced at all

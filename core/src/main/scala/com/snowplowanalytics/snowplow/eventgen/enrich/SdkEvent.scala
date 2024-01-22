@@ -15,7 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.enrich
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.UnstructEvent
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
-import com.snowplowanalytics.snowplow.eventgen.protocol.Body
+import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Context}
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.enrichment.Enrichments
@@ -241,10 +241,10 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    maxContextsPerEvent: Int,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean = false
   ): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, maxContextsPerEvent, generateEnrichments).map(
+    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts, generateEnrichments).map(
       _._2
     )
 
@@ -257,7 +257,7 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    maxContextsPerEvent: Int,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
@@ -270,7 +270,7 @@ object SdkEvent {
         eventPerPayloadMax,
         now,
         frequencies,
-        maxContextsPerEvent
+        contexts
       )
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
@@ -281,11 +281,11 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
-    maxContextsPerEvent: Int,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
-      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, maxContextsPerEvent)
+      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid, enrichments))
