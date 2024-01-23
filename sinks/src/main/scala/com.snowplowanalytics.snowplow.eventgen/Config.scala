@@ -129,6 +129,9 @@ object Config {
 
   implicit val contextConfigDecoder: Decoder[Context.ContextsConfig] =
     deriveConfiguredDecoder[Context.ContextsConfig]
+      .ensure(_.minPerEvent >= 0, "minPerEvent must be a positive number")
+      .ensure(_.maxPerEvent >= 0, "minPerEvent must be a positive number")
+      .ensure(c => c.maxPerEvent >= c.minPerEvent, "minPerEvent cannot be larger than maxPerEvent")
 
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]
