@@ -17,6 +17,7 @@ import com.snowplowanalytics.snowplow.eventgen.collector.Api._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.Method
 import org.scalacheck.Gen
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 
 import java.time.Instant
 
@@ -33,23 +34,22 @@ object HttpRequest {
   }
 
   case class MethodFrequencies(
-  get: Int,
-  post: Int,
-  head: Int
-)
+    get: Int,
+    post: Int,
+    head: Int
+  )
 
   object Method {
     final case class Post(path: Api) extends Method
     final case class Get(path: Api) extends Method
     final case class Head(path: Api) extends Method
 
-    def gen(freq: MethodFrequencies): Gen[Method] = {
+    def gen(freq: MethodFrequencies): Gen[Method] =
       Gen.frequency(
-        (freq.post, genPost), 
+        (freq.post, genPost),
         (freq.get, genGet),
         (freq.head, genHead)
-        )
-          }
+      )
 
     private def genPost: Gen[Method.Post] = Gen.oneOf(genApi(0), genApi(200)).map(Method.Post)
     private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Get)
@@ -61,6 +61,7 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig,
     methodFrequencies: Option[MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
@@ -68,9 +69,9 @@ object HttpRequest {
     // From here in it's not an option, just to make the code a bit cleaner
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
     genWithParts(
-      HttpRequestQuerystring.gen(now, frequencies),
-      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies),
-      methodFreq      
+      HttpRequestQuerystring.gen(now, frequencies, contexts),
+      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts),
+      methodFreq
     )
   }
 
@@ -83,6 +84,7 @@ object HttpRequest {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig,
     methodFrequencies: Option[MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
@@ -91,15 +93,27 @@ object HttpRequest {
     val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
     genWithParts(
       // qs doesn't do duplicates?
-      HttpRequestQuerystring.gen(now, frequencies),
-      HttpRequestBody
-        .genDup(natProb, synProb, natTotal, synTotal, eventPerPayloadMin, eventPerPayloadMax, now, frequencies),
+      HttpRequestQuerystring.gen(now, frequencies, contexts),
+      HttpRequestBody.genDup(
+        natProb,
+        synProb,
+        natTotal,
+        synTotal,
+        eventPerPayloadMin,
+        eventPerPayloadMax,
+        now,
+        frequencies,
+        contexts
+      ),
       methodFreq
     )
   }
-    
 
-  private def genWithParts(qsGen: Gen[HttpRequestQuerystring], bodyGen: Gen[HttpRequestBody], methodFreq: MethodFrequencies) =
+  private def genWithParts(
+    qsGen: Gen[HttpRequestQuerystring],
+    bodyGen: Gen[HttpRequestBody],
+    methodFreq: MethodFrequencies
+  ) =
     for {
       method <- Method.gen(methodFreq)
       qs     <- Gen.option(qsGen)

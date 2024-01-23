@@ -30,7 +30,6 @@ import org.http4s.Method
 import org.typelevel.ci._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequestQuerystring
 
-
 object Http {
 
   def sink[F[_]: Async](properties: Config.Output.Http): Pipe[F, Main.GenOutput, Unit] = {
@@ -39,31 +38,30 @@ object Http {
       generatedRequest: HttpRequest
     ): Request[F] = {
 
-      // Origin headers are given to us a key and a comma separated string of values, 
+      // Origin headers are given to us a key and a comma separated string of values,
       // but we wish to attach each value as a header with the provided key ("Origin")
-      // This function provides a Seq of Raw headers (the type that putHeaders expects) 
+      // This function provides a Seq of Raw headers (the type that putHeaders expects)
       // containing an item for each origin header, and an item each for the other headers.
-      def parseHeaders(headers: Map[String, String]): Seq[Raw] = {
+      def parseHeaders(headers: Map[String, String]): Seq[Raw] =
         headers
-          .map(kv => (kv._1, kv._2) match {
-            case (k, v) if k == "Origin" =>  
-              v.split(",")
-                .map(v => Raw(CIString(k), v))
-                .toSeq
-              
+          .map(kv =>
+            (kv._1, kv._2) match {
+              case (k, v) if k == "Origin" =>
+                v.split(",").map(v => Raw(CIString(k), v)).toSeq
+
               // Raw(CIString(k), v)
-            case (_, _) => Seq(Raw(CIString(kv._1), kv._2))
-          })
+              case (_, _) => Seq(Raw(CIString(kv._1), kv._2))
+            }
+          )
           .toSeq
           .flatten
-      }
 
-       // since /i requests have empty version, we pattern match to add the path.
-       // address is a var since we modify it when adding querystring
-       var address = generatedRequest.method.path.version match {
-        case "" => properties.endpoint / generatedRequest.method.path.vendor
-        case version: String  => properties.endpoint / generatedRequest.method.path.vendor / version
-       }
+      // since /i requests have empty version, we pattern match to add the path.
+      // address is a var since we modify it when adding querystring
+      var address = generatedRequest.method.path.version match {
+        case ""              => properties.endpoint / generatedRequest.method.path.vendor
+        case version: String => properties.endpoint / generatedRequest.method.path.vendor / version
+      }
 
       val body = generatedRequest.body match {
         case Some(b) => b.toString()
@@ -74,27 +72,26 @@ object Http {
 
         // POST requests: attach body, use the uri we already have, without adding querysring
         case TrackerMethod.Post(_) =>
-          Request[F](method = Method.POST, uri = address).withEntity(body).putHeaders(parseHeaders(generatedRequest.headers))
+          Request[F](method = Method.POST, uri = address)
+            .withEntity(body)
+            .putHeaders(parseHeaders(generatedRequest.headers))
 
         // GET requests: add querystring, ignore body field
         case TrackerMethod.Get(_) =>
-                    
           // iterate querystring and add as kv pairs to the address
           generatedRequest.qs match {
-            case None => address
-            case Some(querystring: HttpRequestQuerystring) => 
+            case None                                      => address
+            case Some(querystring: HttpRequestQuerystring) =>
               // val newUri = address
               querystring.toProto
-              querystring.toProto.foreach(kv =>
-                address = address.withQueryParam(kv.getName(), kv.getValue())
-              )
+              querystring.toProto.foreach(kv => address = address.withQueryParam(kv.getName(), kv.getValue()))
           }
 
           Request[F](method = Method.GET, uri = address).putHeaders(parseHeaders(generatedRequest.headers))
 
         // HEAD requests induce server errors that will take some digging to figure out.
         // In the interest of getting to a usable tool quickly, for now we just throw an error for these.
-        case TrackerMethod.Head(_) => throw new NotImplementedError ( "HEAD requests not implemented" )
+        case TrackerMethod.Head(_) => throw new NotImplementedError("HEAD requests not implemented")
       }
 
       return req
@@ -102,11 +99,9 @@ object Http {
 
     val httpClient = EmberClientBuilder.default[F].build
 
-    st: Stream[F, Main.GenOutput] => {
-        Stream
-          .resource(httpClient)
-          .flatMap(client => 
-            st.map(_._3).map(buildRequesst).evalMap(req => client.status(req)).void)
-    }
+    st: Stream[F, Main.GenOutput] =>
+      Stream
+        .resource(httpClient)
+        .flatMap(client => st.map(_._3).map(buildRequesst).evalMap(req => client.status(req)).void)
   }
 }

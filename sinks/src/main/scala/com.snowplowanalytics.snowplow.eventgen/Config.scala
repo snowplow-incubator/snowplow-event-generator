@@ -24,8 +24,8 @@ import io.circe.config.parser
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.protocol.event.{EventFrequencies, UnstructEventFrequencies}
+import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
 
 final case class Config(
@@ -42,6 +42,7 @@ final case class Config(
   duplicates: Option[Config.Duplicates],
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
+  contexts: Context.ContextsConfig,
   generateEnrichments: Boolean,
   methodFrequencies: Option[MethodFrequencies],
   output: Config.Output
@@ -93,7 +94,7 @@ object Config {
     deriveConfiguredDecoder[EventFrequencies]
 
   implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
-    deriveConfiguredDecoder [MethodFrequencies]
+    deriveConfiguredDecoder[MethodFrequencies]
 
   implicit val unstructEventFrequenciesDecoder: Decoder[UnstructEventFrequencies] =
     deriveConfiguredDecoder[UnstructEventFrequencies]
@@ -125,6 +126,12 @@ object Config {
 
   implicit val outputDecoder: Decoder[Output] =
     deriveConfiguredDecoder[Output]
+
+  implicit val contextConfigDecoder: Decoder[Context.ContextsConfig] =
+    deriveConfiguredDecoder[Context.ContextsConfig]
+      .ensure(_.minPerEvent >= 0, "minPerEvent must be a positive number")
+      .ensure(_.maxPerEvent >= 0, "minPerEvent must be a positive number")
+      .ensure(c => c.maxPerEvent >= c.minPerEvent, "minPerEvent cannot be larger than maxPerEvent")
 
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]

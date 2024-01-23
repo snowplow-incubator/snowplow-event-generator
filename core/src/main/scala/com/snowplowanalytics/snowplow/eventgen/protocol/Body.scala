@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.Context.ContextsWrapper
+import com.snowplowanalytics.snowplow.eventgen.protocol.Context.{ContextsWrapper, DerivedContextsWrapper}
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common._
 import io.circe.Json
@@ -35,7 +35,8 @@ final case class Body(
   et: EventTransaction,
   u: Option[User],
   event: BodyEvent,
-  context: Option[ContextsWrapper]
+  contexts: ContextsWrapper,
+  derivedContexts: DerivedContextsWrapper
 ) extends Protocol {
   override def toProto: List[BasicNameValuePair] =
     asKV("e", Some(e)) ++
@@ -46,7 +47,7 @@ final case class Body(
       dev.fold(List.empty[BasicNameValuePair])(_.toProto) ++
       tv.toProto ++
       u.fold(List.empty[BasicNameValuePair])(_.toProto) ++
-      context.fold(List.empty[BasicNameValuePair])(_.toProto)
+      contexts.toProto
 
   def toPayloadElement: Json =
     toProto.foldLeft(Map.empty[String, String])((acc, kv) => acc ++ Map(kv.getName -> kv.getValue)).asJson
@@ -62,9 +63,10 @@ object Body {
     natTotal: Int,
     synTotal: Int,
     now: Instant,
-    frequencies: EventFrequencies
+    frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig
   ): Gen[Body] =
-    genWithEt(EventTransaction.genDup(synProb, synTotal), now, frequencies).withPerturb(in =>
+    genWithEt(EventTransaction.genDup(synProb, synTotal), now, frequencies, contexts).withPerturb(in =>
       if (natProb == 0f | natTotal == 0)
         in
       else if (dupRng.nextInt(10000) < (natProb * 10000))
@@ -72,7 +74,12 @@ object Body {
       else
         in
     );
-  private def genWithEt(etGen: Gen[EventTransaction], now: Instant, frequencies: EventFrequencies) =
+  private def genWithEt(
+    etGen: Gen[EventTransaction],
+    now: Instant,
+    frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig
+  ) =
     for {
       e   <- EventType.gen(frequencies)
       app <- Application.gen
@@ -82,17 +89,19 @@ object Body {
       tv  <- TrackerVersion.gen
       u   <- User.genOpt
       event <- e match {
-        case EventType.Struct           => StructEvent.gen
-        case EventType.Unstruct         => UnstructEventWrapper.gen(frequencies.unstructEventFrequencies)
-        case EventType.PageView         => PageView.gen
-        case EventType.PagePing         => PagePing.gen
-        case EventType.Transaction      => TransactionEvent.gen
-        case EventType.TransactionItem  => TransactionItemEvent.gen
+        case EventType.Struct          => StructEvent.gen
+        case EventType.Unstruct        => UnstructEventWrapper.gen(now, frequencies.unstructEventFrequencies)
+        case EventType.PageView        => PageView.gen
+        case EventType.PagePing        => PagePing.gen
+        case EventType.Transaction     => TransactionEvent.gen
+        case EventType.TransactionItem => TransactionItemEvent.gen
       }
-      context <- Context.ContextsWrapper.genOps
-    } yield Body(e, app, dt, dev, tv, et, u, event, context)
+      contexts        <- Context.ContextsWrapper.gen(now, contexts)
+      derivedContexts <- Context.DerivedContextsWrapper.gen(now)
+    } yield Body(e, app, dt, dev, tv, et, u, event, contexts, derivedContexts)
 
-  def gen(now: Instant, frequencies: EventFrequencies): Gen[Body] = genWithEt(EventTransaction.gen, now, frequencies)
+  def gen(now: Instant, frequencies: EventFrequencies, contexts: Context.ContextsConfig): Gen[Body] =
+    genWithEt(EventTransaction.gen, now, frequencies, contexts)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }

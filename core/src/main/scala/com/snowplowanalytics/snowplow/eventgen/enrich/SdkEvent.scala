@@ -12,15 +12,13 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.enrich
 
-import com.snowplowanalytics.iglu.core.SelfDescribingData
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.{Contexts, UnstructEvent}
+import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.UnstructEvent
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
-import com.snowplowanalytics.snowplow.eventgen.protocol.Body
+import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Context}
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.enrichment.Enrichments
-import io.circe.Json
 import org.scalacheck.Gen
 
 import java.time.Instant
@@ -44,21 +42,25 @@ object SdkEvent {
     case _ => None
   }
 
-  private def eventFromColPayload(p: CollectorPayload, fallbackEid: UUID, enrichments: Option[Enrichments]): List[Event] =
+  private def eventFromColPayload(
+    p: CollectorPayload,
+    fallbackEid: UUID,
+    enrichments: Option[Enrichments]
+  ): List[Event] =
     p.payload.map { el =>
       val evnt = Some(el.e match {
-        case EventType.Struct => "struct"
-        case EventType.Unstruct => "unstruct"
-        case EventType.PageView => "page_view"
-        case EventType.PagePing => "page_ping"
-        case EventType.Transaction => "transaction"
+        case EventType.Struct          => "struct"
+        case EventType.Unstruct        => "unstruct"
+        case EventType.PageView        => "page_view"
+        case EventType.PagePing        => "page_ping"
+        case EventType.Transaction     => "transaction"
         case EventType.TransactionItem => "transaction_item"
       })
 
       val (ue, eName, ueVendor, ueFormat, ueVersion) = el.event match {
         case UnstructEventWrapper(event, _) =>
           val sk = event.schema
-          (event.toUnstructEvent, Some(sk.name), Some(sk.vendor), Some(sk.format), Some(sk.version.asString))
+          (UnstructEvent(Some(event)), Some(sk.name), Some(sk.vendor), Some(sk.format), Some(sk.version.asString))
         case _ =>
           (UnstructEvent(data = None), evnt, None, None, None)
       }
@@ -83,15 +85,15 @@ object SdkEvent {
         case _                       => None
       }
 
-      val defaultEnrichment = enrichments.flatMap(_.defaultEnrichment)
-      val ipEnrichment = enrichments.flatMap(_.ipEnrichment)
-      val urlEnrichment = enrichments.flatMap(_.urlEnrichment)
-      val refererEnrichment = enrichments.flatMap(_.refererEnrichment)
+      val defaultEnrichment             = enrichments.flatMap(_.defaultEnrichment)
+      val ipEnrichment                  = enrichments.flatMap(_.ipEnrichment)
+      val urlEnrichment                 = enrichments.flatMap(_.urlEnrichment)
+      val refererEnrichment             = enrichments.flatMap(_.refererEnrichment)
       val campaignAttributionEnrichment = enrichments.flatMap(_.campaignAttributionEnrichment)
-      val currencyConversionEnrichment = enrichments.flatMap(_.currencyConversionEnrichment)
-      val crossDomainEnrichment = enrichments.flatMap(_.crossDomainEnrichment)
-      val eventFingerprintEnrichment = enrichments.flatMap(_.eventFingerprintEnrichment)
-      val deprecatedFields = enrichments.flatMap(_.deprecatedFields)
+      val currencyConversionEnrichment  = enrichments.flatMap(_.currencyConversionEnrichment)
+      val crossDomainEnrichment         = enrichments.flatMap(_.crossDomainEnrichment)
+      val eventFingerprintEnrichment    = enrichments.flatMap(_.eventFingerprintEnrichment)
+      val deprecatedFields              = enrichments.flatMap(_.deprecatedFields)
 
       Event(
         app_id = el.app.aid,
@@ -151,7 +153,7 @@ object SdkEvent {
         mkt_term = campaignAttributionEnrichment.flatMap(_.mkt_term),
         mkt_content = campaignAttributionEnrichment.flatMap(_.mkt_content),
         mkt_campaign = campaignAttributionEnrichment.flatMap(_.mkt_campaign),
-        contexts = el.context.map(_.contexts).getOrElse(Contexts(List.empty[SelfDescribingData[Json]])),
+        contexts = el.contexts.forSdkEvent,
         se_category = structEventOpt.flatMap(_.se_ca),
         se_action = structEventOpt.flatMap(_.se_ac),
         se_label = structEventOpt.flatMap(_.se_la),
@@ -221,7 +223,7 @@ object SdkEvent {
         dvce_sent_tstamp = el.dt.flatMap(_.dtm),
         refr_domain_userid = crossDomainEnrichment.flatMap(_.refr_domain_userid),
         refr_dvce_tstamp = crossDomainEnrichment.flatMap(_.refr_dvce_tstamp),
-        derived_contexts = Contexts(List.empty[SelfDescribingData[Json]]),
+        derived_contexts = el.derivedContexts.forSdkEvent,
         domain_sessionid = el.u.flatMap(_.sid.map(_.toString)),
         derived_tstamp = defaultEnrichment.flatMap(_.derived_tstamp),
         event_vendor = ueVendor,
@@ -239,9 +241,12 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean = false
   ): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, generateEnrichments).map(_._2)
+    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts, generateEnrichments).map(
+      _._2
+    )
 
   def genPairDup(
     natProb: Float,
@@ -252,6 +257,7 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
@@ -263,10 +269,11 @@ object SdkEvent {
         eventPerPayloadMin,
         eventPerPayloadMax,
         now,
-        frequencies
+        frequencies,
+        contexts
       )
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
-      eid <- Gen.uuid
+      eid         <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid, enrichments))
 
   def genPair(
@@ -274,12 +281,13 @@ object SdkEvent {
     eventPerPayloadMax: Int,
     now: Instant,
     frequencies: EventFrequencies,
+    contexts: Context.ContextsConfig,
     generateEnrichments: Boolean
   ): Gen[(CollectorPayload, List[Event])] =
     for {
-      cp  <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies)
+      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
-      eid <- Gen.uuid
+      eid         <- Gen.uuid
     } yield (cp, eventFromColPayload(cp, eid, enrichments))
 
 }

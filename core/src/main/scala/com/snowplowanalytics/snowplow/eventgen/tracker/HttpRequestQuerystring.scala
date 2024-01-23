@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.tracker
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Protocol}
+import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Context, Protocol}
 import com.snowplowanalytics.snowplow.eventgen.protocol.Body.encodeValue
 import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
 import org.apache.http.message.BasicNameValuePair
@@ -26,9 +26,10 @@ final case class HttpRequestQuerystring(qs: List[BasicNameValuePair]) extends Pr
 }
 
 object HttpRequestQuerystring {
-  def gen(now: Instant, frequencies: EventFrequencies): Gen[HttpRequestQuerystring] = genWithBody(
-    Body.gen(now, frequencies)
-  )
+  def gen(now: Instant, frequencies: EventFrequencies, contexts: Context.ContextsConfig): Gen[HttpRequestQuerystring] =
+    genWithBody(
+      Body.gen(now, frequencies, contexts)
+    )
 
   private def genWithBody(bodyGen: Gen[Body]) =
     bodyGen.flatMap(qs =>
