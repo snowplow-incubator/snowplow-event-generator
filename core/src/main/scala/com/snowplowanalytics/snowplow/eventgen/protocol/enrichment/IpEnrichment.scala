@@ -29,7 +29,7 @@ case class IpEnrichment(
   ip_isp: Option[String],
   ip_organization: Option[String],
   ip_domain: Option[String],
-  ip_netspeed: Option[String],
+  ip_netspeed: Option[String]
 )
 
 object IpEnrichment {
@@ -46,6 +46,6 @@ object IpEnrichment {
       genStringOpt("ip_isp", 10),
       genStringOpt("ip_organization", 10),
       genStringOpt("ip_domain", 10),
-      genStringOpt("ip_netspeed", 10),
+      genStringOpt("ip_netspeed", 10)
     ).mapN(IpEnrichment.apply)
 }

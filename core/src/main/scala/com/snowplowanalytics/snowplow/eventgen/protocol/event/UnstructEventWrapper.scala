@@ -12,37 +12,38 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.UnstructEvent.{
-  ChangeForm,
-  FunnelInteraction,
-  LinkClick,
-  UnstructEventData
-}
+import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.{ChangeForm, FunnelInteraction, LinkClick}
+import com.snowplowanalytics.iglu.core.SelfDescribingData
+import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent
 import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
+import io.circe.Json
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
 import org.scalacheck.Gen
+import java.time.Instant
 
 case class UnstructEventFrequencies(changeForm: Int, funnelInteraction: Int, linkClick: Int)
 
 final case class UnstructEventWrapper(
-  event: UnstructEventData,
+  event: SelfDescribingData[Json],
   b64: Boolean
 ) extends BodyEvent {
-  override def toProto: List[BasicNameValuePair] =
+  override def toProto: List[BasicNameValuePair] = {
+    val asJson = SnowplowEvent.UnstructEvent(Some(event)).asJson
     if (!b64)
-      asKV("ue_pr", Some(event.toUnstructEvent.asJson))
+      asKV("ue_pr", Some(asJson.noSpaces))
     else
-      asKV("ue_px", Some(base64Encode(event.toUnstructEvent.asJson)))
+      asKV("ue_px", Some(base64Encode(asJson)))
+  }
 }
 
 object UnstructEventWrapper {
-  def gen(frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] =
+  def gen(now: Instant, frequencies: UnstructEventFrequencies): Gen[UnstructEventWrapper] =
     Gen
       .frequency(
-        frequencies.linkClick         -> LinkClick.gen,
-        frequencies.changeForm        -> ChangeForm.gen,
-        frequencies.funnelInteraction -> FunnelInteraction.gen
+        frequencies.linkClick         -> LinkClick.gen(now),
+        frequencies.changeForm        -> ChangeForm.gen(now),
+        frequencies.funnelInteraction -> FunnelInteraction.gen(now)
       )
       .map(l => UnstructEventWrapper(l, b64 = true))
 }

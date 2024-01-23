@@ -25,7 +25,7 @@ final case class TransactionItemEvent(
   ti_ca: Option[String], // ti_category
   ti_pr: Double,         // ti_price
   ti_qu: Int,            // ti_quantity
-  ti_cu: Option[String], //ti_currency
+  ti_cu: Option[String]  // ti_currency
 ) extends BodyEvent {
   override def toProto: List[BasicNameValuePair] =
     asKV("ti_id", Some(ti_id)) ++
