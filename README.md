@@ -9,11 +9,11 @@ We provide [a command line tool](#quickstart-cli) to output events to a file, an
 
 ## Quickstart CLI
 
-Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.7.0/snowplow-event-generator-0.7.0.tar.gz). You need java installed to run it.
+Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.8.0/snowplow-event-generator-0.8.0.tar.gz). You need java installed to run it.
 
 ```bash
-wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.7.0/snowplow-event-generator-0.7.0.tar.gz
-tar -xzf snowplow-event-generator-0.7.0.tar.gz
+wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.8.0/snowplow-event-generator-0.8.0.tar.gz
+tar -xzf snowplow-event-generator-0.8.0.tar.gz
 ```
 
 And start generating events in your `my-events` directory, in configuration file set:
