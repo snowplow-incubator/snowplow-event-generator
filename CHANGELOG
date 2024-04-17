@@ -1,3 +1,8 @@
+Version 0.8.0 (2024-04-18)
+--------------------------
+Add more different types of self-describing event (#76)
+Configurable number of self-describing context entities (#74)
+
 Version 0.7.0 (2024-01-03)
 --------------------------
 Populate all event fields (#73)
