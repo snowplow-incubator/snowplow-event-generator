@@ -19,14 +19,14 @@ import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._
 
 case class DefaultEnrichment(
-  derived_tstamp: Option[Instant],
-  etl_tstamp: Option[Instant]
+  derived_tstamp: Instant,
+  etl_tstamp: Instant
 )
 
 object DefaultEnrichment {
   def gen: Gen[DefaultEnrichment] =
     (
-      genInstantOpt(Instant.now),
-      genInstantOpt(Instant.now)
+      genInstant(Instant.now),
+      genInstant(Instant.now)
     ).mapN(DefaultEnrichment.apply)
 }

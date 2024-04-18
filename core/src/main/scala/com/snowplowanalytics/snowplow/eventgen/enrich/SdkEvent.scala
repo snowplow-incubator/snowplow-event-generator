@@ -85,7 +85,7 @@ object SdkEvent {
         case _                       => None
       }
 
-      val defaultEnrichment             = enrichments.flatMap(_.defaultEnrichment)
+      val defaultEnrichment             = enrichments.map(_.defaultEnrichment)
       val ipEnrichment                  = enrichments.flatMap(_.ipEnrichment)
       val urlEnrichment                 = enrichments.flatMap(_.urlEnrichment)
       val refererEnrichment             = enrichments.flatMap(_.refererEnrichment)
@@ -225,14 +225,14 @@ object SdkEvent {
         refr_dvce_tstamp = crossDomainEnrichment.flatMap(_.refr_dvce_tstamp),
         derived_contexts = el.derivedContexts.forSdkEvent,
         domain_sessionid = el.u.flatMap(_.sid.map(_.toString)),
-        derived_tstamp = defaultEnrichment.flatMap(_.derived_tstamp),
+        derived_tstamp = defaultEnrichment.map(_.derived_tstamp),
         event_vendor = ueVendor,
         event_name = eName,
         event_format = ueFormat,
         event_version = ueVersion,
         event_fingerprint = eventFingerprintEnrichment.flatMap(_.event_fingerprint),
         true_tstamp = el.dt.flatMap(_.ttm),
-        etl_tstamp = defaultEnrichment.flatMap(_.etl_tstamp)
+        etl_tstamp = defaultEnrichment.map(_.etl_tstamp)
       )
     }
 
