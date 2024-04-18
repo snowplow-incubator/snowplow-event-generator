@@ -68,7 +68,9 @@ object Dependencies {
     val kcl            = "software.amazon.awssdk"    % "kinesis"                      % V.awsSdk
     val awsRegions     = "software.amazon.awssdk"    % "regions"                      % V.awsSdk
     val http4sClient   = "org.http4s"               %% "http4s-blaze-client"          % V.http4s
-    val stsSdk         = "software.amazon.awssdk"    % "sts"                          % V.awsSdk    
+    val stsSdk         = "software.amazon.awssdk"    % "sts"                          % V.awsSdk
+    val http4sEmber    = "org.http4s"               %% "http4s-ember-client"          % V.http4s
+    val http4sCirce    =  "org.http4s"              %% "http4s-circe"                 % V.http4s
 
     // Scala (test only)
     val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test
