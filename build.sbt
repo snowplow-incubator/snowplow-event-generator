@@ -39,10 +39,12 @@ lazy val core = project
       Dependencies.Libraries.collectorPayload,
       Dependencies.Libraries.slf4j,
       Dependencies.Libraries.thrift,
+      Dependencies.Libraries.stsSdk % Runtime,
       // Scala (test only)
       Dependencies.Libraries.specs2Scalacheck,
       Dependencies.Libraries.specs2,
-      Dependencies.Libraries.specs2Cats
+      Dependencies.Libraries.specs2Cats,
+      
     )
   )
 
@@ -71,9 +73,9 @@ lazy val sinks = project
       Dependencies.Libraries.fs2Pubsub,
       Dependencies.Libraries.fs2Kafka,
       Dependencies.Libraries.awsRegions,
-      "org.http4s" %% "http4s-ember-client" % "0.23.15",
-      "org.http4s" %% "http4s-circe" % "0.23.15"
-      // TODO move this
+      Dependencies.Libraries.stsSdk % Runtime,
+      Dependencies.Libraries.http4sEmber,
+      Dependencies.Libraries.http4sCirce
     ),
     //libraryDependencies += "org.typelevel" %% "cats-effect" % "3.4.6",
     // libraryDependencies += "org.http4s"    %% "http4s-ember-client" % "0.23.15",
