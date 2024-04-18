@@ -17,7 +17,7 @@ import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._
 
 final case class Enrichments(
-  defaultEnrichment: Option[DefaultEnrichment],
+  defaultEnrichment: DefaultEnrichment,
   ipEnrichment: Option[IpEnrichment],
   urlEnrichment: Option[UrlEnrichment],
   refererEnrichment: Option[RefererEnrichment],
@@ -32,7 +32,7 @@ object Enrichments {
 
   def gen: Gen[Enrichments] =
     (
-      Gen.option(DefaultEnrichment.gen),
+      DefaultEnrichment.gen,
       Gen.option(IpEnrichment.gen),
       Gen.option(UrlEnrichment.gen),
       Gen.option(RefererEnrichment.gen),
