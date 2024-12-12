@@ -23,6 +23,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - name: Run tests
         run: sbt clean scalafmtCheckAll test
 
@@ -38,6 +40,8 @@ jobs:
         with:
           java-version: 11
           distribution: adopt
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - name: Get current version
         id: ver
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
@@ -82,6 +86,8 @@ jobs:
         with:
           java-version: 11
           distribution: adopt
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1          
       - name: Deploy common on Bintray Maven and Maven Central
         run: sbt "project core" ci-release
         env:
@@ -102,6 +108,8 @@ jobs:
         with:
           java-version: 11
           distribution: adopt
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1          
       - name: Get current version
         id: ver
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"

@@ -40,6 +40,7 @@ final case class Config(
   withEnrichedJson: Boolean,
   payloadsPerFile: Int,
   duplicates: Option[Config.Duplicates],
+  fixedAppId: Option[String],
   timestamps: Config.Timestamps,
   eventFrequencies: EventFrequencies,
   contexts: Context.ContextsConfig,

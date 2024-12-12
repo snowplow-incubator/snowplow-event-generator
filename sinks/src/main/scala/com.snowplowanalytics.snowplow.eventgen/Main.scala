@@ -90,7 +90,8 @@ object Main extends IOApp {
                       time,
                       config.eventFrequencies,
                       config.contexts,
-                      config.generateEnrichments
+                      config.generateEnrichments,
+                      config.fixedAppId
                     ),
                     rng
                   ),
@@ -123,7 +124,8 @@ object Main extends IOApp {
                       time,
                       config.eventFrequencies,
                       config.contexts,
-                      config.generateEnrichments
+                      config.generateEnrichments,
+                      config.fixedAppId
                     ),
                     rng
                   ),
