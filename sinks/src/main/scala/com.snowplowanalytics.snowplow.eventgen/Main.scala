@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Snowplow Analytics Ltd. All rights reserved.
+ * Copyright (c) 2021-2025 Snowplow Analytics Ltd. All rights reserved.
  *
  * This program is licensed to you under the Apache License Version 2.0,
  * and you may not use this file except in compliance with the Apache License Version 2.0.
@@ -12,27 +12,21 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
+import java.time.Instant
+
+import org.scalacheck.{Gen => ScalaGen}
+
 import fs2.{Pipe, Stream}
+
 import cats.syntax.all._
-import cats.effect.kernel.Sync
-import cats.effect.{Async, Clock, ExitCode, IO, IOApp}
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
-import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
+
+import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.kernel.{Async, Clock, Sync}
+
 import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
 import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
-import software.amazon.awssdk.services.kinesis.model.PutRecordRequest
-import com.permutive.pubsub.producer.grpc.{GooglePubsubProducer, PubsubProducerConfig}
-import com.permutive.pubsub.producer.Model.{ProjectId, Topic}
-import com.permutive.pubsub.producer.encoder.MessageEncoder
-import scala.concurrent.duration.DurationInt
-import software.amazon.awssdk.regions.Region
-
-import java.net.URI
-import java.nio.charset.StandardCharsets
+import com.snowplowanalytics.snowplow.eventgen.sinks.Sink
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
@@ -40,7 +34,7 @@ object Main extends IOApp {
       case Right(Config.Cli(config)) =>
         val unstructCounts = printCounts(AllUnstructs.all)
         val contextCounts  = printCounts(AllContexts.all)
-        sink[IO](config) >>
+        generate[IO](config) >>
           IO.println(s"""Contexts:
                         |$contextCounts
                         |Unstruct Events:
@@ -55,217 +49,53 @@ object Main extends IOApp {
   def printCounts(gens: List[SelfDescribingJsonGen]): String =
     gens.map(g => s"  ${g.schemaKey.toSchemaUri} = ${g.genCount}").mkString("\n")
 
-  type GenOutput = (collector.CollectorPayload, List[Event], HttpRequest)
+  def generate[F[_]: Async](config: Config): F[Unit] = {
 
-  def sink[F[_]: Async](config: Config): F[Unit] = {
-    val rng = config.randomisedSeed match {
-      case true  => new scala.util.Random(scala.util.Random.nextInt())
-      case false => new scala.util.Random(config.seed)
-    }
+    val sink: Sink[F] = Sink.make(config, config.output)
 
-    val timeF = config.timestamps match {
-      case Config.Timestamps.Now         => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
-      case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
-    }
-
-    // function to wrangle outputs into the format I want
-    def makeGenOutput(nested: (collector.CollectorPayload, List[Event]), http: HttpRequest): GenOutput =
-      return (nested._1, nested._2, http)
-
-    val eventStream: Stream[F, GenOutput] =
-      Stream.eval(timeF).flatMap { time =>
-        config.duplicates match {
-          case Some(dups) =>
-            Stream.repeatEval(
-              Sync[F].delay(
-                makeGenOutput(
-                  runGen(
-                    SdkEvent.genPairDup(
-                      dups.natProb,
-                      dups.synProb,
-                      dups.natTotal,
-                      dups.synTotal,
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies,
-                      config.contexts,
-                      config.generateEnrichments,
-                      config.fixedAppId
-                    ),
-                    rng
-                  ),
-                  runGen(
-                    HttpRequest.genDup(
-                      dups.natProb,
-                      dups.synProb,
-                      dups.natTotal,
-                      dups.synTotal,
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies,
-                      config.contexts,
-                      config.methodFrequencies
-                    ),
-                    rng
-                  )
-                )
-              )
-            )
-          case None =>
-            Stream.repeatEval(
-              Sync[F].delay(
-                makeGenOutput(
-                  runGen(
-                    SdkEvent.genPair(
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies,
-                      config.contexts,
-                      config.generateEnrichments,
-                      config.fixedAppId
-                    ),
-                    rng
-                  ),
-                  runGen(
-                    HttpRequest.gen(
-                      config.eventPerPayloadMin,
-                      config.eventPerPayloadMax,
-                      time,
-                      config.eventFrequencies,
-                      config.contexts,
-                      config.methodFrequencies
-                    ),
-                    rng
-                  )
-                )
-              )
-            )
-        }
-      }
-
-    def sinkBuilder(prefix: String, idx: Int, uri: URI): Pipe[F, Byte, Nothing] = {
-      val suffix = if (config.compress) ".gz" else ""
-      if (uri.toString.startsWith("s3:")) {
-        RotatingSink.s3(prefix, suffix, idx, uri)
-      } else if (uri.toString.startsWith("file:")) {
-        RotatingSink.file(prefix, suffix, idx, uri)
-      } else {
-        throw new RuntimeException(s"Unknown scheme in $uri")
-      }
-    }
-
-    def sinkFor(name: String, idx: Int, predicate: Boolean, uri: URI): Pipe[F, Byte, Nothing] =
-      if (predicate) sinkBuilder(name, idx, uri)
-      else _.drain
-
-    def fileSink(fileConfig: Config.Output.File): Pipe[F, GenOutput, Unit] =
-      RotatingSink.rotate(config.payloadsPerFile) { idx =>
-        val pipe1: Pipe[F, GenOutput, Nothing] =
-          _.map(_._1)
-            .through(Serializers.rawSerializer(config.compress))
-            .through(sinkFor("raw", idx, config.withRaw, fileConfig.path))
-        val pipe2: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
-          .through(Serializers.enrichedTsvSerializer(config.compress))
-          .through(sinkFor("enriched", idx, config.withEnrichedTsv, fileConfig.path))
-        val pipe3: Pipe[F, GenOutput, Nothing] = _.flatMap(in => Stream.emits(in._2))
-          .through(Serializers.enrichedJsonSerializer(config.compress))
-          .through(sinkFor("transformed", idx, config.withEnrichedJson, fileConfig.path))
-        in: Stream[F, GenOutput] => in.broadcastThrough(pipe1, pipe2, pipe3)
-      }
-
-    def kafkaSink(output: Config.Output.Kafka): Pipe[F, GenOutput, Unit] = Kafka.sink(output)
-
-    def httpSink(output: Config.Output.Http): Pipe[F, GenOutput, Unit] = Http.sink(output)
-
-    def kinesisSink(output: Config.Output.Kinesis): Pipe[F, GenOutput, Unit] = {
-      if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
-        throw new RuntimeException(s"Kinesis could only output in single format")
-      if (config.compress) {
-        throw new RuntimeException(s"Kinesis doesn't support compression")
-      }
-      val kinesisClient: KinesisAsyncClient = output.region match {
-        case Some(region) =>
-          KinesisAsyncClient.builder.region(Region.of(region)).build
-        case None =>
-          KinesisAsyncClient.builder.build
-      }
-
-      def reqBuilder(event: Event): PutRecordRequest = PutRecordRequest
-        .builder()
-        .streamName(output.streamName)
-        .partitionKey(event.event_id.toString)
-        .data(SdkBytes.fromUtf8String(event.toTsv))
-        .build()
-
-      st: Stream[F, GenOutput] =>
-        st.map(_._2)
-          .flatMap(Stream.emits)
-          .map(reqBuilder)
-          .parEvalMap(10)(e => Async[F].fromCompletableFuture(Sync[F].delay(kinesisClient.putRecord(e))))
-          .void
-    }
-
-    def pubsubSink(output: Config.Output.PubSub): Pipe[F, GenOutput, Unit] = {
-      if (List(config.withRaw, config.withEnrichedTsv, config.withEnrichedJson).count(identity) > 1)
-        throw new RuntimeException(s"Pubsub could only output in single format")
-      if (config.compress) {
-        throw new RuntimeException(s"Pubsub doesn't support compression")
-      }
-      val producerConfig = PubsubProducerConfig[F](
-        batchSize = 100,
-        delayThreshold = 1.second,
-        onFailedTerminate = _ => Sync[F].unit
+    if (config.withRaw) {
+      // Collector payloads
+      run(
+        config.payloadsTotal.toLong,
+        mkStream(config, Gen.collectorPayload(config, _)),
+        sink.collectorPayload
       )
-      val topicRegex = "^/*projects/([^/]+)/topics/([^/]+)$".r
-      val (projectId, topic) = output.subscription match {
-        case topicRegex(p, t) => (ProjectId(p), Topic(t))
-        case _ =>
-          throw new RuntimeException(s"pubsub uri does not match format pubsub://projects/project-id/topics/topic-id")
-      }
-      implicit val encoder: MessageEncoder[Event] = new MessageEncoder[Event] {
-        def encode(e: Event): Either[Throwable, Array[Byte]] =
-          e.toTsv.getBytes(StandardCharsets.UTF_8).asRight
-      }
-      st: Stream[F, GenOutput] =>
-        for {
-          producer <- Stream.resource(GooglePubsubProducer.of[F, Event](projectId, topic, producerConfig))
-          _        <- st.parEvalMapUnordered(1000)(e => e._2.traverse_(producer.produce(_)))
-        } yield ()
+    } else if (config.withEnrichedTsv || config.withEnrichedJson) {
+      // Enriched events
+      run(
+        config.payloadsTotal.toLong,
+        mkStream(config, Gen.enriched(config, _)).flatMap(Stream.emits),
+        sink.enriched
+      )
+    } else if (config.output.isInstanceOf[Config.Output.Http]) {
+      // HTTP requests
+      run(
+        config.payloadsTotal.toLong,
+        mkStream(config, Gen.httpRequest(config, _)),
+        sink.http
+      )
+    } else {
+      Sync[F].raiseError(
+        new IllegalArgumentException("Can't determine the type of events to generate based on the configuration")
+      )
     }
-
-    def makeOutput: Pipe[F, GenOutput, Unit] = config.output match {
-      case fileConfig: Config.Output.File =>
-        fileSink(fileConfig)
-      case kinesisConfig: Config.Output.Kinesis =>
-        kinesisSink(kinesisConfig)
-      case kafkaConfig: Config.Output.Kafka =>
-        kafkaSink(kafkaConfig)
-      case pubsubConfig: Config.Output.PubSub =>
-        pubsubSink(pubsubConfig)
-      case httpConfig: Config.Output.Http =>
-        httpSink(httpConfig)
-    }
-
-    eventStream
-      .take(config.payloadsTotal.toLong)
-      .zipWithScan1((0, 0)) { case (idx, el) => (el._2.length + idx._1, 1 + idx._2) }
-      .evalTap { case (_, idx) =>
-        if (idx._2 == config.payloadsTotal.toLong) {
-          Sync[F].delay(println(s"""Payloads = ${idx._2}
-                                   |Events = ${idx._1}""".stripMargin))
-        } else if (idx._1 % 10000 == 0 && idx._1 != 0) {
-          Sync[F].delay(println(s"processed events: ${idx._1}..."))
-        } else {
-          Sync[F].unit
-        }
-      }
-      .map(_._1)
-      .through(makeOutput)
-      .compile
-      .drain
   }
 
+  def run[F[_]: Sync, A](nbEvents: Long, events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
+    events.take(nbEvents).through(sink).compile.drain
+
+  def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
+    for {
+      rng <- Stream.emit {
+        if (config.randomisedSeed) new scala.util.Random(scala.util.Random.nextInt())
+        else new scala.util.Random(config.seed)
+      }
+      time <- Stream.eval {
+        config.timestamps match {
+          case Config.Timestamps.Now => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
+          case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
+        }
+      }
+      event <- Stream.repeatEval(Sync[F].delay(runGen(mkGen(time), rng)))
+    } yield event
 }

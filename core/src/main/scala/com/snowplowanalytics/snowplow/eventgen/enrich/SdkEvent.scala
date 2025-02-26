@@ -42,7 +42,7 @@ object SdkEvent {
     case _ => None
   }
 
-  private def eventFromColPayload(
+  private def eventsFromColPayload(
     p: CollectorPayload,
     fallbackEid: UUID,
     enrichments: Option[Enrichments],
@@ -240,29 +240,31 @@ object SdkEvent {
   def gen(
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant,
+    time: Instant,
     frequencies: EventFrequencies,
     contexts: Context.ContextsConfig,
-    generateEnrichments: Boolean = false,
-    fixedAppId: Option[String] = None
+    generateEnrichments: Boolean,
+    fixedAppId: Option[String]
   ): Gen[List[Event]] =
-    genPair(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts, generateEnrichments, fixedAppId).map(
-      _._2
-    )
+    for {
+      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, time, frequencies, contexts)
+      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
+      eid         <- Gen.uuid
+    } yield eventsFromColPayload(cp, eid, enrichments, fixedAppId)
 
-  def genPairDup(
+  def genDup(
     natProb: Float,
     synProb: Float,
     natTotal: Int,
     synTotal: Int,
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant,
+    time: Instant,
     frequencies: EventFrequencies,
     contexts: Context.ContextsConfig,
     generateEnrichments: Boolean,
     fixedAppId: Option[String]
-  ): Gen[(CollectorPayload, List[Event])] =
+  ): Gen[List[Event]] =
     for {
       cp <- CollectorPayload.genDup(
         natProb,
@@ -271,27 +273,11 @@ object SdkEvent {
         synTotal,
         eventPerPayloadMin,
         eventPerPayloadMax,
-        now,
+        time,
         frequencies,
         contexts
       )
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
-    } yield (cp, eventFromColPayload(cp, eid, enrichments, fixedAppId))
-
-  def genPair(
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig,
-    generateEnrichments: Boolean,
-    fixedAppId: Option[String]
-  ): Gen[(CollectorPayload, List[Event])] =
-    for {
-      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts)
-      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
-      eid         <- Gen.uuid
-    } yield (cp, eventFromColPayload(cp, eid, enrichments, fixedAppId))
-
+    } yield eventsFromColPayload(cp, eid, enrichments, fixedAppId)
 }

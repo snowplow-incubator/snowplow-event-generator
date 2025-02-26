@@ -76,7 +76,7 @@ object Body {
     );
   private def genWithEt(
     etGen: Gen[EventTransaction],
-    now: Instant,
+    time: Instant,
     frequencies: EventFrequencies,
     contexts: Context.ContextsConfig
   ) =
@@ -84,24 +84,24 @@ object Body {
       e   <- EventType.gen(frequencies)
       app <- Application.gen
       et  <- etGen
-      dt  <- DateTime.genOpt(now)
+      dt  <- DateTime.genOpt(time)
       dev <- Device.genOpt
       tv  <- TrackerVersion.gen
       u   <- User.genOpt
       event <- e match {
         case EventType.Struct          => StructEvent.gen
-        case EventType.Unstruct        => UnstructEventWrapper.gen(now, frequencies)
+        case EventType.Unstruct        => UnstructEventWrapper.gen(time, frequencies)
         case EventType.PageView        => PageView.gen
         case EventType.PagePing        => PagePing.gen
         case EventType.Transaction     => TransactionEvent.gen
         case EventType.TransactionItem => TransactionItemEvent.gen
       }
-      contexts        <- Context.ContextsWrapper.gen(now, contexts)
-      derivedContexts <- Context.DerivedContextsWrapper.gen(now)
+      contexts        <- Context.ContextsWrapper.gen(time, contexts)
+      derivedContexts <- Context.DerivedContextsWrapper.gen(time)
     } yield Body(e, app, dt, dev, tv, et, u, event, contexts, derivedContexts)
 
-  def gen(now: Instant, frequencies: EventFrequencies, contexts: Context.ContextsConfig): Gen[Body] =
-    genWithEt(EventTransaction.gen, now, frequencies, contexts)
+  def gen(time: Instant, frequencies: EventFrequencies, contexts: Context.ContextsConfig): Gen[Body] =
+    genWithEt(EventTransaction.gen, time, frequencies, contexts)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }

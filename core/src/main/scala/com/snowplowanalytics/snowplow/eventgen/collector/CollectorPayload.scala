@@ -120,34 +120,34 @@ object CollectorPayload {
     synTotal: Int,
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant,
+    time: Instant,
     frequencies: EventFrequencies,
     contexts: Context.ContextsConfig
   ): Gen[CollectorPayload] =
     genWithBody(
       eventPerPayloadMin,
       eventPerPayloadMax,
-      Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies, contexts),
-      now
+      Body.genDup(natProb, synProb, natTotal, synTotal, time, frequencies, contexts),
+      time
     )
 
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], now: Instant) =
+  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], time: Instant) =
     for {
       n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
       api     <- Api.genApi(n)
       src     <- Source.gen
-      cc      <- CollectorContext.gen(now)
+      cc      <- CollectorContext.gen(time)
       payload <- Gen.listOfN(n, bodyGen)
     } yield CollectorPayload(api, payload, src, cc)
 
   def gen(
     eventPerPayloadMin: Int,
     eventPerPayloadMax: Int,
-    now: Instant,
+    time: Instant,
     frequencies: EventFrequencies,
     contexts: Context.ContextsConfig
   ): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(now, frequencies, contexts), now)
+    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(time, frequencies, contexts), time)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
