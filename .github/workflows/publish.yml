@@ -87,7 +87,7 @@ jobs:
           java-version: 11
           distribution: adopt
       - name: Install sbt
-        uses: sbt/setup-sbt@v1          
+        uses: sbt/setup-sbt@v1
       - name: Deploy common on Bintray Maven and Maven Central
         run: sbt "project core" ci-release
         env:
@@ -109,7 +109,7 @@ jobs:
           java-version: 11
           distribution: adopt
       - name: Install sbt
-        uses: sbt/setup-sbt@v1          
+        uses: sbt/setup-sbt@v1
       - name: Get current version
         id: ver
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
