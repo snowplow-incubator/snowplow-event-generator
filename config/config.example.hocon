@@ -19,7 +19,7 @@
     "at": "2022-02-01T01:01:01z"
   }
   "output": {
-    "type": "File"
-    "path": "file:///tmp"
+    "type": "Kinesis"
+    "streamName": "sp-raw"
   }
 }

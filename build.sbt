@@ -43,8 +43,7 @@ lazy val core = project
       // Scala (test only)
       Dependencies.Libraries.specs2Scalacheck,
       Dependencies.Libraries.specs2,
-      Dependencies.Libraries.specs2Cats,
-      
+      Dependencies.Libraries.specs2Cats
     )
   )
 
@@ -75,7 +74,8 @@ lazy val sinks = project
       Dependencies.Libraries.awsRegions,
       Dependencies.Libraries.stsSdk % Runtime,
       Dependencies.Libraries.http4sEmber,
-      Dependencies.Libraries.http4sCirce
+      Dependencies.Libraries.http4sCirce,
+      Dependencies.Libraries.catsRetry
     ),
     //libraryDependencies += "org.typelevel" %% "cats-effect" % "3.4.6",
     // libraryDependencies += "org.http4s"    %% "http4s-ember-client" % "0.23.15",

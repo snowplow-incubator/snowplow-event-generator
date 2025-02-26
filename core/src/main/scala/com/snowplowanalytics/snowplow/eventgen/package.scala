@@ -20,9 +20,7 @@ import scala.util.Random
 
 package object eventgen {
 
-//  def runWithDups()
-
-  def runGen[F[_], A](gen: Gen[A], seed: Random): A = {
+  def runGen[A](gen: Gen[A], seed: Random): A = {
 
     @tailrec
     def go(attempt: Int): A =
