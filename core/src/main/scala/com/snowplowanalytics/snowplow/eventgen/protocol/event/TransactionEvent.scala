@@ -52,6 +52,6 @@ object TransactionEvent {
       genStringOpt("tr_city", 10),
       genStringOpt("tr_state", 10),
       genStringOpt("tr_country", 10),
-      genStringOpt("tr_currency", 10)
+      Gen.option(genCurrency)
     ).mapN(TransactionEvent.apply)
 }

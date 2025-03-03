@@ -35,10 +35,10 @@ case class IpEnrichment(
 object IpEnrichment {
   def gen: Gen[IpEnrichment] =
     (
-      genStringOpt("geo_country", 10),
-      genStringOpt("geo_region", 10),
+      Gen.option(genGeoCountry),
+      Gen.option(genGeoRegion),
       genStringOpt("geo_city", 10),
-      genStringOpt("geo_zipcode", 10),
+      genStringOpt("zip_", 10),
       genDblOpt,
       genDblOpt,
       genStringOpt("geo_region_name", 10),

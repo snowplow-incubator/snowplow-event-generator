@@ -32,6 +32,6 @@ object CurrencyConversionEnrichment {
       genScale2DoubleOpt,
       genScale2DoubleOpt,
       genScale2DoubleOpt,
-      genStringOpt("base_currency", 10)
+      Gen.option(genCurrency)
     ).mapN(CurrencyConversionEnrichment.apply)
 }
