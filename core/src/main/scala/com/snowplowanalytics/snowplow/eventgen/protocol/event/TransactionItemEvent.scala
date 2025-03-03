@@ -46,6 +46,6 @@ object TransactionItemEvent {
       genStringOpt("ti_category", 10),
       genScale2Double,
       genInt,
-      genStringOpt("ti_currency", 10)
+      Gen.option(genCurrency)
     ).mapN(TransactionItemEvent.apply)
 }

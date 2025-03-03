@@ -92,6 +92,12 @@ package object primitives {
 
   def genScale2DoubleOpt: Gen[Option[Double]] = Gen.option(genScale2Double)
 
+  def genCurrency: Gen[String] = Gen.oneOf("USD", "EUR", "CAD")
+
+  def genGeoCountry: Gen[String] = Gen.oneOf("BE", "DE", "CA", "US")
+
+  def genGeoRegion: Gen[String] = Gen.oneOf("ENG", "NIR", "SCT", "WLS")
+
   private val LoremIpsum: Seq[String] =
     """Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
       | Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
