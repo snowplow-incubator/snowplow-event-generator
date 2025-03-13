@@ -31,8 +31,8 @@ object PlaybackRateChangeEvent extends SelfDescribingJsonGen {
 
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
-      "previousRate" -> Gen.chooseNum(0, 100).optionalOrNull,
-      "newRate"      -> Gen.chooseNum(0, 100).required
+      "previousRate" -> Gen.chooseNum(0, 16).optionalOrNull,
+      "newRate"      -> Gen.chooseNum(0, 16).required
     )
 
 }
