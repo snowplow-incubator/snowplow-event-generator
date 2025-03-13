@@ -82,7 +82,19 @@ object Main extends IOApp {
   }
 
   def run[F[_]: Sync, A](nbEvents: Long, events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
-    events.take(nbEvents).through(sink).compile.drain
+    events
+      .take(nbEvents)
+      .zipWithIndex
+      .evalMap { case (e, index) =>
+        if (index % 10000 == 0 && index != 0) {
+          Sync[F].delay(println(s"processed events: $index...")).map(_ => e)
+        } else {
+          Sync[F].pure(e)
+        }
+      }
+      .through(sink)
+      .compile
+      .drain
 
   def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
     for {
