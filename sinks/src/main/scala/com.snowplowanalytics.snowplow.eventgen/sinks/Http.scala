@@ -48,7 +48,16 @@ object Http {
       requests =>
         Stream
           .resource(EmberClientBuilder.default[F].build)
-          .flatMap(client => requests.map(buildRequest[F](config, _)).evalMap(req => client.status(req)).void)
+          .flatMap(client =>
+            requests.map(buildRequest[F](config, _)).evalMap { req =>
+              client
+                .status(req)
+                .void
+                // The app also generates bad requests (e.g. to bad path).
+                // We don't want the app to crash when the collector replies with some error.
+                .voidError
+            }
+          )
   }
 
   private def buildRequest[F[_]](
