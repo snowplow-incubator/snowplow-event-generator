@@ -27,9 +27,9 @@ object OptimizelySummary extends SelfDescribingJsonGen {
 
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
-      "experimentId"  -> Gen.choose(-10, 100000).orNull,
+      "experimentId"  -> Gen.choose(0, 100000).orNull,
       "variationName" -> strGen(1, 32).orNull,
-      "variation"     -> Gen.choose(-10, 100000).optional,
+      "variation"     -> Gen.choose(0, 100000).optional,
       "visitorId"     -> strGen(1, 32).optional
     )
 }
