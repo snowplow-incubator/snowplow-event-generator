@@ -14,6 +14,8 @@ package com.snowplowanalytics.snowplow.eventgen
 
 import java.time.Instant
 
+import scala.concurrent.duration.DurationInt
+
 import org.scalacheck.{Gen => ScalaGen}
 
 import fs2.{Pipe, Stream}
@@ -21,7 +23,7 @@ import fs2.{Pipe, Stream}
 import cats.syntax.all._
 
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.effect.kernel.{Async, Clock, Sync}
+import cats.effect.kernel.{Async, Clock, Ref, Sync}
 
 import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
 import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
@@ -32,8 +34,8 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     Config.parse(args) match {
       case Right(Config.Cli(config)) =>
-        val unstructCounts = printCounts(AllUnstructs.all)
-        val contextCounts  = printCounts(AllContexts.all)
+        def unstructCounts = printCounts(AllUnstructs.all)
+        def contextCounts  = printCounts(AllContexts.all)
         generate[IO](config) >>
           IO.println(s"""Contexts:
                         |$contextCounts
@@ -81,18 +83,19 @@ object Main extends IOApp {
     }
   }
 
-  def run[F[_]: Sync, A](nbEvents: Long, events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
-    events
-      .take(nbEvents)
-      .zipWithIndex
-      .evalMap { case (e, index) =>
-        if (index % 10000 == 0 && index != 0) {
-          Sync[F].delay(println(s"processed events: $index...")).map(_ => e)
-        } else {
-          Sync[F].pure(e)
+  def run[F[_]: Async, A](nbEvents: Long, events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
+    Stream
+      .eval(Ref.of(0))
+      .flatMap { counts =>
+        val reportPeriod = 1.minute
+        val showCounts = Stream.awakeEvery(reportPeriod).evalMap { _ =>
+          counts
+            .getAndSet(0)
+            .flatMap(nbEvents => Sync[F].delay(println(s"$nbEvents events generated in the last $reportPeriod")))
         }
+
+        events.take(nbEvents).prefetchN(100).through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
       }
-      .through(sink)
       .compile
       .drain
 
