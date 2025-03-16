@@ -14,16 +14,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol.event
 
 import org.scalacheck.Gen
 
-case class EventFrequencies(
-  struct: Int,
-  unstruct: Int,
-  pageView: Int,
-  pagePing: Int,
-  transaction: Int,
-  transactionItem: Int,
-  unstructEventFrequencyDefault: Int,
-  unstructEventFrequencies: Map[String, Int]
-)
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 sealed trait EventType {
   override def toString: String = this match {
@@ -56,7 +47,7 @@ object EventType {
   //  case object StructLegacy extends EventType
   //  case object AdImpression extends EventType
 
-  def gen(frequencies: EventFrequencies): Gen[EventType] = Gen.frequency(
+  def gen(frequencies: GenConfig.EventsFrequencies): Gen[EventType] = Gen.frequency(
     (frequencies.struct, Struct),
     (frequencies.unstruct, Unstruct),
     (frequencies.pageView, PageView),

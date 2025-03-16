@@ -24,116 +24,27 @@ import io.circe.config.parser
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
-import com.snowplowanalytics.snowplow.eventgen.protocol.Context
-import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 final case class Config(
-  payloadsTotal: Option[Long],
-  seed: Long,
-  randomisedSeed: Boolean,
-  compress: Boolean,
-  eventPerPayloadMax: Int,
-  eventPerPayloadMin: Int,
-  withRaw: Boolean,
-  withEnrichedTsv: Boolean,
-  withEnrichedJson: Boolean,
-  payloadsPerFile: Int,
-  duplicates: Option[Config.Duplicates],
-  fixedAppId: Option[String],
-  timestamps: Config.Timestamps,
-  eventFrequencies: EventFrequencies,
-  contexts: Context.ContextsConfig,
-  generateEnrichments: Boolean,
-  methodFrequencies: Option[MethodFrequencies],
-  output: Config.Output
+  events: GenConfig.Events,
+  output: Config.Output,
+  eventsTotal: Option[Long],
+  timestamp: Config.Timestamp,
+  appId: Option[String],
+  seed: Option[Long],
+  eventsPerPayload: GenConfig.EventsPerPayload,
+  eventsFrequencies: GenConfig.EventsFrequencies,
+  contextsPerEvent: GenConfig.ContextsPerEvent,
+  duplicates: Option[GenConfig.Duplicates]
 )
 
 object Config {
 
-  /*
-    Probability of duplication for natural and synthetic duplicates from 0 to 1
-   */
-  case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
-
-  implicit val customCodecConfig: Configuration =
-    Configuration.default.withDiscriminator("type")
-
-  sealed trait Timestamps
-  object Timestamps {
-    case object Now extends Timestamps
-    case class Fixed(at: Instant) extends Timestamps
-  }
-
   case class Cli(config: Config)
 
-  sealed trait Output
-
-  object Output {
-    case class Kinesis(streamName: String, region: Option[String]) extends Output
-    case class File(path: URI) extends Output
-    case class PubSub(subscription: String) extends Output
-    case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Output
-    case class Http(endpoint: org.http4s.Uri) extends Output
-    case class Stdout() extends Output
-  }
-
   val configOpt   = Opts.option[Path]("config", "Path to the configuration HOCON").orNone
-  val application = Command("Snowplow Event Generator", "Generating random manifests of Snowplow events")(configOpt)
-
-  // This is needed when providing parameters via system properties
-  // e.g. -Dsnowplow.compress=false
-  implicit val booleanDecoder: Decoder[Boolean] =
-    Decoder.decodeBoolean.or(Decoder.decodeString.emap(_.toBooleanOption.toRight("Invalid boolean")))
-
-  implicit val timestampsConfigDecoder: Decoder[Timestamps] =
-    deriveConfiguredDecoder[Timestamps]
-
-  implicit val duplicatesDecoder: Decoder[Duplicates] =
-    deriveConfiguredDecoder[Duplicates]
-
-  implicit val eventFrequenciesDecoder: Decoder[EventFrequencies] =
-    deriveConfiguredDecoder[EventFrequencies]
-
-  implicit val methodFrequenciesDecoder: Decoder[MethodFrequencies] =
-    deriveConfiguredDecoder[MethodFrequencies]
-
-  implicit val mapDecoder: Decoder[Map[String, String]] = Decoder.decodeMap[String, String]
-
-  implicit val uriDecoder: Decoder[URI] = Decoder[String].emap { str =>
-    Either.catchOnly[IllegalArgumentException](URI.create(str)).leftMap(_.getMessage)
-  }
-
-  implicit val httpUriDecoder: Decoder[org.http4s.Uri] = Decoder[String].emap { str =>
-    org.http4s.Uri.fromString(str).leftMap(_.getMessage)
-  }
-
-  implicit val kafkaDecoder: Decoder[Output.Kafka] =
-    deriveConfiguredDecoder[Output.Kafka]
-
-  implicit val kinesisDecoder: Decoder[Output.Kinesis] =
-    deriveConfiguredDecoder[Output.Kinesis]
-
-  implicit val fileDecoder: Decoder[Output.File] =
-    deriveConfiguredDecoder[Output.File]
-
-  implicit val pubSubDecoder: Decoder[Output.PubSub] =
-    deriveConfiguredDecoder[Output.PubSub]
-
-  implicit val httpDecoder: Decoder[Output.Http] =
-    deriveConfiguredDecoder[Output.Http]
-
-  implicit val outputDecoder: Decoder[Output] =
-    deriveConfiguredDecoder[Output]
-
-  implicit val contextConfigDecoder: Decoder[Context.ContextsConfig] =
-    deriveConfiguredDecoder[Context.ContextsConfig]
-      .ensure(_.minPerEvent >= 0, "minPerEvent must be a positive number")
-      .ensure(_.maxPerEvent >= 0, "minPerEvent must be a positive number")
-      .ensure(c => c.maxPerEvent >= c.minPerEvent, "minPerEvent cannot be larger than maxPerEvent")
-
-  implicit val configDecoder: Decoder[Config] =
-    deriveConfiguredDecoder[Config]
+  val application = Command("Snowplow Event Generator", "Generating and sending random Snowplow events")(configOpt)
 
   /** Parse raw CLI arguments into validated and transformed application config
     *
@@ -168,6 +79,8 @@ object Config {
         .leftMap(e => s"Could not parse config file $file: ${e.getMessage}")
     } yield namespaced(ConfigFactory.load(namespaced(resolved.withFallback(namespaced(ConfigFactory.load())))))
 
+  private val Namespace = "snowplow"
+
   /** Optionally give precedence to configs wrapped in a "snowplow" block. To help avoid polluting config namespace */
   private def namespaced(config: RawConfig): RawConfig =
     if (config.hasPath(Namespace))
@@ -175,6 +88,85 @@ object Config {
     else
       config
 
-  private val Namespace = "snowplow"
+  implicit val customCodecConfig: Configuration =
+    Configuration.default.withDiscriminator("type")
 
+  sealed trait Output
+  object Output {
+    case class Kinesis(streamName: String, region: Option[String]) extends Output
+    case class PubSub(topic: String) extends Output
+    case class Kafka(brokers: String, topic: String, producerConf: Map[String, String] = Map.empty) extends Output
+    case class Http(endpoint: org.http4s.Uri) extends Output
+    case class File(path: URI, eventsPerFile: Int, compress: Boolean) extends Output
+    case object Stdout extends Output
+  }
+
+  sealed trait Timestamp
+  object Timestamp {
+    case object Now extends Timestamp
+    case class Fixed(at: Instant) extends Timestamp
+  }
+
+  // This is needed when providing parameters via system properties
+  // e.g. -Dsnowplow.file.compress=false
+  implicit val booleanDecoder: Decoder[Boolean] =
+    Decoder.decodeBoolean.or(Decoder.decodeString.emap(_.toBooleanOption.toRight("Invalid boolean")))
+
+  implicit val httpUriDecoder: Decoder[org.http4s.Uri] = Decoder[String].emap { str =>
+    org.http4s.Uri.fromString(str).leftMap(_.getMessage)
+  }
+
+  implicit val mapDecoder: Decoder[Map[String, String]] = Decoder.decodeMap[String, String]
+
+  implicit val uriDecoder: Decoder[URI] = Decoder[String].emap { str =>
+    Either.catchOnly[IllegalArgumentException](URI.create(str)).leftMap(_.getMessage)
+  }
+
+  implicit val enrichedFormatDecoder: Decoder[GenConfig.Events.Enriched.Format] =
+    deriveConfiguredDecoder[GenConfig.Events.Enriched.Format]
+
+  implicit val methodFrequenciesDecoder: Decoder[GenConfig.Events.Http.MethodFrequencies] =
+    deriveConfiguredDecoder[GenConfig.Events.Http.MethodFrequencies]
+
+  implicit val eventsDecoder: Decoder[GenConfig.Events] =
+    deriveConfiguredDecoder[GenConfig.Events]
+
+  implicit val kinesisDecoder: Decoder[Output.Kinesis] =
+    deriveConfiguredDecoder[Output.Kinesis]
+
+  implicit val pubSubDecoder: Decoder[Output.PubSub] =
+    deriveConfiguredDecoder[Output.PubSub]
+
+  implicit val kafkaDecoder: Decoder[Output.Kafka] =
+    deriveConfiguredDecoder[Output.Kafka]
+
+  implicit val httpDecoder: Decoder[Output.Http] =
+    deriveConfiguredDecoder[Output.Http]
+
+  implicit val fileDecoder: Decoder[Output.File] =
+    deriveConfiguredDecoder[Output.File]
+
+  implicit val outputDecoder: Decoder[Output] =
+    deriveConfiguredDecoder[Output]
+
+  implicit val timestampDecoder: Decoder[Timestamp] =
+    deriveConfiguredDecoder[Timestamp]
+
+  implicit val eventsPerPayloadDecoder: Decoder[GenConfig.EventsPerPayload] =
+    deriveConfiguredDecoder[GenConfig.EventsPerPayload]
+
+  implicit val eventsFrequenciesDecoder: Decoder[GenConfig.EventsFrequencies] =
+    deriveConfiguredDecoder[GenConfig.EventsFrequencies]
+
+  implicit val contextsPerEventDecoder: Decoder[GenConfig.ContextsPerEvent] =
+    deriveConfiguredDecoder[GenConfig.ContextsPerEvent]
+      .ensure(_.min >= 0, "minPerEvent must be a positive number")
+      .ensure(_.max >= 0, "minPerEvent must be a positive number")
+      .ensure(c => c.max >= c.min, "minPerEvent cannot be larger than maxPerEvent")
+
+  implicit val duplicatesDecoder: Decoder[GenConfig.Duplicates] =
+    deriveConfiguredDecoder[GenConfig.Duplicates]
+
+  implicit val configDecoder: Decoder[Config] =
+    deriveConfiguredDecoder[Config]
 }

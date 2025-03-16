@@ -16,6 +16,7 @@ import com.snowplowanalytics.iglu.core.SelfDescribingData
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.Contexts
 import com.snowplowanalytics.snowplow.eventgen.primitives._
 import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import io.circe.syntax.EncoderOps
 import io.circe.Json
 import org.apache.http.message.BasicNameValuePair
@@ -23,8 +24,6 @@ import org.scalacheck.Gen
 import java.time.Instant
 
 object Context {
-
-  final case class ContextsConfig(minPerEvent: Int, maxPerEvent: Int)
 
   final case class ContextsWrapper(value: List[SelfDescribingData[Json]]) extends Protocol {
     override def toProto: List[BasicNameValuePair] = value match {
@@ -46,9 +45,9 @@ object Context {
 
   object ContextsWrapper {
 
-    def gen(now: Instant, config: ContextsConfig): Gen[ContextsWrapper] =
+    def gen(now: Instant, contextsPerEvent: GenConfig.ContextsPerEvent): Gen[ContextsWrapper] =
       Gen
-        .chooseNum(config.minPerEvent, config.maxPerEvent)
+        .chooseNum(contextsPerEvent.min, contextsPerEvent.max)
         .flatMap { numContexts =>
           Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now))
         }

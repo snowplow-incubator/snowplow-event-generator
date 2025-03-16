@@ -31,38 +31,27 @@ import blobstore.url.Url
 
 import software.amazon.awssdk.services.s3.S3AsyncClient
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.Config
 
 object File {
 
-  def make[F[_]: Async](config: Config, fileConfig: Config.Output.File) = new Sink[F] {
+  def make[F[_]: Async](config: Config.Output.File) = new Sink[F] {
 
     override def collectorPayload: Pipe[F, CollectorPayload, Unit] =
       pipe(
-        config.payloadsPerFile,
+        config.eventsPerFile,
         rawSerializer(config.compress),
-        mkWriter(config, fileConfig, "raw")
+        mkWriter(config, "raw")
       )
 
-    override def enriched: Pipe[F, Event, Unit] =
-      if (config.withEnrichedTsv)
-        pipe(
-          config.payloadsPerFile,
-          enrichedTsvSerializer(config.compress),
-          mkWriter(config, fileConfig, "enriched-tsv")
-        )
-      else if (config.withEnrichedJson)
-        pipe(
-          config.payloadsPerFile,
-          enrichedJsonSerializer(config.compress),
-          mkWriter(config, fileConfig, "enriched-json")
-        )
-      else
-        _ => Stream.raiseError(new IllegalArgumentException(s"Can't determine enriched format to use"))
+    override def enriched: Pipe[F, String, Unit] =
+      pipe(
+        config.eventsPerFile,
+        stringSerializer(config.compress),
+        mkWriter(config, "enriched")
+      )
 
     override def http: Pipe[F, HttpRequest, Unit] =
       _ => Stream.raiseError(new IllegalStateException(s"Can't use file output for HTTP requests"))
@@ -133,11 +122,10 @@ object File {
   }
 
   private def mkWriter[F[_]: Async](
-    config: Config,
-    fileConfig: Config.Output.File,
+    config: Config.Output.File,
     prefix: String
   ): Int => Pipe[F, Byte, Unit] = { idx =>
-    val uri    = fileConfig.path
+    val uri    = config.path
     val suffix = if (config.compress) ".gz" else ""
 
     if (uri.toString.startsWith("s3:")) {
@@ -164,12 +152,6 @@ object File {
 
   private def rawSerializer[F[_]: Sync](compress: Boolean): Pipe[F, CollectorPayload, Byte] =
     _.flatMap(e => Stream.emits(e.toRaw)).through(base64.encode).through(stringSerializer(compress))
-
-  private def enrichedTsvSerializer[F[_]: Sync](compress: Boolean): Pipe[F, Event, Byte] =
-    _.map(_.toTsv).through(stringSerializer(compress))
-
-  private def enrichedJsonSerializer[F[_]: Sync](compress: Boolean): Pipe[F, Event, Byte] =
-    _.map(_.toJson(true).noSpaces).through(stringSerializer(compress))
 
   private def stringSerializer[F[_]: Sync](compress: Boolean): Pipe[F, String, Byte] = {
     val pipe: Pipe[F, String, Byte] = _.flatMap(x => Stream(x, "\n")).through(utf8.encode)

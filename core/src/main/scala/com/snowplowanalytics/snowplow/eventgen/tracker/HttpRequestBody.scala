@@ -13,8 +13,8 @@
 package com.snowplowanalytics.snowplow.eventgen.tracker
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SelfDescribingData}
-import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Context}
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.protocol.Body
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import io.circe.Json
@@ -31,30 +31,28 @@ final case class HttpRequestBody(schema: SchemaKey, data: List[Body]) {
 
 object HttpRequestBody {
   def genDup(
-    natProb: Float,
-    synProb: Float,
-    natTotal: Int,
-    synTotal: Int,
-    min: Int,
-    max: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    duplicates: GenConfig.Duplicates,
+    evenstPerPayload: GenConfig.EventsPerPayload,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ): Gen[HttpRequestBody] =
-    genWithBody(min, max, Body.genDup(natProb, synProb, natTotal, synTotal, now, frequencies, contexts))
+    genWithBody(evenstPerPayload, Body.genDup(duplicates, time, frequencies, contexts))
 
   def gen(
-    min: Int,
-    max: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    evenstPerPayload: GenConfig.EventsPerPayload,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ): Gen[HttpRequestBody] =
-    genWithBody(min, max, Body.gen(now, frequencies, contexts))
+    genWithBody(evenstPerPayload, Body.gen(time, frequencies, contexts))
 
-  private def genWithBody(min: Int, max: Int, bodyGen: Gen[Body]) =
+  private def genWithBody(
+    evenstPerPayload: GenConfig.EventsPerPayload,
+    bodyGen: Gen[Body]
+  ) =
     for {
-      n       <- Gen.chooseNum(min, max)
+      n       <- Gen.chooseNum(evenstPerPayload.min, evenstPerPayload.max)
       payload <- Gen.listOfN(n, bodyGen)
     } yield HttpRequestBody(PayloadDataSchema.Default, payload)
 }
