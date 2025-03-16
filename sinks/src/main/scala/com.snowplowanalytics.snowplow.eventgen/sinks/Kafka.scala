@@ -22,8 +22,6 @@ import cats.syntax.all._
 
 import cats.effect.kernel.{Async, Sync}
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.Config
@@ -39,11 +37,11 @@ object Kafka {
         toKafkaRecord[CollectorPayload]
       )
 
-    override def enriched: Pipe[F, Event, Unit] =
+    override def enriched: Pipe[F, String, Unit] =
       pipe(
         config,
         enrichedProducer,
-        toKafkaRecord[Event]
+        toKafkaRecord[String]
       )
 
     override def http: Pipe[F, HttpRequest, Unit] =
@@ -56,8 +54,8 @@ object Kafka {
   }
 
   private def enrichedProducer[F[_]: Sync] = {
-    implicit val serializer = Serializer.lift[F, Event](e => Sync[F].pure(e.toTsv.getBytes(StandardCharsets.UTF_8)))
-    ProducerSettings[F, String, Event]
+    implicit val serializer = Serializer.lift[F, String](e => Sync[F].pure(e.getBytes(StandardCharsets.UTF_8)))
+    ProducerSettings[F, String, String]
   }
 
   private def toKafkaRecord[A](topicName: String, a: A): ProducerRecord[String, A] =

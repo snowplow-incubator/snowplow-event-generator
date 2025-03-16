@@ -15,7 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.collector
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
 import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.{CollectorPayload => CollectorPayload1}
 import com.snowplowanalytics.snowplow.eventgen.protocol._
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import org.apache.http.NameValuePair
@@ -114,26 +114,21 @@ final case class CollectorPayload(
 
 object CollectorPayload {
   def genDup(
-    natProb: Float,
-    synProb: Float,
-    natTotal: Int,
-    synTotal: Int,
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
+    duplicates: GenConfig.Duplicates,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ): Gen[CollectorPayload] =
     genWithBody(
-      eventPerPayloadMin,
-      eventPerPayloadMax,
-      Body.genDup(natProb, synProb, natTotal, synTotal, time, frequencies, contexts),
+      eventsPerPayload,
+      Body.genDup(duplicates, time, frequencies, contexts),
       time
     )
 
-  private def genWithBody(eventPerPayloadMin: Int, eventPerPayloadMax: Int, bodyGen: Gen[Body], time: Instant) =
+  private def genWithBody(eventsPerPayload: GenConfig.EventsPerPayload, bodyGen: Gen[Body], time: Instant) =
     for {
-      n       <- Gen.chooseNum(eventPerPayloadMin, eventPerPayloadMax)
+      n       <- Gen.chooseNum(eventsPerPayload.min, eventsPerPayload.max)
       api     <- Api.genApi(n)
       src     <- Source.gen
       cc      <- CollectorContext.gen(time)
@@ -141,13 +136,12 @@ object CollectorPayload {
     } yield CollectorPayload(api, payload, src, cc)
 
   def gen(
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ): Gen[CollectorPayload] =
-    genWithBody(eventPerPayloadMin, eventPerPayloadMax, Body.gen(time, frequencies, contexts), time)
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts), time)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))

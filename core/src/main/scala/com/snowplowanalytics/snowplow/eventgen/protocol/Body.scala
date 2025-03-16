@@ -15,6 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol
 import com.snowplowanalytics.snowplow.eventgen.protocol.Context.{ContextsWrapper, DerivedContextsWrapper}
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common._
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
@@ -58,27 +59,25 @@ object Body {
   lazy val dupRng = new Random(20000L)
 
   def genDup(
-    natProb: Float,
-    synProb: Float,
-    natTotal: Int,
-    synTotal: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    duplicates: GenConfig.Duplicates,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ): Gen[Body] =
-    genWithEt(EventTransaction.genDup(synProb, synTotal), now, frequencies, contexts).withPerturb(in =>
-      if (natProb == 0f | natTotal == 0)
-        in
-      else if (dupRng.nextInt(10000) < (natProb * 10000))
-        Seed(dupRng.nextInt(natTotal).toLong)
-      else
-        in
-    );
+    genWithEt(EventTransaction.genDup(duplicates.synProb, duplicates.synTotal), time, frequencies, contexts)
+      .withPerturb(in =>
+        if (duplicates.natProb == 0f | duplicates.natTotal == 0)
+          in
+        else if (dupRng.nextInt(10000) < (duplicates.natProb * 10000))
+          Seed(dupRng.nextInt(duplicates.natTotal).toLong)
+        else
+          in
+      );
   private def genWithEt(
     etGen: Gen[EventTransaction],
     time: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent
   ) =
     for {
       e   <- EventType.gen(frequencies)
@@ -100,7 +99,7 @@ object Body {
       derivedContexts <- Context.DerivedContextsWrapper.gen(time)
     } yield Body(e, app, dt, dev, tv, et, u, event, contexts, derivedContexts)
 
-  def gen(time: Instant, frequencies: EventFrequencies, contexts: Context.ContextsConfig): Gen[Body] =
+  def gen(time: Instant, frequencies: GenConfig.EventsFrequencies, contexts: GenConfig.ContextsPerEvent): Gen[Body] =
     genWithEt(EventTransaction.gen, time, frequencies, contexts)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)

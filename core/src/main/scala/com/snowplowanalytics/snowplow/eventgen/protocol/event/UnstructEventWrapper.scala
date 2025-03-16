@@ -16,6 +16,7 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.iglu.core.SelfDescribingData
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent
 import com.snowplowanalytics.snowplow.eventgen.primitives.base64Encode
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.http.message.BasicNameValuePair
@@ -37,7 +38,7 @@ final case class UnstructEventWrapper(
 
 object UnstructEventWrapper {
 
-  def gen(now: Instant, config: EventFrequencies): Gen[UnstructEventWrapper] = {
+  def gen(now: Instant, config: GenConfig.EventsFrequencies): Gen[UnstructEventWrapper] = {
     val freqToUnstruct = AllUnstructs.all.map { unstruct =>
       val frequency =
         config
