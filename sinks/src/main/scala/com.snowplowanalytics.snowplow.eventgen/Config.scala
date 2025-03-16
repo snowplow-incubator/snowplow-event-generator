@@ -29,7 +29,7 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.Context
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.MethodFrequencies
 
 final case class Config(
-  payloadsTotal: Int,
+  payloadsTotal: Option[Long],
   seed: Long,
   randomisedSeed: Boolean,
   compress: Boolean,
