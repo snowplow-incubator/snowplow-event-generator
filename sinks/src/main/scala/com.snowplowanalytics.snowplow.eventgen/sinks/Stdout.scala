@@ -41,7 +41,7 @@ object Stdout {
         _ => Stream.raiseError(new IllegalArgumentException(s"Can't determine enriched format to use"))
 
     override def http: Pipe[F, HttpRequest, Unit] =
-      _ => Stream.raiseError(new IllegalStateException(s"Can't use Stdout output for HTTP requests"))
+      pipe(_.toString)
   }
 
   private def pipe[F[_]: Sync, A](
