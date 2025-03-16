@@ -16,8 +16,7 @@ import com.snowplowanalytics.snowplow.eventgen.collector.Api
 import com.snowplowanalytics.snowplow.eventgen.collector.Api._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.Method
 import org.scalacheck.Gen
-import com.snowplowanalytics.snowplow.eventgen.protocol.event.EventFrequencies
-import com.snowplowanalytics.snowplow.eventgen.protocol.Context
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 import java.time.Instant
 
@@ -33,18 +32,12 @@ object HttpRequest {
     val path: Api
   }
 
-  case class MethodFrequencies(
-    get: Int,
-    post: Int,
-    head: Int
-  )
-
   object Method {
     final case class Post(path: Api) extends Method
     final case class Get(path: Api) extends Method
     final case class Head(path: Api) extends Method
 
-    def gen(freq: MethodFrequencies): Gen[Method] =
+    def gen(freq: GenConfig.Events.Http.MethodFrequencies): Gen[Method] =
       Gen.frequency(
         (freq.post, genPost),
         (freq.get, genGet),
@@ -57,51 +50,42 @@ object HttpRequest {
   }
 
   def gen(
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig,
-    methodFrequencies: Option[MethodFrequencies]
+    eventsPerPayload: GenConfig.EventsPerPayload,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
     // From here in it's not an option, just to make the code a bit cleaner
-    val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
+    val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
-      HttpRequestQuerystring.gen(now, frequencies, contexts),
-      HttpRequestBody.gen(eventPerPayloadMin, eventPerPayloadMax, now, frequencies, contexts),
+      HttpRequestQuerystring.gen(time, frequencies, contexts),
+      HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts),
       methodFreq
     )
   }
 
   def genDup(
-    natProb: Float,
-    synProb: Float,
-    natTotal: Int,
-    synTotal: Int,
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
-    now: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig,
-    methodFrequencies: Option[MethodFrequencies]
+    duplicates: GenConfig.Duplicates,
+    eventsPerPayload: GenConfig.EventsPerPayload,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
     // From here in it's not an option, just to make the code a bit cleaner
-    val methodFreq = methodFrequencies.getOrElse(new MethodFrequencies(1, 1, 1))
+    val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
       // qs doesn't do duplicates?
-      HttpRequestQuerystring.gen(now, frequencies, contexts),
+      HttpRequestQuerystring.gen(time, frequencies, contexts),
       HttpRequestBody.genDup(
-        natProb,
-        synProb,
-        natTotal,
-        synTotal,
-        eventPerPayloadMin,
-        eventPerPayloadMax,
-        now,
+        duplicates,
+        eventsPerPayload,
+        time,
         frequencies,
         contexts
       ),
@@ -112,7 +96,7 @@ object HttpRequest {
   private def genWithParts(
     qsGen: Gen[HttpRequestQuerystring],
     bodyGen: Gen[HttpRequestBody],
-    methodFreq: MethodFrequencies
+    methodFreq: GenConfig.Events.Http.MethodFrequencies
   ) =
     for {
       method <- Method.gen(methodFreq)

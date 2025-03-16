@@ -29,6 +29,7 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AllContexts
 import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
 import com.snowplowanalytics.snowplow.eventgen.sinks.Sink
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
@@ -53,30 +54,24 @@ object Main extends IOApp {
 
   private def generate[F[_]: Async](config: Config): F[Unit] = {
 
-    val sink: Sink[F] = Sink.make(config, config.output)
+    val sink: Sink[F] = Sink.make(config.output)
 
-    if (config.withRaw) {
-      // Collector payloads
-      run(
-        mkStream(config, Gen.collectorPayload(config, _)),
-        sink.collectorPayload
-      )
-    } else if (config.withEnrichedTsv || config.withEnrichedJson) {
-      // Enriched events
-      run(
-        mkStream(config, Gen.enriched(config, _)).flatMap(Stream.emits),
-        sink.enriched
-      )
-    } else if (config.output.isInstanceOf[Config.Output.Http]) {
-      // HTTP requests
-      run(
-        mkStream(config, Gen.httpRequest(config, _)),
-        sink.http
-      )
-    } else {
-      Sync[F].raiseError(
-        new IllegalArgumentException("Can't determine the type of events to generate based on the configuration")
-      )
+    config.events match {
+      case GenConfig.Events.CollectorPayloads =>
+        run(
+          mkStream(config, Gen.collectorPayload(config, _)),
+          sink.collectorPayload
+        )
+      case GenConfig.Events.Enriched(format, generateEnrichments) =>
+        run(
+          mkStream(config, Gen.enriched(config, _, format, generateEnrichments)).flatMap(Stream.emits),
+          sink.enriched
+        )
+      case GenConfig.Events.Http(methodFrequencies) =>
+        run(
+          mkStream(config, Gen.httpRequest(config, _, methodFrequencies)),
+          sink.http
+        )
     }
   }
 
@@ -99,19 +94,20 @@ object Main extends IOApp {
   private def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
     for {
       rng <- Stream.emit {
-        if (config.randomisedSeed) new scala.util.Random(scala.util.Random.nextInt())
-        else new scala.util.Random(config.seed)
+        config.seed.fold(new scala.util.Random(scala.util.Random.nextInt()))(seed => new scala.util.Random(seed))
       }
       time <- Stream.eval {
-        config.timestamps match {
-          case Config.Timestamps.Now => Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"time: $t")))
-          case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
+        config.timestamp match {
+          case Config.Timestamp.Now =>
+            Clock[F].realTimeInstant.flatTap(t => Sync[F].delay(println(s"Timestamp used in events: $t")))
+          case Config.Timestamp.Fixed(time) =>
+            Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"Timestamp used in events: $t")))
         }
       }
       events = Stream(1)
         .repeat
         .covary[F]
         .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
-      event <- config.payloadsTotal.fold(events)(events.take)
+      event <- config.eventsTotal.fold(events)(events.take)
     } yield event
 }

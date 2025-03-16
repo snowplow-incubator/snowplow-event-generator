@@ -26,8 +26,6 @@ import cats.syntax.all._
 
 import cats.effect.kernel.{Async, Sync}
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.Config
@@ -45,10 +43,10 @@ object Pubsub {
       pipe(config)
     }
 
-    override def enriched: Pipe[F, Event, Unit] = {
-      implicit val encoder: MessageEncoder[Event] = new MessageEncoder[Event] {
-        def encode(e: Event): Either[Throwable, Array[Byte]] =
-          e.toTsv.getBytes(StandardCharsets.UTF_8).asRight
+    override def enriched: Pipe[F, String, Unit] = {
+      implicit val encoder: MessageEncoder[String] = new MessageEncoder[String] {
+        def encode(enriched: String): Either[Throwable, Array[Byte]] =
+          enriched.getBytes(StandardCharsets.UTF_8).asRight
       }
 
       pipe(config)
@@ -68,7 +66,7 @@ object Pubsub {
 
     in =>
       for {
-        (projectId, topic) <- config.subscription match {
+        (projectId, topic) <- config.topic match {
           case topicRegex(p, t) => Stream.emit((ProjectId(p), Topic(t)))
           case _ =>
             Stream.raiseError(

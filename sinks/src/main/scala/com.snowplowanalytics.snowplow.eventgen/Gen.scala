@@ -16,11 +16,10 @@ import java.time.Instant
 
 import org.scalacheck.{Gen => ScalaGen}
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 object Gen {
 
@@ -28,77 +27,79 @@ object Gen {
     config.duplicates match {
       case Some(dups) =>
         CollectorPayload.genDup(
-          dups.natProb,
-          dups.synProb,
-          dups.natTotal,
-          dups.synTotal,
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          dups,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts
+          config.eventsFrequencies,
+          config.contextsPerEvent
         )
       case None =>
         CollectorPayload.gen(
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts
+          config.eventsFrequencies,
+          config.contextsPerEvent
         )
     }
 
-  def enriched(config: Config, time: Instant): ScalaGen[List[Event]] =
-    config.duplicates match {
+  def enriched(
+    config: Config,
+    time: Instant,
+    format: GenConfig.Events.Enriched.Format,
+    generateEnrichments: Boolean
+  ): ScalaGen[List[String]] = {
+    val gen = config.duplicates match {
       case Some(dups) =>
         SdkEvent.genDup(
-          dups.natProb,
-          dups.synProb,
-          dups.natTotal,
-          dups.synTotal,
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          dups,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts,
-          config.generateEnrichments,
-          config.fixedAppId
+          config.eventsFrequencies,
+          config.contextsPerEvent,
+          generateEnrichments,
+          config.appId
         )
       case None =>
         SdkEvent.gen(
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts,
-          config.generateEnrichments,
-          config.fixedAppId
+          config.eventsFrequencies,
+          config.contextsPerEvent,
+          generateEnrichments,
+          config.appId
         )
     }
 
-  def httpRequest(config: Config, time: Instant): ScalaGen[HttpRequest] =
+    gen.map(_.map { e =>
+      format match {
+        case GenConfig.Events.Enriched.Format.TSV  => e.toTsv
+        case GenConfig.Events.Enriched.Format.JSON => e.toJson(true).noSpaces
+      }
+    })
+  }
+
+  def httpRequest(
+    config: Config,
+    time: Instant,
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
+  ): ScalaGen[HttpRequest] =
     config.duplicates match {
       case Some(dups) =>
         HttpRequest.genDup(
-          dups.natProb,
-          dups.synProb,
-          dups.natTotal,
-          dups.synTotal,
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          dups,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts,
-          config.methodFrequencies
+          config.eventsFrequencies,
+          config.contextsPerEvent,
+          methodFrequencies
         )
       case None =>
         HttpRequest.gen(
-          config.eventPerPayloadMin,
-          config.eventPerPayloadMax,
+          config.eventsPerPayload,
           time,
-          config.eventFrequencies,
-          config.contexts,
-          config.methodFrequencies
+          config.eventsFrequencies,
+          config.contextsPerEvent,
+          methodFrequencies
         )
     }
 }

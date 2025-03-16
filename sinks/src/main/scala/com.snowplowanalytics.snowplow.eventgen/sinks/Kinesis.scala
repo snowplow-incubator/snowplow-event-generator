@@ -29,8 +29,6 @@ import cats.effect.kernel.{Async, Resource, Sync}
 
 import retry.{RetryDetails, RetryPolicies}
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.Config
@@ -46,15 +44,14 @@ object Kinesis {
           toKinesisRecord[CollectorPayload](
             config.streamName,
             cp,
-            _ => UUID.randomUUID().toString,
             cp => SdkBytes.fromByteArray(cp.toRaw)
           )
       )
 
-    override def enriched: Pipe[F, Event, Unit] =
+    override def enriched: Pipe[F, String, Unit] =
       pipe(
         config.region,
-        e => toKinesisRecord[Event](config.streamName, e, _.event_id.toString, e => SdkBytes.fromUtf8String(e.toTsv))
+        e => toKinesisRecord[String](config.streamName, e, e => SdkBytes.fromUtf8String(e))
       )
 
     override def http: Pipe[F, HttpRequest, Unit] =
@@ -64,10 +61,9 @@ object Kinesis {
   private def toKinesisRecord[A](
     streamName: String,
     a: A,
-    getPartitionKey: A => String,
     getBytes: A => SdkBytes
   ): PutRecordRequest =
-    PutRecordRequest.builder().streamName(streamName).partitionKey(getPartitionKey(a)).data(getBytes(a)).build()
+    PutRecordRequest.builder().streamName(streamName).partitionKey(UUID.randomUUID.toString).data(getBytes(a)).build()
 
   private def pipe[F[_]: Async, A](
     maybeRegion: Option[String],
