@@ -16,22 +16,20 @@ import cats.effect.Async
 
 import fs2.Pipe
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.Config
 
 trait Sink[F[_]] {
   def collectorPayload: Pipe[F, CollectorPayload, Unit]
-  def enriched: Pipe[F, Event, Unit]
+  def enriched: Pipe[F, String, Unit]
   def http: Pipe[F, HttpRequest, Unit]
 }
 
 object Sink {
-  def make[F[_]: Async](config: Config, sinkConfig: Config.Output): Sink[F] = sinkConfig match {
+  def make[F[_]: Async](sinkConfig: Config.Output): Sink[F] = sinkConfig match {
     case fileConfig: Config.Output.File =>
-      File.make(config, fileConfig)
+      File.make(fileConfig)
     case httpConfig: Config.Output.Http =>
       Http.make(httpConfig)
     case kafkaConfig: Config.Output.Kafka =>
@@ -40,7 +38,7 @@ object Sink {
       Kinesis.make(kinesisConfig)
     case pubsubConfig: Config.Output.PubSub =>
       Pubsub.make(pubsubConfig)
-    case _: Config.Output.Stdout =>
-      Stdout.make(config)
+    case Config.Output.Stdout =>
+      Stdout.make
   }
 }

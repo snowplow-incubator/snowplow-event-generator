@@ -15,10 +15,11 @@ package com.snowplowanalytics.snowplow.eventgen.enrich
 import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
 import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent.UnstructEvent
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
-import com.snowplowanalytics.snowplow.eventgen.protocol.{Body, Context}
+import com.snowplowanalytics.snowplow.eventgen.protocol.Body
 import com.snowplowanalytics.snowplow.eventgen.protocol.common.Web
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.enrichment.Enrichments
+import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import org.scalacheck.Gen
 
 import java.time.Instant
@@ -46,7 +47,7 @@ object SdkEvent {
     p: CollectorPayload,
     fallbackEid: UUID,
     enrichments: Option[Enrichments],
-    fixedAppId: Option[String]
+    appId: Option[String]
   ): List[Event] =
     p.payload.map { el =>
       val evnt = Some(el.e match {
@@ -97,7 +98,7 @@ object SdkEvent {
       val deprecatedFields              = enrichments.flatMap(_.deprecatedFields)
 
       Event(
-        app_id = fixedAppId.orElse(el.app.aid),
+        app_id = appId.orElse(el.app.aid),
         platform = Some(el.app.p),
         collector_tstamp = p.context.timestamp,
         dvce_created_tstamp = el.dt.flatMap(_.dtm),
@@ -238,46 +239,37 @@ object SdkEvent {
     }
 
   def gen(
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    fixedAppId: Option[String]
+    appId: Option[String]
   ): Gen[List[Event]] =
     for {
-      cp          <- CollectorPayload.gen(eventPerPayloadMin, eventPerPayloadMax, time, frequencies, contexts)
+      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
-    } yield eventsFromColPayload(cp, eid, enrichments, fixedAppId)
+    } yield eventsFromColPayload(cp, eid, enrichments, appId)
 
   def genDup(
-    natProb: Float,
-    synProb: Float,
-    natTotal: Int,
-    synTotal: Int,
-    eventPerPayloadMin: Int,
-    eventPerPayloadMax: Int,
+    duplicates: GenConfig.Duplicates,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
-    frequencies: EventFrequencies,
-    contexts: Context.ContextsConfig,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    fixedAppId: Option[String]
+    appId: Option[String]
   ): Gen[List[Event]] =
     for {
       cp <- CollectorPayload.genDup(
-        natProb,
-        synProb,
-        natTotal,
-        synTotal,
-        eventPerPayloadMin,
-        eventPerPayloadMax,
+        duplicates,
+        eventsPerPayload,
         time,
         frequencies,
         contexts
       )
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
-    } yield eventsFromColPayload(cp, eid, enrichments, fixedAppId)
+    } yield eventsFromColPayload(cp, eid, enrichments, appId)
 }

@@ -14,31 +14,23 @@ package com.snowplowanalytics.snowplow.eventgen.sinks
 
 import java.util.Base64
 
-import fs2.{Pipe, Stream}
+import fs2.Pipe
 
 import cats.effect.kernel.Sync
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
-import com.snowplowanalytics.snowplow.eventgen.Config
 
 object Stdout {
 
-  def make[F[_]: Sync](config: Config) = new Sink[F] {
+  def make[F[_]: Sync] = new Sink[F] {
     private val base64Encoder = Base64.getUrlEncoder
 
     override def collectorPayload: Pipe[F, CollectorPayload, Unit] =
       pipe(cp => new String(base64Encoder.encode(cp.toRaw)))
 
-    override def enriched: Pipe[F, Event, Unit] =
-      if (config.withEnrichedTsv)
-        pipe(e => e.toTsv)
-      else if (config.withEnrichedJson)
-        pipe(e => e.toJson(true).noSpaces)
-      else
-        _ => Stream.raiseError(new IllegalArgumentException(s"Can't determine enriched format to use"))
+    override def enriched: Pipe[F, String, Unit] =
+      pipe(identity)
 
     override def http: Pipe[F, HttpRequest, Unit] =
       pipe(_.toString)

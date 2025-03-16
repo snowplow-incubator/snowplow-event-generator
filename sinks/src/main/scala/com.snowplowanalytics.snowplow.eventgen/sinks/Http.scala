@@ -28,8 +28,6 @@ import org.http4s.Method
 
 import org.typelevel.ci._
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
-
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequestQuerystring
 import com.snowplowanalytics.snowplow.eventgen.Config
@@ -41,7 +39,7 @@ object Http {
     override def collectorPayload: Pipe[F, CollectorPayload, Unit] =
       _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for Thrift collector payloads"))
 
-    override def enriched: Pipe[F, Event, Unit] =
+    override def enriched: Pipe[F, String, Unit] =
       _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for enriched events"))
 
     override def http: Pipe[F, HttpRequest, Unit] =

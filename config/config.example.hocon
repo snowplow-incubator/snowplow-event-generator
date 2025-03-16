@@ -1,25 +1,130 @@
 {
-  "seed": 1
-  "payloadsTotal": 1000
-  "withRaw": true
-  "withEnrichedTsv": true
-  "withEnrichedJson": true
-  "compress": true
-  "payloadsPerFile": 1000
-  "eventPerPayloadMin": 1
-  "eventPerPayloadMax": 1
-  "duplicates": {
-    "natProb": 0.0
-    "synProb": 0.0
-    "natTotal": 1
-    "synTotal": 1
+  # Events to generate and send
+  "events": {
+    # Possible values: CollectorPayloads, Enriched, Http
+    "type": "CollectorPayloads"
+
+    # Only for enriched events
+    #
+    # Format of the enriched events. Possible values: TSV, JSON
+    # "format": {
+    #   "type": "TSV"
+    # }
+    # Whether to generate enrichments contexts
+    # "generateEnrichments": true
+
+    # Only for HTTP requests
+    #
+    # Set weights for the distributions of HTTP methods
+    # Setting a fequency to 0 results in that method not being produced at all
+    # Setting equal values results in an even distribution of methods
+    # "methodFrequencies": {
+    #   "post": 1
+    #   "get": 1
+    #   "head": 0 # Has to be 0
+    # }
   }
-  "timestamps": {
-    "type": "Fixed"
-    "at": "2022-02-01T01:01:01z"
-  }
+
+  # Where to send generated events to
   "output": {
     "type": "Kinesis"
     "streamName": "sp-raw"
+    "region": "eu-central-1" # Optional
+
+    # "type": "PubSub"
+    # "topic":  "/projects/<project-id>/topics/<topic-id>"
+
+    # "type": "Kafka"
+    # "brokers": "broker:9092"
+    # "topic": "collectorPayloads"
+    # "producerConf": {
+    #   "acks": "all"
+    # }
+
+    # "type": "Http"
+    # "endpoint": "https://aws-sandbox-dev1.collector.snplow.net"
+
+    # "type": "File"
+    # "path": "file:///tmp/generated"
+    # "eventsPerFile": 1000
+    # "compress": false # GZIP
+
+    # "type": "Stdout"
+  }
+
+  # Optional. Number of events to generate in total
+  # If not set, events will get generated forever
+  # "eventsTotal": 1000
+
+  # Timestamp to use in the events
+  "timestamp": {
+    # Start up time of event generator is used in all the events
+    "type": "Now"
+
+    # "type": "Fixed"
+    # "at": "2022-02-01T01:01:01z"
+  }
+
+  # Optional. App ID to use in the events
+  # If not set, each event will get a new app ID
+  # "appId": "my-app"
+
+  # Optional. Seed to use to generate events
+  # For a same seed, the same event will get deterministically generated
+  # If not set, each event will get generated randomly
+  # "seed": 42
+
+  "eventsPerPayload": {
+    # Minimum number of events per collector payload or HTTP request
+    # Single event has a 1:1 odds of getting sent via GET or POST
+    # Multiple events are always sent via POST
+    "min": 1
+
+    # Maximum number of events per collector payload or HTTP request
+    # Single event has a 1:1 odds of getting sent via GET or POST
+    # Multiple events are always sent via POST
+    "max": 1
+  }
+
+  # Set weights for the distributions of event types
+  # Setting a fequency to 0 results in that event type not being produced at all
+  # Setting equal values results in an even distribution of event types
+  "eventFrequencies": {
+    "struct": 1
+    "unstruct": 1
+    "pageView": 1
+    "pagePing": 1
+    "unstructEventFrequencyDefault": 1
+    "unstructEventFrequencies": {
+      "change_form": 1
+      "funnel_interaction": 1
+      "link_click": 1
+    }
+  }
+
+  # Limits on how many self-describing entities can be attached to each event
+  # The actual number will be randomly chosen for each event
+  "contextsPerEvent": {
+    "min": 0
+    "max": 10
+  }
+
+  "duplicates": {
+    # Probablity of full event duplicate (between 0 and 1)
+    "natProb": 0.0
+
+    # Probablity of synthetic event duplicate (only eid) (between 0 and 1)
+    "synProb": 0.0
+
+    # Pool size for the natural duplicates
+    # Setting it to 1 means that same events gets duplicated all the time
+    # If total number of events is less than pool size, it might not generate any duplicates
+    # Note that it could duplicate synthetic duplicate, as natural duplication is applied later
+    "natTotal": 1
+
+    # Pool size for the sythetic duplicates (same eid but different everything else)
+    # Setting it to 1 means that same event ID gets duplicated all the time
+    # If total number of events is less than pool size, it might not generate any duplicates
+    "synTotal": 1
   }
 }
