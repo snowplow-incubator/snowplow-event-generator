@@ -58,21 +58,18 @@ object Main extends IOApp {
     if (config.withRaw) {
       // Collector payloads
       run(
-        config.payloadsTotal.toLong,
         mkStream(config, Gen.collectorPayload(config, _)),
         sink.collectorPayload
       )
     } else if (config.withEnrichedTsv || config.withEnrichedJson) {
       // Enriched events
       run(
-        config.payloadsTotal.toLong,
         mkStream(config, Gen.enriched(config, _)).flatMap(Stream.emits),
         sink.enriched
       )
     } else if (config.output.isInstanceOf[Config.Output.Http]) {
       // HTTP requests
       run(
-        config.payloadsTotal.toLong,
         mkStream(config, Gen.httpRequest(config, _)),
         sink.http
       )
@@ -83,7 +80,7 @@ object Main extends IOApp {
     }
   }
 
-  def run[F[_]: Async, A](nbEvents: Long, events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
+  def run[F[_]: Async, A](events: Stream[F, A], sink: Pipe[F, A, Unit]): F[Unit] =
     Stream
       .eval(Ref.of(0))
       .flatMap { counts =>
@@ -94,7 +91,7 @@ object Main extends IOApp {
             .flatMap(nbEvents => Sync[F].delay(println(s"$nbEvents events generated in the last $reportPeriod")))
         }
 
-        events.take(nbEvents).through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
+        events.through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
       }
       .compile
       .drain
@@ -111,9 +108,10 @@ object Main extends IOApp {
           case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
         }
       }
-      events <- Stream(1)
+      events = Stream(1)
         .repeat
         .covary[F]
         .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
-    } yield events
+      event <- config.payloadsTotal.fold(events)(events.take)
+    } yield event
 }
