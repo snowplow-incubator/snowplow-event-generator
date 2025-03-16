@@ -42,14 +42,14 @@ object Http {
       _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for Thrift collector payloads"))
 
     override def enriched: Pipe[F, Event, Unit] =
-      _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for Thrift collector payloads"))
+      _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for enriched events"))
 
     override def http: Pipe[F, HttpRequest, Unit] =
       requests =>
         Stream
           .resource(EmberClientBuilder.default[F].build)
           .flatMap(client =>
-            requests.map(buildRequest[F](config, _)).evalMap { req =>
+            requests.map(buildRequest[F](config, _)).parEvalMapUnorderedUnbounded { req =>
               client
                 .status(req)
                 .void
