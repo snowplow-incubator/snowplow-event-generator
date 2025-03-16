@@ -48,10 +48,10 @@ object Main extends IOApp {
 
     }
 
-  def printCounts(gens: List[SelfDescribingJsonGen]): String =
+  private def printCounts(gens: List[SelfDescribingJsonGen]): String =
     gens.map(g => s"  ${g.schemaKey.toSchemaUri} = ${g.genCount}").mkString("\n")
 
-  def generate[F[_]: Async](config: Config): F[Unit] = {
+  private def generate[F[_]: Async](config: Config): F[Unit] = {
 
     val sink: Sink[F] = Sink.make(config, config.output)
 
@@ -94,12 +94,12 @@ object Main extends IOApp {
             .flatMap(nbEvents => Sync[F].delay(println(s"$nbEvents events generated in the last $reportPeriod")))
         }
 
-        events.take(nbEvents).prefetchN(100).through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
+        events.take(nbEvents).through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
       }
       .compile
       .drain
 
-  def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
+  private def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
     for {
       rng <- Stream.emit {
         if (config.randomisedSeed) new scala.util.Random(scala.util.Random.nextInt())
@@ -111,6 +111,9 @@ object Main extends IOApp {
           case Config.Timestamps.Fixed(time) => Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"time: $t")))
         }
       }
-      event <- Stream.repeatEval(Sync[F].delay(runGen(mkGen(time), rng)))
-    } yield event
+      events <- Stream(1)
+        .repeat
+        .covary[F]
+        .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+    } yield events
 }
