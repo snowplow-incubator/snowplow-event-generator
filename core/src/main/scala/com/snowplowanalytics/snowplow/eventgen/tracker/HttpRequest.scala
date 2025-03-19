@@ -24,7 +24,7 @@ final case class HttpRequest(
   method: Method,
   headers: Map[String, String],
   qs: Option[HttpRequestQuerystring],
-  body: Option[HttpRequestBody]
+  body: Option[String]
 )
 
 object HttpRequest {
@@ -107,5 +107,5 @@ object HttpRequest {
       }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
       raw = HttpRequestHeaders.rawReqUriHeader(qs)
-    } yield HttpRequest(method, generatedHs ++ raw, qs, body)
+    } yield HttpRequest(method, generatedHs ++ raw, qs, body.map(_.toString))
 }

@@ -46,6 +46,11 @@ object GenConfig {
     unstructEventFrequencies: Map[String, Int]
   )
 
+  case class BodySizesFrequencies(
+    small: Int,
+    big: Int
+  )
+
   case class ContextsPerEvent(min: Int, max: Int)
 
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)

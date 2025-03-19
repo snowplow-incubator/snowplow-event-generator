@@ -47,7 +47,7 @@ object Http {
         Stream
           .resource(EmberClientBuilder.default[F].build)
           .flatMap(client =>
-            requests.map(buildRequest[F](config, _)).parEvalMapUnorderedUnbounded { req =>
+            requests.map(buildRequest[F](config, _)).parEvalMapUnordered(100) { req =>
               client
                 .status(req)
                 .void

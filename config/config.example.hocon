@@ -127,4 +127,8 @@
     # If total number of events is less than pool size, it might not generate any duplicates
     "synTotal": 1
   }
+  "bodySizesFrequencies": {
+    "small": 9
+    "big": 1
+  }
 }

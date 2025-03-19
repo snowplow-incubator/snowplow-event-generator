@@ -30,6 +30,8 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.unstructs.AllUnstructs
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
 import com.snowplowanalytics.snowplow.eventgen.sinks.Sink
 import com.snowplowanalytics.snowplow.eventgen.GenConfig
+import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
+import com.snowplowanalytics.snowplow.eventgen.collector.Api
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
@@ -67,9 +69,28 @@ object Main extends IOApp {
           mkStream(config, Gen.enriched(config, _, format, generateEnrichments)).flatMap(Stream.emits),
           sink.enriched
         )
-      case GenConfig.Events.Http(methodFrequencies) =>
+      case GenConfig.Events.Http(_) =>
+        val smallBody = "a" * 1000
+        val bigBody   = "a" * 200000
+        val smallRequest = HttpRequest(
+          HttpRequest.Method.Post(Api("com.snowplowanalytics.snowplow", "tp2")),
+          Map.empty[String, String],
+          None,
+          Some(smallBody)
+        )
+        val bigRequest = HttpRequest(
+          HttpRequest.Method.Post(Api("com.snowplowanalytics.snowplow", "tp2")),
+          Map.empty[String, String],
+          None,
+          Some(bigBody)
+        )
+
+        val gen = ScalaGen.frequency(
+          (config.bodySizesFrequencies.small, smallRequest),
+          (config.bodySizesFrequencies.big, bigRequest)
+        )
         run(
-          mkStream(config, Gen.httpRequest(config, _, methodFrequencies)),
+          mkStream(config, _ => gen),
           sink.http
         )
     }

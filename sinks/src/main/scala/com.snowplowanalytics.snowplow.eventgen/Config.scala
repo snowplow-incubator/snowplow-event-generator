@@ -35,6 +35,7 @@ final case class Config(
   seed: Option[Long],
   eventsPerPayload: GenConfig.EventsPerPayload,
   eventsFrequencies: GenConfig.EventsFrequencies,
+  bodySizesFrequencies: GenConfig.BodySizesFrequencies,
   contextsPerEvent: GenConfig.ContextsPerEvent,
   duplicates: Option[GenConfig.Duplicates]
 )
@@ -157,6 +158,9 @@ object Config {
 
   implicit val eventsFrequenciesDecoder: Decoder[GenConfig.EventsFrequencies] =
     deriveConfiguredDecoder[GenConfig.EventsFrequencies]
+
+  implicit val bodySizesFrequenciesDecoder: Decoder[GenConfig.BodySizesFrequencies] =
+    deriveConfiguredDecoder[GenConfig.BodySizesFrequencies]
 
   implicit val contextsPerEventDecoder: Decoder[GenConfig.ContextsPerEvent] =
     deriveConfiguredDecoder[GenConfig.ContextsPerEvent]
