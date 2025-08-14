@@ -108,6 +108,7 @@ object Main extends IOApp {
         .repeat
         .covary[F]
         .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
-      event <- config.eventsTotal.fold(events)(events.take)
+      paced = Stream.awakeEvery(100.milli).flatMap(_ => events.take(80))
+      event <- config.eventsTotal.fold(paced)(paced.take)
     } yield event
 }
