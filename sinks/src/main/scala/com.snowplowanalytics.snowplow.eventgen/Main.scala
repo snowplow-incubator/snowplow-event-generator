@@ -104,10 +104,19 @@ object Main extends IOApp {
             Async[F].pure(time).flatTap(t => Sync[F].delay(println(s"Timestamp used in events: $t")))
         }
       }
-      events = Stream(1)
-        .repeat
-        .covary[F]
-        .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+      events = config.rate match {
+        case Some(rate) =>
+          val tick      = rate.tickMillis.millis
+          val batchSize = rate.eventsPerSecond * rate.tickMillis / 1000
+          Stream.awakeEvery[F](tick).flatMap { _ =>
+            Stream.evalSeq(List.fill(batchSize)(runGen(mkGen(time), rng)).pure[F])
+          }
+        case None =>
+          Stream(1)
+            .repeat
+            .covary[F]
+            .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+      }
       event <- config.eventsTotal.fold(events)(events.take)
     } yield event
 }

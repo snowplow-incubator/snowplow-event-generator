@@ -127,4 +127,11 @@
     # If total number of events is less than pool size, it might not generate any duplicates
     "synTotal": 1
   }
+
+  # Control the rate at which events are sent & number of events sent
+  # Every tickMillis, generator will send a batch whose size equals eventsPerSecond * tickMillis / 1000
+  "rate": {
+    "eventsPerSecond": 400
+    "tickMillis": 500
+  }
 }

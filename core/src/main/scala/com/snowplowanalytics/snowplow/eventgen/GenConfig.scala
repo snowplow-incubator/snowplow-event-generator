@@ -49,4 +49,6 @@ object GenConfig {
   case class ContextsPerEvent(min: Int, max: Int)
 
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
+
+  final case class Rate(eventsPerSecond: Int, tickMillis: Int = 100)
 }
