@@ -1,3 +1,24 @@
+Version 0.9.0 (2025-09-25)
+--------------------------
+Add rate support (#86)
+Re organize configuration and add documentation (#85)
+Make it possible to send an infinite stream of events (#85)
+Add parallelism for generating events and for sending HTTP requests (#85)
+Print the number of generated events every minute (#85)
+Do not fail in case of HTTP error (#85)
+Fix min size errors in OptimizelySummary
+Log event count
+Fix max size errors in playback_rate_change_event
+Shorten atomic field values
+Make it possible to send collector payloads to Kinesis, Pubsub and Kafka
+Option to set fixed app id
+fix sloppiness from my previous work
+patch again
+Fix error in example config
+Fix issue with sts dep
+Add sts dependency
+derived_tstamp and etl_tstamp should always be defined
+
 Version 0.8.0 (2024-04-18)
 --------------------------
 Add more different types of self-describing event (#76)
