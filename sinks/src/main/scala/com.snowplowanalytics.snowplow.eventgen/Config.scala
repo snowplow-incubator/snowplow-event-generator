@@ -36,7 +36,8 @@ final case class Config(
   eventsPerPayload: GenConfig.EventsPerPayload,
   eventsFrequencies: GenConfig.EventsFrequencies,
   contextsPerEvent: GenConfig.ContextsPerEvent,
-  duplicates: Option[GenConfig.Duplicates]
+  duplicates: Option[GenConfig.Duplicates],
+  rate: Option[GenConfig.Rate]
 )
 
 object Config {
@@ -166,6 +167,9 @@ object Config {
 
   implicit val duplicatesDecoder: Decoder[GenConfig.Duplicates] =
     deriveConfiguredDecoder[GenConfig.Duplicates]
+
+  implicit val rateDecoder: Decoder[GenConfig.Rate] =
+    deriveConfiguredDecoder[GenConfig.Rate]
 
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]
