@@ -9,11 +9,11 @@ We provide [a command line tool](#quickstart-cli) to output events to a file, an
 
 ## Quickstart CLI
 
-Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.8.0/snowplow-event-generator-0.8.0.tar.gz). You need java installed to run it.
+Download the [executable from github](https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.9.0/snowplow-event-generator-0.9.0.tar.gz). You need java installed to run it.
 
 ```bash
-wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.8.0/snowplow-event-generator-0.8.0.tar.gz
-tar -xzf snowplow-event-generator-0.8.0.tar.gz
+wget https://github.com/snowplow-incubator/snowplow-event-generator/releases/download/0.9.0/snowplow-event-generator-0.9.0.tar.gz
+tar -xzf snowplow-event-generator-0.9.0.tar.gz
 ```
 
 And start generating events in your `my-events` directory, in configuration file set:
@@ -270,7 +270,7 @@ Aside from "output" configuration, all fields in the configuration file are opti
 Core is a scala library for generating snowplow events.
 
 ```
-libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.7.0" % Test
+libraryDependencies += "com.snowplowanalytics" % "snowplow-event-generator-core" % "0.9.0" % Test
 ```
 
 ```scala
@@ -359,7 +359,7 @@ val res2: List[List[(Option[java.util.UUID], Option[String])]] =
 
 ## Copyright and License
 
-Snowplow Events Generator is copyright 2021-2022 Snowplow Analytics Ltd.
+Snowplow Events Generator is copyright 2021-2025 Snowplow Analytics Ltd.
 
 Licensed under the **[Apache License, Version 2.0][license]** (the "License");
 you may not use this software except in compliance with the License.
