@@ -42,7 +42,7 @@ object AllContexts {
       InstanceIdentityDocument,
       JavaContext,
       MediaPlayer,
-      MobileContext,
+//      MobileContext,
       OptimizelyState,
       OptimizelySummary,
       OptimizelyVariation,
