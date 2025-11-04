@@ -47,7 +47,7 @@ object MobileContext extends SelfDescribingJsonGen {
       "totalStorage"          -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775000")).optionalOrNull,
       "isPortrait"            -> genBool.optionalOrNull,
       "resolution"            -> strGen(1, 20).optionalOrNull,
-      "scale"                 -> Gen.chooseNum(0, 1000).optionalOrNull,
+      "scale"                 -> Gen.chooseNum(0, 100.1).required,
       "language"              -> strGen(1, 8).optionalOrNull,
       "appSetId"              -> Gen.uuid.optionalOrNull,
       "appSetIdScope"         -> Gen.oneOf("app", "developer").optionalOrNull

@@ -46,12 +46,11 @@ object Context {
   object ContextsWrapper {
 
     def gen(now: Instant, contextsPerEvent: GenConfig.ContextsPerEvent): Gen[ContextsWrapper] =
-      Gen
-        .chooseNum(contextsPerEvent.min, contextsPerEvent.max)
-        .flatMap { numContexts =>
-          Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now))
-        }
-        .map(ContextsWrapper(_))
+      for {
+        numContexts   <- Gen.chooseNum(contextsPerEvent.min, contextsPerEvent.max)
+        mobileContext <- contexts.MobileContext.gen(now)
+        contexts      <- Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now))
+      } yield ContextsWrapper(mobileContext :: contexts)
   }
 
   final case class DerivedContextsWrapper(value: List[SelfDescribingData[Json]]) {
