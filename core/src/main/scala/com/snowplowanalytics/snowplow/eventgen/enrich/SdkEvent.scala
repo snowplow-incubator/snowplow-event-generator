@@ -244,10 +244,11 @@ object SdkEvent {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    appId: Option[String]
+    appId: Option[String],
+    identityGraph: Option[GenConfig.UserGraph] = None
   ): Gen[List[Event]] =
     for {
-      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts)
+      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts, identityGraph)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
     } yield eventsFromColPayload(cp, eid, enrichments, appId)
@@ -259,7 +260,8 @@ object SdkEvent {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    appId: Option[String]
+    appId: Option[String],
+    identityGraph: Option[GenConfig.UserGraph] = None
   ): Gen[List[Event]] =
     for {
       cp <- CollectorPayload.genDup(
@@ -267,9 +269,27 @@ object SdkEvent {
         eventsPerPayload,
         time,
         frequencies,
-        contexts
+        contexts,
+        identityGraph
       )
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
     } yield eventsFromColPayload(cp, eid, enrichments, appId)
+
+  /** Generate enriched events with specific profile (for multi-profile scenarios).
+    */
+  def genWithProfile(
+    eventsPerPayload: GenConfig.EventsPerPayload,
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
+    generateEnrichments: Boolean,
+    profileAppId: String,
+    profileConfig: GenConfig.UserGraph
+  ): Gen[List[Event]] =
+    for {
+      cp <- CollectorPayload.genWithProfile(eventsPerPayload, time, frequencies, contexts, profileAppId, profileConfig)
+      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
+      eid         <- Gen.uuid
+    } yield eventsFromColPayload(cp, eid, enrichments, Some(profileAppId))
 }

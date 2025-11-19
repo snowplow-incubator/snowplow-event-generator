@@ -37,8 +37,20 @@ final case class Config(
   eventsFrequencies: GenConfig.EventsFrequencies,
   contextsPerEvent: GenConfig.ContextsPerEvent,
   duplicates: Option[GenConfig.Duplicates],
-  rate: Option[GenConfig.Rate]
-)
+  rate: Option[GenConfig.Rate],
+  userGraph: Option[GenConfig.UserGraph],
+  appProfiles: Option[List[GenConfig.AppProfile]]
+) {
+  // Helper to get active user configuration
+  def activeUserConfig: Option[Either[GenConfig.UserGraph, List[GenConfig.AppProfile]]] =
+    (userGraph, appProfiles) match {
+      case (Some(single), None)   => Some(Left(single))
+      case (None, Some(profiles)) => Some(Right(profiles))
+      case (Some(_), Some(_)) =>
+        throw new IllegalArgumentException("Cannot specify both userGraph and appProfiles")
+      case (None, None) => None
+    }
+}
 
 object Config {
 
@@ -90,7 +102,7 @@ object Config {
       config
 
   implicit val customCodecConfig: Configuration =
-    Configuration.default.withDiscriminator("type")
+    Configuration.default.withDiscriminator("type").withDefaults
 
   sealed trait Output
   object Output {
@@ -170,6 +182,15 @@ object Config {
 
   implicit val rateDecoder: Decoder[GenConfig.Rate] =
     deriveConfiguredDecoder[GenConfig.Rate]
+
+  implicit val userGraphDistributionDecoder: Decoder[GenConfig.UserGraph.Distribution] =
+    deriveConfiguredDecoder[GenConfig.UserGraph.Distribution]
+
+  implicit val userGraphDecoder: Decoder[GenConfig.UserGraph] =
+    deriveConfiguredDecoder[GenConfig.UserGraph]
+
+  implicit val appProfileDecoder: Decoder[GenConfig.AppProfile] =
+    deriveConfiguredDecoder[GenConfig.AppProfile]
 
   implicit val configDecoder: Decoder[Config] =
     deriveConfiguredDecoder[Config]
