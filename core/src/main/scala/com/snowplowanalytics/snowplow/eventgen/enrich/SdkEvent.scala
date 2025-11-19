@@ -244,32 +244,19 @@ object SdkEvent {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    appId: Option[String]
-  ): Gen[List[Event]] =
+    appId: Option[String],
+    identitySource: GenConfig.IdentitySource,
+    duplicates: Option[GenConfig.Duplicates]
+  ): Gen[List[Event]] = {
+    val effectiveAppId = identitySource match {
+      case GenConfig.IdentitySource.ProfileGraph(profileAppId, _) => Some(profileAppId)
+      case _                                                      => appId
+    }
     for {
-      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts)
+      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
-    } yield eventsFromColPayload(cp, eid, enrichments, appId)
+    } yield eventsFromColPayload(cp, eid, enrichments, effectiveAppId)
+  }
 
-  def genDup(
-    duplicates: GenConfig.Duplicates,
-    eventsPerPayload: GenConfig.EventsPerPayload,
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    generateEnrichments: Boolean,
-    appId: Option[String]
-  ): Gen[List[Event]] =
-    for {
-      cp <- CollectorPayload.genDup(
-        duplicates,
-        eventsPerPayload,
-        time,
-        frequencies,
-        contexts
-      )
-      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
-      eid         <- Gen.uuid
-    } yield eventsFromColPayload(cp, eid, enrichments, appId)
 }

@@ -18,7 +18,10 @@ object GenConfig {
   object Events {
     case object CollectorPayloads extends Events
     case class Enriched(format: Enriched.Format, generateEnrichments: Boolean) extends Events
-    case class Http(methodFrequencies: Option[Http.MethodFrequencies]) extends Events
+    case class Http(
+      methodFrequencies: Option[Http.MethodFrequencies],
+      validEventsOnly: Boolean = false
+    ) extends Events
 
     object Enriched {
       sealed trait Format
@@ -51,4 +54,57 @@ object GenConfig {
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
 
   final case class Rate(eventsPerSecond: Int, tickMillis: Int = 100)
+
+  /** User graph configuration using merge-based model.
+    *
+    * Users are assigned to clusters where they share identifiers. The observable shared identifier rate will exactly
+    * match the configured sharedIdentifierRate.
+    */
+  case class UserGraph(
+    numUsers: Long,
+    sharedIdentifierRate: Double, // Fraction of users who share identifiers with others (exact)
+    identifiersPerUser: Map[String, Int],
+    authenticationRate: Double = 0.80,
+    distribution: UserGraph.Distribution = UserGraph.Distribution.PowerLaw,
+    activeUserRate: Double = 1.0, // For multi-app: what % of user pool is active on this app
+    usersPerCluster: Int = 5,     // Average number of users per cluster
+    numSharedIdentifiers: Option[Map[String, Int]] =
+      None // Optional: How many identifiers to share per type (default: 1)
+  ) {
+    def maxIdentifiers(idType: String): Int =
+      identifiersPerUser.getOrElse(idType, 1)
+
+    /** Get number of shared identifiers for a given identifier type. Defaults to 1 (guarantees observable rate =
+      * configured sharedIdentifierRate)
+      */
+    def sharedIdentifiersForType(idType: String): Int =
+      numSharedIdentifiers.flatMap(_.get(idType)).getOrElse(1)
+  }
+
+  /** App profile for multi-app scenarios.
+    *
+    * Allows different apps (website, mobile app, etc.) to have different identity characteristics while sharing the
+    * same underlying identity pool.
+    */
+  case class AppProfile(
+    appId: String,
+    weight: Int,
+    userGraph: UserGraph
+  )
+
+  object UserGraph {
+
+    sealed trait Distribution
+    object Distribution {
+      case object Uniform extends Distribution
+      case object PowerLaw extends Distribution
+    }
+  }
+
+  sealed trait IdentitySource
+  object IdentitySource {
+    case object NoIdentity extends IdentitySource
+    case class SingleGraph(config: UserGraph) extends IdentitySource
+    case class ProfileGraph(appId: String, config: UserGraph) extends IdentitySource
+  }
 }

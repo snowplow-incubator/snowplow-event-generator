@@ -41,4 +41,13 @@ object Application {
 //    genStringOpt("evn", 10),
       genStringOpt("tna", 10)
     ).mapN(Application.apply)
+
+  /** Generate Application with a specific app_id (for multi-profile scenarios).
+    */
+  def genWithAppId(appId: String): Gen[Application] =
+    (
+      Gen.oneOf("web", "mob", "pc", "srv", "app", "tv", "cnsl", "iot"),
+      Gen.const(Some(appId)),
+      genStringOpt("tna", 10)
+    ).mapN(Application.apply)
 }
