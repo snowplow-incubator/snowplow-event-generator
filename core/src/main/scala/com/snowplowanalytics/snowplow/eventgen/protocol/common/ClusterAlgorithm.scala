@@ -30,11 +30,13 @@ object ClusterAlgorithm {
     *   - KnuthHash: Knuth's multiplicative hash constant (2^32 / golden ratio)
     *   - SecondaryHash: Large prime for XOR-based hash mixing
     */
-  private object HashConstants {
+  object HashConstants {
     val ClusterMembershipPrime: Long = 997L
     val ClusterIdPrime: Long         = 31L
     val KnuthHash: Long              = 73856093L
     val SecondaryHash: Long          = 19349663L
+    val KnuthHashGoldenRatio: Long   = 2654435761L
+    val NormalizationBase: Int       = 1000000
   }
 
   /** Deterministically determine if an identity is in a cluster (based on shared identifier rate). Uses identity ID as
@@ -73,7 +75,7 @@ object ClusterAlgorithm {
   ): String =
     identifierType match {
       case "cookie" =>
-        val hash = (clusterId * HashConstants.KnuthHash) ^ (sharedIdx * HashConstants.SecondaryHash) & Long.MaxValue
+        val hash = ((clusterId * HashConstants.KnuthHash) ^ (sharedIdx * HashConstants.SecondaryHash)) & Long.MaxValue
         s"shared_cookie_${hash.toHexString}"
 
       case "device" =>
@@ -97,7 +99,7 @@ object ClusterAlgorithm {
   def generateUniqueIdentifier(userId: Long, identifierType: String, idx: Int): String =
     identifierType match {
       case "cookie" =>
-        val hash = (userId * HashConstants.KnuthHash) ^ (idx * HashConstants.SecondaryHash) & Long.MaxValue
+        val hash = ((userId * HashConstants.KnuthHash) ^ (idx * HashConstants.SecondaryHash)) & Long.MaxValue
         s"cookie_${hash.toHexString}"
 
       case "device" =>
@@ -106,11 +108,11 @@ object ClusterAlgorithm {
 
       case "ip" =>
         // Use hash to avoid overflow for large userId values
-        val hash   = (userId * HashConstants.KnuthHash) + (idx * HashConstants.SecondaryHash) & Long.MaxValue
+        val hash   = ((userId * HashConstants.KnuthHash) + (idx * HashConstants.SecondaryHash)) & Long.MaxValue
         val octet1 = 172
-        val octet2 = ((hash                             / 65536) % 256).toInt
-        val octet3 = ((hash                             / 256)   % 256).toInt
-        val octet4 = (hash                              % 256).toInt
+        val octet2 = ((hash                              / 65536) % 256).toInt
+        val octet3 = ((hash                              / 256)   % 256).toInt
+        val octet4 = (hash                               % 256).toInt
         s"$octet1.$octet2.$octet3.$octet4"
 
       case _ =>

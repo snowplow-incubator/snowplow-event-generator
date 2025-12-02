@@ -19,153 +19,60 @@ import org.scalacheck.{Gen => ScalaGen}
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
 import com.snowplowanalytics.snowplow.eventgen.enrich.SdkEvent
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
-import com.snowplowanalytics.snowplow.eventgen.GenConfig
 
 object Gen {
 
-  def collectorPayload(config: Config, time: Instant): ScalaGen[CollectorPayload] =
-    config.activeUserConfig match {
-      case Some(Right(profiles)) =>
-        // Multi-profile mode: select a profile for each event (uses algorithmic approach)
-        for {
-          profile <- AppProfileSelector.selectProfile(profiles)
-          payload <- CollectorPayload.genWithProfile(
-            config.eventsPerPayload,
-            time,
-            config.eventsFrequencies,
-            config.contextsPerEvent,
-            profile.appId,
-            profile.userGraph
-          )
-        } yield payload
-
-      case Some(Left(singleGraph)) =>
-        // Single graph mode (uses algorithmic approach)
-        config.duplicates match {
-          case Some(dups) =>
-            CollectorPayload.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              Some(singleGraph)
-            )
-          case None =>
-            CollectorPayload.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              Some(singleGraph)
-            )
-        }
-
-      case None =>
-        // No identity graph: random generation
-        config.duplicates match {
-          case Some(dups) =>
-            CollectorPayload.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              None
-            )
-          case None =>
-            CollectorPayload.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              None
-            )
-        }
+  private def resolveIdentitySource(
+    profiles: List[GenConfig.AppProfile]
+  ): ScalaGen[GenConfig.IdentitySource] =
+    AppProfileSelector.selectProfile(profiles).map { profile =>
+      GenConfig.IdentitySource.ProfileGraph(profile.appId, profile.userGraph)
     }
+
+  private def getIdentitySource(config: Config): ScalaGen[GenConfig.IdentitySource] =
+    config.activeUserConfig match {
+      case Some(Right(profiles))   => resolveIdentitySource(profiles)
+      case Some(Left(singleGraph)) => ScalaGen.const(GenConfig.IdentitySource.SingleGraph(singleGraph))
+      case None                    => ScalaGen.const(GenConfig.IdentitySource.NoIdentity)
+    }
+
+  def collectorPayload(config: Config, time: Instant): ScalaGen[CollectorPayload] =
+    for {
+      identitySource <- getIdentitySource(config)
+      payload <- CollectorPayload.gen(
+        config.eventsPerPayload,
+        time,
+        config.eventsFrequencies,
+        config.contextsPerEvent,
+        identitySource,
+        config.duplicates
+      )
+    } yield payload
 
   def enriched(
     config: Config,
     time: Instant,
     format: GenConfig.Events.Enriched.Format,
     generateEnrichments: Boolean
-  ): ScalaGen[List[String]] = {
-    val gen = config.activeUserConfig match {
-      case Some(Right(profiles)) =>
-        // Multi-profile mode: select a profile for each event
-        for {
-          profile <- AppProfileSelector.selectProfile(profiles)
-          events <- SdkEvent.genWithProfile(
-            config.eventsPerPayload,
-            time,
-            config.eventsFrequencies,
-            config.contextsPerEvent,
-            generateEnrichments,
-            profile.appId,
-            profile.userGraph
-          )
-        } yield events
-
-      case Some(Left(singleGraph)) =>
-        // Single profile mode (backward compatible)
-        config.duplicates match {
-          case Some(dups) =>
-            SdkEvent.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              generateEnrichments,
-              config.appId,
-              Some(singleGraph)
-            )
-          case None =>
-            SdkEvent.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              generateEnrichments,
-              config.appId,
-              Some(singleGraph)
-            )
-        }
-
-      case None =>
-        // No identity graph: random generation
-        config.duplicates match {
-          case Some(dups) =>
-            SdkEvent.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              generateEnrichments,
-              config.appId,
-              None
-            )
-          case None =>
-            SdkEvent.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              generateEnrichments,
-              config.appId,
-              None
-            )
-        }
-    }
-
-    gen.map(_.map { e =>
+  ): ScalaGen[List[String]] =
+    for {
+      identitySource <- getIdentitySource(config)
+      events <- SdkEvent.gen(
+        config.eventsPerPayload,
+        time,
+        config.eventsFrequencies,
+        config.contextsPerEvent,
+        generateEnrichments,
+        config.appId,
+        identitySource,
+        config.duplicates
+      )
+    } yield events.map { e =>
       format match {
         case GenConfig.Events.Enriched.Format.TSV  => e.toTsv
         case GenConfig.Events.Enriched.Format.JSON => e.toJson(true).noSpaces
       }
-    })
-  }
+    }
 
   def httpRequest(
     config: Config,
@@ -173,86 +80,17 @@ object Gen {
     methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
     validEventsOnly: Boolean
   ): ScalaGen[HttpRequest] =
-    config.activeUserConfig match {
-      case Some(Right(profiles)) =>
-        // Multi-profile mode: select a profile for each event
-        for {
-          profile <- AppProfileSelector.selectProfile(profiles)
-          request <- config.duplicates match {
-            case Some(dups) =>
-              HttpRequest.genDup(
-                dups,
-                config.eventsPerPayload,
-                time,
-                config.eventsFrequencies,
-                config.contextsPerEvent,
-                methodFrequencies,
-                Some(profile.userGraph),
-                validEventsOnly
-              )
-            case None =>
-              HttpRequest.gen(
-                config.eventsPerPayload,
-                time,
-                config.eventsFrequencies,
-                config.contextsPerEvent,
-                methodFrequencies,
-                Some(profile.userGraph),
-                validEventsOnly
-              )
-          }
-        } yield request
-
-      case Some(Left(singleGraph)) =>
-        // Single graph mode
-        config.duplicates match {
-          case Some(dups) =>
-            HttpRequest.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              methodFrequencies,
-              Some(singleGraph),
-              validEventsOnly
-            )
-          case None =>
-            HttpRequest.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              methodFrequencies,
-              Some(singleGraph),
-              validEventsOnly
-            )
-        }
-
-      case None =>
-        // No identity graph: random generation
-        config.duplicates match {
-          case Some(dups) =>
-            HttpRequest.genDup(
-              dups,
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              methodFrequencies,
-              None,
-              validEventsOnly
-            )
-          case None =>
-            HttpRequest.gen(
-              config.eventsPerPayload,
-              time,
-              config.eventsFrequencies,
-              config.contextsPerEvent,
-              methodFrequencies,
-              None,
-              validEventsOnly
-            )
-        }
-    }
+    for {
+      identitySource <- getIdentitySource(config)
+      request <- HttpRequest.gen(
+        config.eventsPerPayload,
+        time,
+        config.eventsFrequencies,
+        config.contextsPerEvent,
+        methodFrequencies,
+        identitySource,
+        config.duplicates,
+        validEventsOnly
+      )
+    } yield request
 }

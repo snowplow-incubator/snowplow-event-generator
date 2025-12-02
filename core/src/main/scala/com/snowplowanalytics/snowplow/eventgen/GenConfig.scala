@@ -100,4 +100,11 @@ object GenConfig {
       case object PowerLaw extends Distribution
     }
   }
+
+  sealed trait IdentitySource
+  object IdentitySource {
+    case object NoIdentity extends IdentitySource
+    case class SingleGraph(config: UserGraph) extends IdentitySource
+    case class ProfileGraph(appId: String, config: UserGraph) extends IdentitySource
+  }
 }

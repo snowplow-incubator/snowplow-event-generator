@@ -30,31 +30,24 @@ final case class HttpRequestBody(schema: SchemaKey, data: List[Body]) {
 }
 
 object HttpRequestBody {
-  def genDup(
-    duplicates: GenConfig.Duplicates,
-    evenstPerPayload: GenConfig.EventsPerPayload,
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
-  ): Gen[HttpRequestBody] =
-    genWithBody(evenstPerPayload, Body.genDup(duplicates, time, frequencies, contexts, identityGraph))
 
   def gen(
-    evenstPerPayload: GenConfig.EventsPerPayload,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
+    identitySource: GenConfig.IdentitySource,
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[HttpRequestBody] =
-    genWithBody(evenstPerPayload, Body.gen(time, frequencies, contexts, identityGraph))
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates))
 
   private def genWithBody(
-    evenstPerPayload: GenConfig.EventsPerPayload,
+    eventsPerPayload: GenConfig.EventsPerPayload,
     bodyGen: Gen[Body]
   ) =
     for {
-      n       <- Gen.chooseNum(evenstPerPayload.min, evenstPerPayload.max)
+      n       <- Gen.chooseNum(eventsPerPayload.min, eventsPerPayload.max)
       payload <- Gen.listOfN(n, bodyGen)
     } yield HttpRequestBody(PayloadDataSchema.Default, payload)
+
 }

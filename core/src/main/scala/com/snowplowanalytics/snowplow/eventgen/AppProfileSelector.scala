@@ -12,6 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen
 
+import com.snowplowanalytics.snowplow.eventgen.protocol.common.ClusterAlgorithm.HashConstants
 import org.scalacheck.Gen
 
 /** Utility for selecting app profiles and determining identity-app affinity.
@@ -21,15 +22,22 @@ import org.scalacheck.Gen
   */
 object AppProfileSelector {
 
-  /** Hash constants for deterministic app-user affinity.
-    *
-    *   - KnuthHash: 2^32 / golden ratio for multiplicative hashing
-    *   - NormalizationBase: Denominator for converting hash to [0,1] probability
-    *   - SeedMultiplier: Prime for combining userId and appId (shared with ClusterAlgorithm)
+  /** Minimum number of candidates to generate per batch when filtering users by app. Set to 50 to ensure reasonable
+    * success probability even with low usage rates, while avoiding excessive memory allocation for small batches.
     */
-  private val KnuthHash         = 2654435761L
-  private val NormalizationBase = 1000000
-  private val SeedMultiplier    = 31L // Same as ClusterAlgorithm.HashConstants.ClusterIdPrime
+  private val MinBatchSize = 50
+
+  /** Multiplier for batch size calculation: batchSize = max(MinBatchSize, BatchSizeMultiplier / usageRate). Value of
+    * 5.0 means we generate ~5x more candidates than statistically needed, providing >99% success probability per batch
+    * for typical usage rates.
+    */
+  private val BatchSizeMultiplier = 5.0
+
+  /** Minimum expected number of matching users required for acceptance sampling to work reliably. With fewer than 10
+    * expected matches, the probability of finding no match in a batch becomes unacceptably high, leading to potential
+    * runtime failures.
+    */
+  private val MinExpectedMatches = 10.0
 
   /** Select a profile using weighted random selection.
     *
@@ -58,9 +66,9 @@ object AppProfileSelector {
     *   true if this identity uses this app
     */
   def doesIdentityUseApp(userId: Long, appId: String, usageRate: Double): Boolean = {
-    val seed       = userId * SeedMultiplier              + appId.hashCode.toLong
-    val hash       = ((seed * KnuthHash) & Long.MaxValue) % NormalizationBase
-    val normalized = hash.toDouble                        / NormalizationBase.toDouble
+    val seed = userId * HashConstants.ClusterIdPrime                         + appId.hashCode.toLong
+    val hash = ((seed * HashConstants.KnuthHashGoldenRatio) & Long.MaxValue) % HashConstants.NormalizationBase
+    val normalized = hash.toDouble / HashConstants.NormalizationBase.toDouble
     normalized < usageRate
   }
 
@@ -90,17 +98,14 @@ object AppProfileSelector {
 
     val expectedMatches = numUsers * usageRate
     require(
-      expectedMatches >= 10.0,
+      expectedMatches >= MinExpectedMatches,
       s"Too few expected matches for app '$appId': $expectedMatches " +
         s"(numUsers=$numUsers × usageRate=$usageRate). " +
-        s"Need ≥10 expected matches to avoid acceptance sampling failure. " +
+        s"Need ≥$MinExpectedMatches expected matches to avoid acceptance sampling failure. " +
         s"Either increase numUsers or increase usageRate."
     )
 
-    // Generate batch of candidates and find first match
-    // Batch size: 5 / usageRate ensures >99.9% probability of at least one match
-    // E.g., usageRate=0.2, batchSize=25: P(all miss) = 0.8^25 ≈ 0.004%
-    val batchSize = Math.max(50, (5.0 / usageRate).toInt)
+    val batchSize = Math.max(MinBatchSize, (BatchSizeMultiplier / usageRate).toInt)
 
     Gen.listOfN(batchSize, userSelector).map { candidates =>
       candidates.find(id => doesIdentityUseApp(id, appId, usageRate)).getOrElse {

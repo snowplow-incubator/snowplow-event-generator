@@ -15,7 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.protocol
 import com.snowplowanalytics.snowplow.eventgen.protocol.Context.{ContextsWrapper, DerivedContextsWrapper}
 import com.snowplowanalytics.snowplow.eventgen.protocol.event._
 import com.snowplowanalytics.snowplow.eventgen.protocol.common._
-import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.AuthenticatedUser
+import com.snowplowanalytics.snowplow.eventgen.protocol.contexts.EcommerceUser
 import com.snowplowanalytics.snowplow.eventgen.{CorrelatedUser, GenConfig}
 import io.circe.Json
 import io.circe.syntax._
@@ -62,53 +62,58 @@ object Body {
 
   lazy val dupRng = new Random(DuplicationSeed)
 
-  def genDup(
-    duplicates: GenConfig.Duplicates,
+  def gen(
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
-  ): Gen[Body] =
-    genWithEt(
-      EventTransaction.genDup(duplicates.synProb, duplicates.synTotal),
-      time,
-      frequencies,
-      contexts,
-      identityGraph,
-      None
-    ).withPerturb(in =>
+    identitySource: GenConfig.IdentitySource,
+    duplicates: Option[GenConfig.Duplicates]
+  ): Gen[Body] = {
+    val etGen = duplicates match {
+      case Some(dups) => EventTransaction.genDup(dups.synProb, dups.synTotal)
+      case None       => EventTransaction.gen
+    }
+    val baseGen = genWithEt(etGen, time, frequencies, contexts, identitySource)
+    duplicates match {
+      case Some(dups) => withNaturalDuplicates(baseGen, dups)
+      case None       => baseGen
+    }
+  }
+
+  private def withNaturalDuplicates(baseGen: Gen[Body], duplicates: GenConfig.Duplicates): Gen[Body] =
+    baseGen.withPerturb { in =>
       if (duplicates.natProb == 0f | duplicates.natTotal == 0)
         in
       else if (dupRng.nextInt(ProbabilityPrecision) < (duplicates.natProb * ProbabilityPrecision))
         Seed(dupRng.nextInt(duplicates.natTotal).toLong)
       else
         in
-    );
+    }
+
   private def genWithEt(
     etGen: Gen[EventTransaction],
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph],
-    profileInfo: Option[(String, GenConfig.UserGraph)]
+    identitySource: GenConfig.IdentitySource
   ) =
     for {
       e <- EventType.gen(frequencies)
-      app <- profileInfo match {
-        case Some((appId, _)) => Application.genWithAppId(appId)
-        case None             => Application.gen
+      app <- identitySource match {
+        case GenConfig.IdentitySource.ProfileGraph(appId, _) => Application.genWithAppId(appId)
+        case _                                               => Application.gen
       }
       et  <- etGen
       dt  <- DateTime.genOpt(time)
       dev <- Device.genOpt
       tv  <- TrackerVersion.gen
 
-      correlatedData <- (profileInfo, identityGraph) match {
-        case (Some((appId, profileConfig)), _) =>
-          CorrelatedUser.gen(profileConfig, Some(appId)).map(Some(_))
-        case (None, Some(config)) =>
+      correlatedData <- identitySource match {
+        case GenConfig.IdentitySource.ProfileGraph(appId, config) =>
+          CorrelatedUser.gen(config, Some(appId)).map(Some(_))
+        case GenConfig.IdentitySource.SingleGraph(config) =>
           CorrelatedUser.gen(config, None).map(Some(_))
-        case (None, None) =>
+        case GenConfig.IdentitySource.NoIdentity =>
           Gen.const(None)
       }
 
@@ -128,33 +133,13 @@ object Body {
 
       regularContexts <- Context.ContextsWrapper.gen(time, contexts)
       authUserContext <- correlatedData match {
-        case Some(data) => AuthenticatedUser.genWithUserId(data.authenticatedUserId)
+        case Some(data) => EcommerceUser.genWithUserId(data.authenticatedUserId)
         case None       => Gen.const(None)
       }
 
       allContexts = authUserContext.toList ++ regularContexts.value
       derivedContexts <- Context.DerivedContextsWrapper.gen(time)
     } yield Body(e, app, dt, dev, tv, et, u, event, ContextsWrapper(allContexts), derivedContexts)
-
-  def gen(
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
-  ): Gen[Body] =
-    genWithEt(EventTransaction.gen, time, frequencies, contexts, identityGraph, None)
-
-  /** Generate Body with specific profile (for multi-profile scenarios). Uses algorithmic approach for fast generation
-    * without pre-computation.
-    */
-  def genWithProfile(
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    appId: String,
-    profileConfig: GenConfig.UserGraph
-  ): Gen[Body] =
-    genWithEt(EventTransaction.gen, time, frequencies, contexts, None, Some((appId, profileConfig)))
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }

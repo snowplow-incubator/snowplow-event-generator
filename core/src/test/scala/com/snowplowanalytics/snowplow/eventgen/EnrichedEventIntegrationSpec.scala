@@ -41,7 +41,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             Instant.now(),
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
-            Some(config)
+            GenConfig.IdentitySource.SingleGraph(config),
+            None
           )
           .sample
           .get
@@ -71,7 +72,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             Instant.now(),
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
-            Some(config)
+            GenConfig.IdentitySource.SingleGraph(config),
+            None
           )
           .sample
           .get
@@ -99,7 +101,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             Instant.now(),
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
-            Some(config)
+            GenConfig.IdentitySource.SingleGraph(config),
+            None
           )
           .sample
           .get
@@ -126,12 +129,107 @@ class EnrichedEventIntegrationSpec extends Specification {
           Instant.now(),
           GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
           GenConfig.ContextsPerEvent(0, 0),
-          Some(config)
+          GenConfig.IdentitySource.SingleGraph(config),
+          None
         )
         .sample
         .get
 
       sample.u.flatMap(_.uid) must beSome[String].which(_.startsWith("user_"))
+    }
+  }
+
+  "Backward compatibility when UserGraph is disabled" should {
+
+    "generate events with random user data when identityGraph = None" in {
+      val samples = (1 to 100).map { _ =>
+        Body
+          .gen(
+            Instant.now(),
+            GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
+            GenConfig.ContextsPerEvent(0, 0),
+            GenConfig.IdentitySource.NoIdentity,
+            None
+          )
+          .sample
+          .get
+      }
+
+      // With random generation, User should be optional (some None, some Some)
+      val withUser    = samples.count(_.u.isDefined)
+      val withoutUser = samples.count(_.u.isEmpty)
+
+      // Both cases should occur with random generation
+      withUser must beGreaterThan(0)
+      withoutUser must beGreaterThan(0)
+    }
+
+    "not add EcommerceUser context when identityGraph = None" in {
+      val samples = (1 to 50).map { _ =>
+        Body
+          .gen(
+            Instant.now(),
+            GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
+            GenConfig.ContextsPerEvent(0, 3),
+            GenConfig.IdentitySource.NoIdentity,
+            None
+          )
+          .sample
+          .get
+      }
+
+      val ecommerceUserContexts = samples.flatMap { body =>
+        body.contexts.value.filter { ctx =>
+          ctx.schema.vendor == "com.snowplowanalytics.snowplow.ecommerce" &&
+          ctx.schema.name == "user"
+        }
+      }
+
+      // No EcommerceUser contexts should be added when identity graph is disabled
+      ecommerceUserContexts must beEmpty
+    }
+
+    "generate random domain_userid format when identityGraph = None" in {
+      val samples = (1 to 50).map { _ =>
+        Body
+          .gen(
+            Instant.now(),
+            GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
+            GenConfig.ContextsPerEvent(0, 0),
+            GenConfig.IdentitySource.NoIdentity,
+            None
+          )
+          .sample
+          .get
+      }
+
+      val duids = samples.flatMap(_.u).flatMap(_.duid)
+
+      // Random duid should NOT follow the identity graph format (cookie_xxx or shared_cookie_xxx)
+      val identityGraphFormatCount = duids.count(d => d.startsWith("cookie_") || d.startsWith("shared_cookie_"))
+      identityGraphFormatCount must_== 0
+    }
+
+    "produce variety in user identifiers when identityGraph = None" in {
+      val samples = (1 to 100).map { _ =>
+        Body
+          .gen(
+            Instant.now(),
+            GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
+            GenConfig.ContextsPerEvent(0, 0),
+            GenConfig.IdentitySource.NoIdentity,
+            None
+          )
+          .sample
+          .get
+      }
+
+      val uniqueDuids = samples.flatMap(_.u).flatMap(_.duid).distinct
+      val uniqueNuids = samples.flatMap(_.u).flatMap(_.nuid).distinct
+
+      // Random generation should produce many unique values
+      uniqueDuids.size must beGreaterThan(10)
+      uniqueNuids.size must beGreaterThan(10)
     }
   }
 }

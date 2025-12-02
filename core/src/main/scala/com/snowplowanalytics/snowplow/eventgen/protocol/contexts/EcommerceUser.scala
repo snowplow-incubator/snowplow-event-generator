@@ -19,10 +19,16 @@ import org.scalacheck.Gen
 import io.circe.Json
 import java.time.Instant
 
-/** Ecommerce user context containing user id for identity correlation. Uses the standard ecommerce user schema from
-  * Iglu Central.
+/** User context for identity correlation in generated events.
+  *
+  * Uses the standard ecommerce user schema from Iglu Central (com.snowplowanalytics.snowplow.ecommerce/user/1-0-0).
+  * This schema is repurposed here for identity resolution testing - the `id` field carries the authenticated user_id
+  * which correlates with `User.uid` for cross-referencing identity data across different event fields.
+  *
+  * Note: While semantically this is a general "authenticated user" context, we use the ecommerce/user schema because
+  * it's a well-defined, existing schema in Iglu Central that contains the required `id` field.
   */
-object AuthenticatedUser extends SelfDescribingJsonGen {
+object EcommerceUser extends SelfDescribingJsonGen {
 
   override def schemaKey: SchemaKey =
     SchemaKey(

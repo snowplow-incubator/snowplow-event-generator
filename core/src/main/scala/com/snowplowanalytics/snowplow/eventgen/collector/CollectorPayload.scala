@@ -113,19 +113,16 @@ final case class CollectorPayload(
 }
 
 object CollectorPayload {
-  def genDup(
-    duplicates: GenConfig.Duplicates,
+
+  def gen(
     eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
+    identitySource: GenConfig.IdentitySource,
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[CollectorPayload] =
-    genWithBody(
-      eventsPerPayload,
-      Body.genDup(duplicates, time, frequencies, contexts, identityGraph),
-      time
-    )
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates), time)
 
   private def genWithBody(eventsPerPayload: GenConfig.EventsPerPayload, bodyGen: Gen[Body], time: Instant) =
     for {
@@ -135,27 +132,6 @@ object CollectorPayload {
       cc      <- CollectorContext.gen(time)
       payload <- Gen.listOfN(n, bodyGen)
     } yield CollectorPayload(api, payload, src, cc)
-
-  def gen(
-    eventsPerPayload: GenConfig.EventsPerPayload,
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    identityGraph: Option[GenConfig.UserGraph] = None
-  ): Gen[CollectorPayload] =
-    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identityGraph), time)
-
-  /** Generate CollectorPayload with specific profile (for multi-profile scenarios).
-    */
-  def genWithProfile(
-    eventsPerPayload: GenConfig.EventsPerPayload,
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent,
-    appId: String,
-    profileConfig: GenConfig.UserGraph
-  ): Gen[CollectorPayload] =
-    genWithBody(eventsPerPayload, Body.genWithProfile(time, frequencies, contexts, appId, profileConfig), time)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
