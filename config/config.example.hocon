@@ -23,10 +23,6 @@
     #   "get": 1
     #   "head": 0 # Has to be 0
     # }
-    #
-    # Only generate valid events that will pass enrichment
-    # When false (default), some requests use invalid endpoints or empty bodies for fuzzing
-    # "validEventsOnly": false
   }
 
   # Where to send generated events to

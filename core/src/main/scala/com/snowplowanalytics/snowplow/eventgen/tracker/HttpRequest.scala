@@ -37,24 +37,16 @@ object HttpRequest {
     final case class Get(path: Api) extends Method
     final case class Head(path: Api) extends Method
 
-    def gen(freq: GenConfig.Events.Http.MethodFrequencies, validEventsOnly: Boolean): Gen[Method] =
+    def gen(freq: GenConfig.Events.Http.MethodFrequencies): Gen[Method] =
       Gen.frequency(
-        (freq.post, genPost(validEventsOnly)),
-        (freq.get, genGet(validEventsOnly)),
-        (freq.head, genHead(validEventsOnly))
+        (freq.post, genPost),
+        (freq.get, genGet),
+        (freq.head, genHead)
       )
 
-    private def genPost(validEventsOnly: Boolean): Gen[Method.Post] =
-      if (validEventsOnly) genApi(200).map(Method.Post)
-      else Gen.oneOf(genApi(0), genApi(200)).map(Method.Post)
-
-    private def genGet(validEventsOnly: Boolean): Gen[Method.Get] =
-      if (validEventsOnly) Gen.oneOf(fixedApis, genApi(1)).map(Method.Get)
-      else Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Get)
-
-    private def genHead(validEventsOnly: Boolean): Gen[Method.Head] =
-      if (validEventsOnly) Gen.oneOf(fixedApis, genApi(1)).map(Method.Head)
-      else Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
+    private def genPost: Gen[Method.Post] = Gen.oneOf(genApi(0), genApi(200)).map(Method.Post)
+    private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Get)
+    private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
   }
 
   def gen(
@@ -64,31 +56,27 @@ object HttpRequest {
     contexts: GenConfig.ContextsPerEvent,
     methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates],
-    validEventsOnly: Boolean
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[HttpRequest] = {
     val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
       HttpRequestQuerystring.gen(time, frequencies, contexts, identitySource),
       HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates),
-      methodFreq,
-      validEventsOnly
+      methodFreq
     )
   }
 
   private def genWithParts(
     qsGen: Gen[HttpRequestQuerystring],
     bodyGen: Gen[HttpRequestBody],
-    methodFreq: GenConfig.Events.Http.MethodFrequencies,
-    validEventsOnly: Boolean
+    methodFreq: GenConfig.Events.Http.MethodFrequencies
   ) =
     for {
-      method <- Method.gen(methodFreq, validEventsOnly)
+      method <- Method.gen(methodFreq)
       qs     <- Gen.option(qsGen)
       body <- method match {
-        case Method.Head(_)                    => Gen.const(None)      // HEAD requests can't have a message body
-        case Method.Post(_) if validEventsOnly => bodyGen.map(Some(_)) // POST to tp2 requires a body
-        case _                                 => Gen.option(bodyGen)
+        case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
+        case _              => Gen.option(bodyGen)
       }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
       raw = HttpRequestHeaders.rawReqUriHeader(qs)

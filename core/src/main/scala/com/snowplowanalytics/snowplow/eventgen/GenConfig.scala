@@ -19,8 +19,7 @@ object GenConfig {
     case object CollectorPayloads extends Events
     case class Enriched(format: Enriched.Format, generateEnrichments: Boolean) extends Events
     case class Http(
-      methodFrequencies: Option[Http.MethodFrequencies],
-      validEventsOnly: Boolean = false
+      methodFrequencies: Option[Http.MethodFrequencies]
     ) extends Events
 
     object Enriched {

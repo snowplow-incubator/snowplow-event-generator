@@ -67,9 +67,9 @@ object Main extends IOApp {
           mkStream(config, Gen.enriched(config, _, format, generateEnrichments)).flatMap(Stream.emits),
           sink.enriched
         )
-      case GenConfig.Events.Http(methodFrequencies, validEventsOnly) =>
+      case GenConfig.Events.Http(methodFrequencies) =>
         run(
-          mkStream(config, Gen.httpRequest(config, _, methodFrequencies, validEventsOnly)),
+          mkStream(config, Gen.httpRequest(config, _, methodFrequencies)),
           sink.http
         )
     }

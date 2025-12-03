@@ -77,8 +77,7 @@ object Gen {
   def httpRequest(
     config: Config,
     time: Instant,
-    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
-    validEventsOnly: Boolean
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
   ): ScalaGen[HttpRequest] =
     for {
       identitySource <- getIdentitySource(config)
@@ -89,8 +88,7 @@ object Gen {
         config.contextsPerEvent,
         methodFrequencies,
         identitySource,
-        config.duplicates,
-        validEventsOnly
+        config.duplicates
       )
     } yield request
 }
