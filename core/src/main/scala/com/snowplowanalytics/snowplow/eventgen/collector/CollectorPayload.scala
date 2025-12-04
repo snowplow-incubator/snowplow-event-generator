@@ -113,18 +113,16 @@ final case class CollectorPayload(
 }
 
 object CollectorPayload {
-  def genDup(
-    duplicates: GenConfig.Duplicates,
+
+  def gen(
     eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    identitySource: GenConfig.IdentitySource,
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[CollectorPayload] =
-    genWithBody(
-      eventsPerPayload,
-      Body.genDup(duplicates, time, frequencies, contexts),
-      time
-    )
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates), time)
 
   private def genWithBody(eventsPerPayload: GenConfig.EventsPerPayload, bodyGen: Gen[Body], time: Instant) =
     for {
@@ -134,14 +132,6 @@ object CollectorPayload {
       cc      <- CollectorContext.gen(time)
       payload <- Gen.listOfN(n, bodyGen)
     } yield CollectorPayload(api, payload, src, cc)
-
-  def gen(
-    eventsPerPayload: GenConfig.EventsPerPayload,
-    time: Instant,
-    frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
-  ): Gen[CollectorPayload] =
-    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts), time)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))

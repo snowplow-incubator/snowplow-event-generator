@@ -134,4 +134,100 @@
     "eventsPerSecond": 400
     "tickMillis": 500
   }
+
+  # Optional user graph configuration for realistic user behavior
+  #
+  # KEY CONCEPTS:
+  # - Real users: Fixed number of actual people (numUsers)
+  # - Identifiers: Each user has a pool of cookies, devices, IPs
+  # - Cross-user sharing: Some users share identifiers (households, ISPs, etc.)
+  #
+  # "userGraph": {
+  #   # Total number of distinct real users (people) in the pool
+  #   "numUsers": 3000000
+  #
+  #   # Shared identifier rate: fraction of users who share identifiers (0.0 to 1.0)
+  #   # Controls cross-user identifier sharing (households, ISPs, shared devices)
+  #   "sharedIdentifierRate": 0.05
+  #
+  #   # How many identifiers each user has in their pool
+  #   "identifiersPerUser": {
+  #     "cookie": 4   # Each user has up to 4 different cookies
+  #     "device": 4   # Each user has up to 4 different devices
+  #     "ip": 5       # Each user has up to 5 different IPs
+  #   }
+  #
+  #   # Probability that an event includes authenticated user_id (0.0 to 1.0)
+  #   # 0.65 = 65% of events include authenticated user_id
+  #   "authenticationRate": 0.65
+  #
+  #   # Distribution of events across users
+  #   # "PowerLaw" = 80% of events from 20% of users (Pareto distribution)
+  #   # "Uniform" = even distribution across all users
+  #   "distribution": {
+  #     "type": "PowerLaw"
+  #   }
+  #
+  # }
+
+  # Example configurations:
+  #
+  # Easy: Minimal cross-user sharing (0.1% of users affected)
+  # "userGraph": {
+  #   "numUsers": 9000000
+  #   "sharedIdentifierRate": 0.001
+  #   "identifiersPerUser": { "cookie": 2, "device": 2, "ip": 3 }
+  #   "authenticationRate": 0.97
+  #   "distribution": { "type": "PowerLaw" }
+  # }
+  #
+  # Heavy sharing (50% of users affected, likely misconfiguration scenario)
+  # "userGraph": {
+  #   "numUsers": 1000000
+  #   "sharedIdentifierRate": 0.50
+  #   "identifiersPerUser": { "cookie": 7, "device": 6, "ip": 10 }
+  #   "authenticationRate": 0.50
+  #   "distribution": { "type": "PowerLaw" }
+  # }
+  #
+  # Multi-app - Different apps sharing same user pool:
+  # Models cross-platform user behavior (website + mobile app + API)
+  # "appProfiles": [
+  #   {
+  #     "appId": "web-app"
+  #     "weight": 60  # 60% of events come from this app
+  #     "userGraph": {
+  #       "numUsers": 10000000  # Total real users across all apps
+  #       "sharedIdentifierRate": 0.05
+  #       "identifiersPerUser": { "cookie": 3, "device": 2, "ip": 3 }
+  #       "authenticationRate": 0.80
+  #       "distribution": { "type": "PowerLaw" }
+  #       "activeUserRate": 0.35  # 35% of users are active on this app
+  #     }
+  #   },
+  #   {
+  #     "appId": "mobile-app"
+  #     "weight": 30  # 30% of events come from this app
+  #     "userGraph": {
+  #       "numUsers": 10000000  # Same pool (some users use multiple apps)
+  #       "sharedIdentifierRate": 0.08
+  #       "identifiersPerUser": { "cookie": 4, "device": 3, "ip": 4 }
+  #       "authenticationRate": 0.70
+  #       "distribution": { "type": "PowerLaw" }
+  #       "activeUserRate": 0.15  # 15% of users are active on this app
+  #     }
+  #   },
+  #   {
+  #     "appId": "api-service"
+  #     "weight": 10  # 10% of events come from this app
+  #     "userGraph": {
+  #       "numUsers": 10000000  # Same pool
+  #       "sharedIdentifierRate": 0.02
+  #       "identifiersPerUser": { "cookie": 2, "device": 1, "ip": 2 }
+  #       "authenticationRate": 0.95
+  #       "distribution": { "type": "PowerLaw" }
+  #       "activeUserRate": 0.05  # 5% of users are active on this app
+  #     }
+  #   }
+  # ]
 }
