@@ -86,7 +86,7 @@ object Main extends IOApp {
             .flatMap(nbEvents => Sync[F].delay(println(s"$nbEvents events generated in the last $reportPeriod")))
         }
 
-        events.through(sink).evalTap(_ => counts.update(_ + 1)).concurrently(showCounts)
+        events.evalTap(_ => counts.update(_ + 1)).through(sink).concurrently(showCounts)
       }
       .compile
       .drain

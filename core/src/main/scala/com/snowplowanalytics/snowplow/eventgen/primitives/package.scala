@@ -18,6 +18,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import java.nio.charset.Charset
 import java.time.Instant
 import java.util.{Base64, TimeZone}
+import scala.jdk.CollectionConverters._
 import scala.util.Random
 
 package object primitives {
@@ -57,7 +58,9 @@ package object primitives {
 
   def genInstantOpt(now: Instant): Gen[Option[Instant]] = Gen.option(genInstant(now))
 
-  def genTz: Gen[String] = Gen.oneOf(TimeZone.getAvailableIDs.toSeq)
+  // Cache timezone IDs - TimeZone.getAvailableIDs is expensive
+  private val timezoneIds: Seq[String] = TimeZone.getAvailableIDs.toSeq
+  def genTz: Gen[String]               = Gen.oneOf(timezoneIds)
 
   def genTzOpt: Gen[Option[String]] = Gen.option(genTz)
 
@@ -84,7 +87,9 @@ package object primitives {
 
   def genUserAgentOpt: Gen[Option[String]] = Gen.option(genUserAgent)
 
-  def genCharsetStr: Gen[String] = Gen.oneOf(Charset.availableCharsets().keySet().toArray.toSeq.map(_.toString))
+  // Cache charset list - Charset.availableCharsets() is expensive (system call)
+  private val charsetNames: Seq[String] = Charset.availableCharsets().keySet().asScala.toSeq
+  def genCharsetStr: Gen[String]        = Gen.oneOf(charsetNames)
 
   def genCharsetStrOpt: Gen[Option[String]] = Gen.option(genCharsetStr)
 
