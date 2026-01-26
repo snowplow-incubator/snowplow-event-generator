@@ -62,9 +62,10 @@ object Body {
     duplicates: GenConfig.Duplicates,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[Body] =
-    genWithEt(EventTransaction.genDup(duplicates.synProb, duplicates.synTotal), time, frequencies, contexts)
+    genWithEt(EventTransaction.genDup(duplicates.synProb, duplicates.synTotal), time, frequencies, contexts, appIds)
       .withPerturb(in =>
         if (duplicates.natProb == 0f | duplicates.natTotal == 0)
           in
@@ -77,11 +78,12 @@ object Body {
     etGen: Gen[EventTransaction],
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ) =
     for {
       e   <- EventType.gen(frequencies)
-      app <- Application.gen
+      app <- Application.gen(appIds)
       et  <- etGen
       dt  <- DateTime.genOpt(time)
       dev <- Device.genOpt
@@ -99,8 +101,8 @@ object Body {
       derivedContexts <- Context.DerivedContextsWrapper.gen(time)
     } yield Body(e, app, dt, dev, tv, et, u, event, contexts, derivedContexts)
 
-  def gen(time: Instant, frequencies: GenConfig.EventsFrequencies, contexts: GenConfig.ContextsPerEvent): Gen[Body] =
-    genWithEt(EventTransaction.gen, time, frequencies, contexts)
+  def gen(time: Instant, frequencies: GenConfig.EventsFrequencies, contexts: GenConfig.ContextsPerEvent, appIds: List[String]): Gen[Body] =
+    genWithEt(EventTransaction.gen, time, frequencies, contexts, appIds)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
 }

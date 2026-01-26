@@ -34,11 +34,10 @@ final case class Application(
 }
 
 object Application {
-  def gen: Gen[Application] =
+  def gen(appIds: List[String]): Gen[Application] =
     (
       Gen.oneOf("web", "mob", "pc", "srv", "app", "tv", "cnsl", "iot"),
-      genStringOpt("aid", 10),
-//    genStringOpt("evn", 10),
+      Gen.oneOf(appIds).map(Some(_)),
       genStringOpt("tna", 10)
     ).mapN(Application.apply)
 }

@@ -65,9 +65,10 @@
     # "at": "2022-02-01T01:01:01z"
   }
 
-  # Optional. App ID to use in the events
-  # If not set, each event will get a new app ID
-  # "appId": "my-app"
+  # Optional. List of App IDs to use in the events
+  # Each event will get a randomly selected app ID from this list
+  # If not set, defaults to ["event-gen-1", "event-gen-2", ..., "event-gen-10"]
+  # "appIds": ["my-app-1", "my-app-2", "my-app-3"]
 
   # Optional. Seed to use to generate events
   # For a same seed, the same event will get deterministically generated
@@ -94,6 +95,8 @@
     "unstruct": 1
     "pageView": 1
     "pagePing": 1
+    "transaction": 1
+    "transactionItem": 1
     "unstructEventFrequencyDefault": 1
     "unstructEventFrequencies": {
       "change_form": 1
