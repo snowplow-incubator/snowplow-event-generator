@@ -101,7 +101,12 @@ object Body {
       derivedContexts <- Context.DerivedContextsWrapper.gen(time)
     } yield Body(e, app, dt, dev, tv, et, u, event, contexts, derivedContexts)
 
-  def gen(time: Instant, frequencies: GenConfig.EventsFrequencies, contexts: GenConfig.ContextsPerEvent, appIds: List[String]): Gen[Body] =
+  def gen(
+    time: Instant,
+    frequencies: GenConfig.EventsFrequencies,
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
+  ): Gen[Body] =
     genWithEt(EventTransaction.gen, time, frequencies, contexts, appIds)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)

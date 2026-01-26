@@ -72,7 +72,7 @@ object Dependencies {
     val http4sClient   = "org.http4s"               %% "http4s-blaze-client"          % V.http4s
     val stsSdk         = "software.amazon.awssdk"    % "sts"                          % V.awsSdk
     val http4sEmber    = "org.http4s"               %% "http4s-ember-client"          % V.http4s
-    val http4sCirce    =  "org.http4s"              %% "http4s-circe"                 % V.http4s
+    val http4sCirce    = "org.http4s"               %% "http4s-circe"                 % V.http4s
 
     // Scala (test only)
     val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test
@@ -84,6 +84,6 @@ object Dependencies {
     // raw output
     val snowplowRawEvent = "com.snowplowanalytics"  % "snowplow-thrift-raw-event" % V.snowplowRawEvent
     val collectorPayload = "com.snowplowanalytics"  % "collector-payload-1"       % V.collectorPayload
-    val badRows          = "com.snowplowanalytics"  %% "snowplow-badrows"          % V.badRows
+    val badRows          = "com.snowplowanalytics" %% "snowplow-badrows"          % V.badRows
   }
 }
