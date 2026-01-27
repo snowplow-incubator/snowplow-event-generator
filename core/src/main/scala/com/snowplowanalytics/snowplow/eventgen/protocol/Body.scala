@@ -67,13 +67,14 @@ object Body {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates]
+    duplicates: Option[GenConfig.Duplicates],
+    appIds: List[String]
   ): Gen[Body] = {
     val etGen = duplicates match {
       case Some(dups) => EventTransaction.genDup(dups.synProb, dups.synTotal)
       case None       => EventTransaction.gen
     }
-    val baseGen = genWithEt(etGen, time, frequencies, contexts, identitySource)
+    val baseGen = genWithEt(etGen, time, frequencies, contexts, identitySource, appIds)
     duplicates match {
       case Some(dups) => withNaturalDuplicates(baseGen, dups)
       case None       => baseGen
@@ -90,19 +91,18 @@ object Body {
         in
     }
 
+
   private def genWithEt(
     etGen: Gen[EventTransaction],
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identitySource: GenConfig.IdentitySource
+    identitySource: GenConfig.IdentitySource,
+    appIds: List[String]
   ) =
     for {
-      e <- EventType.gen(frequencies)
-      app <- identitySource match {
-        case GenConfig.IdentitySource.ProfileGraph(appId, _) => Application.genWithAppId(appId)
-        case _                                               => Application.gen
-      }
+      e   <- EventType.gen(frequencies)
+      app <- Application.gen(appIds)
       et  <- etGen
       dt  <- DateTime.genOpt(time)
       dev <- Device.genOpt
