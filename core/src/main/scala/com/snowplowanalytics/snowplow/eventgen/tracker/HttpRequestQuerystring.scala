@@ -29,10 +29,11 @@ object HttpRequestQuerystring {
   def gen(
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[HttpRequestQuerystring] =
     genWithBody(
-      Body.gen(time, frequencies, contexts)
+      Body.gen(time, frequencies, contexts, appIds)
     )
 
   private def genWithBody(bodyGen: Gen[Body]) =

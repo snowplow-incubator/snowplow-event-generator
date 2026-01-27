@@ -76,10 +76,7 @@ lazy val sinks = project
       Dependencies.Libraries.http4sEmber,
       Dependencies.Libraries.http4sCirce,
       Dependencies.Libraries.catsRetry
-    ),
-    //libraryDependencies += "org.typelevel" %% "cats-effect" % "3.4.6",
-    // libraryDependencies += "org.http4s"    %% "http4s-ember-client" % "0.23.15",
-    // libraryDependencies += "org.http4s" %% "http4s-circe" % "0.23.15"
+    )
   )
   .dependsOn(core)
 

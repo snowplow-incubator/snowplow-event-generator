@@ -118,11 +118,12 @@ object CollectorPayload {
     eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[CollectorPayload] =
     genWithBody(
       eventsPerPayload,
-      Body.genDup(duplicates, time, frequencies, contexts),
+      Body.genDup(duplicates, time, frequencies, contexts, appIds),
       time
     )
 
@@ -139,9 +140,10 @@ object CollectorPayload {
     eventsPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[CollectorPayload] =
-    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts), time)
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, appIds), time)
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))

@@ -35,17 +35,19 @@ object HttpRequestBody {
     evenstPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[HttpRequestBody] =
-    genWithBody(evenstPerPayload, Body.genDup(duplicates, time, frequencies, contexts))
+    genWithBody(evenstPerPayload, Body.genDup(duplicates, time, frequencies, contexts, appIds))
 
   def gen(
     evenstPerPayload: GenConfig.EventsPerPayload,
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
-    contexts: GenConfig.ContextsPerEvent
+    contexts: GenConfig.ContextsPerEvent,
+    appIds: List[String]
   ): Gen[HttpRequestBody] =
-    genWithBody(evenstPerPayload, Body.gen(time, frequencies, contexts))
+    genWithBody(evenstPerPayload, Body.gen(time, frequencies, contexts, appIds))
 
   private def genWithBody(
     evenstPerPayload: GenConfig.EventsPerPayload,

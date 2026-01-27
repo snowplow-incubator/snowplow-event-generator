@@ -54,15 +54,16 @@ object HttpRequest {
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
+    appIds: List[String]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
     // From here in it's not an option, just to make the code a bit cleaner
     val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
-      HttpRequestQuerystring.gen(time, frequencies, contexts),
-      HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts),
+      HttpRequestQuerystring.gen(time, frequencies, contexts, appIds),
+      HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts, appIds),
       methodFreq
     )
   }
@@ -73,7 +74,8 @@ object HttpRequest {
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies]
+    methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
+    appIds: List[String]
   ): Gen[HttpRequest] = {
     // MethodFrequencies is an option here, at the entrypoint in order not to force a breaking change where this is a lib.
     // If it's not provided, we give equal distribution to each to achieve behaviour parity
@@ -81,13 +83,14 @@ object HttpRequest {
     val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
       // qs doesn't do duplicates?
-      HttpRequestQuerystring.gen(time, frequencies, contexts),
+      HttpRequestQuerystring.gen(time, frequencies, contexts, appIds),
       HttpRequestBody.genDup(
         duplicates,
         eventsPerPayload,
         time,
         frequencies,
-        contexts
+        contexts,
+        appIds
       ),
       methodFreq
     )

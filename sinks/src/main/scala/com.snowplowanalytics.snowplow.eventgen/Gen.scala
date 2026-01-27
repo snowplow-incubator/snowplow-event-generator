@@ -31,14 +31,16 @@ object Gen {
           config.eventsPerPayload,
           time,
           config.eventsFrequencies,
-          config.contextsPerEvent
+          config.contextsPerEvent,
+          config.appIds
         )
       case None =>
         CollectorPayload.gen(
           config.eventsPerPayload,
           time,
           config.eventsFrequencies,
-          config.contextsPerEvent
+          config.contextsPerEvent,
+          config.appIds
         )
     }
 
@@ -57,7 +59,7 @@ object Gen {
           config.eventsFrequencies,
           config.contextsPerEvent,
           generateEnrichments,
-          config.appId
+          config.appIds
         )
       case None =>
         SdkEvent.gen(
@@ -66,7 +68,7 @@ object Gen {
           config.eventsFrequencies,
           config.contextsPerEvent,
           generateEnrichments,
-          config.appId
+          config.appIds
         )
     }
 
@@ -91,7 +93,8 @@ object Gen {
           time,
           config.eventsFrequencies,
           config.contextsPerEvent,
-          methodFrequencies
+          methodFrequencies,
+          config.appIds
         )
       case None =>
         HttpRequest.gen(
@@ -99,7 +102,8 @@ object Gen {
           time,
           config.eventsFrequencies,
           config.contextsPerEvent,
-          methodFrequencies
+          methodFrequencies,
+          config.appIds
         )
     }
 }
