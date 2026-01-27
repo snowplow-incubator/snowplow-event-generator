@@ -120,9 +120,16 @@ object CollectorPayload {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates]
-  ): Gen[CollectorPayload] =
-    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates), time)
+    duplicates: Option[GenConfig.Duplicates],
+    appIds: List[String]
+  ): Gen[CollectorPayload] = {
+    // ProfileGraph identity source specifies its own appId, overriding the configured list
+    val effectiveAppIds = identitySource match {
+      case GenConfig.IdentitySource.ProfileGraph(profileAppId, _) => List(profileAppId)
+      case _                                                      => appIds
+    }
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates, effectiveAppIds), time)
+  }
 
   private def genWithBody(eventsPerPayload: GenConfig.EventsPerPayload, bodyGen: Gen[Body], time: Instant) =
     for {
@@ -132,6 +139,7 @@ object CollectorPayload {
       cc      <- CollectorContext.gen(time)
       payload <- Gen.listOfN(n, bodyGen)
     } yield CollectorPayload(api, payload, src, cc)
+
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))

@@ -46,8 +46,7 @@ object SdkEvent {
   private def eventsFromColPayload(
     p: CollectorPayload,
     fallbackEid: UUID,
-    enrichments: Option[Enrichments],
-    appId: Option[String]
+    enrichments: Option[Enrichments]
   ): List[Event] =
     p.payload.map { el =>
       val evnt = Some(el.e match {
@@ -98,7 +97,7 @@ object SdkEvent {
       val deprecatedFields              = enrichments.flatMap(_.deprecatedFields)
 
       Event(
-        app_id = appId.orElse(el.app.aid),
+        app_id = el.app.aid,
         platform = Some(el.app.p),
         collector_tstamp = p.context.timestamp,
         dvce_created_tstamp = el.dt.flatMap(_.dtm),
@@ -244,19 +243,14 @@ object SdkEvent {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     generateEnrichments: Boolean,
-    appId: Option[String],
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates]
-  ): Gen[List[Event]] = {
-    val effectiveAppId = identitySource match {
-      case GenConfig.IdentitySource.ProfileGraph(profileAppId, _) => Some(profileAppId)
-      case _                                                      => appId
-    }
+    duplicates: Option[GenConfig.Duplicates],
+    appIds: List[String]
+  ): Gen[List[Event]] =
     for {
-      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates)
+      cp          <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates, appIds)
       enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
-    } yield eventsFromColPayload(cp, eid, enrichments, effectiveAppId)
-  }
+    } yield eventsFromColPayload(cp, eid, enrichments)
 
 }
