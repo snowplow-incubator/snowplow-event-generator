@@ -38,6 +38,6 @@ object EcommerceProduct extends SelfDescribingJsonGen {
       "brand"            -> strGen(1, 200).optionalOrNull,
       "inventory_status" -> strGen(1, 200).optionalOrNull,
       "position"         -> Gen.chooseNum(0, 9999999).optionalOrNull,
-      "currency"         -> strGen(3, 3).required
+      "currency"         -> Gen.oneOf("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "SEK", "NZD").required
     )
 }

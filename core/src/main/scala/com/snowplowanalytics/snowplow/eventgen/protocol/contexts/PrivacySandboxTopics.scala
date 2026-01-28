@@ -15,7 +15,6 @@ package com.snowplowanalytics.snowplow.eventgen.protocol.contexts
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer}
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
 import com.snowplowanalytics.snowplow.eventgen.protocol.implicits._
-import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
 import io.circe.Json
 import java.time.Instant
@@ -27,8 +26,8 @@ object PrivacySandboxTopics extends SelfDescribingJsonGen {
 
   private val topicEntryGen: Gen[Json] =
     Map(
-      "topic"   -> Gen.chooseNum(0, 9999999).optionalOrNull,
-      "version" -> strGen(1, 36).optionalOrNull
+      "topic"   -> Gen.chooseNum(1, 629).optionalOrNull,
+      "version" -> Gen.oneOf("chrome.1:1:2", "chrome.1:2:6").optionalOrNull
     ).genObject
 
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =

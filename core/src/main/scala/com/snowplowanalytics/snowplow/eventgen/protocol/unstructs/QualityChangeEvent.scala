@@ -29,8 +29,8 @@ object QualityChangeEvent extends SelfDescribingJsonGen {
     Map(
       "previousQuality" -> strGen(1, 100).optionalOrNull,
       "newQuality"      -> strGen(1, 100).optionalOrNull,
-      "bitrate"         -> Gen.chooseNum(0L, 9007199254740991L).optionalOrNull,
-      "framesPerSecond" -> Gen.chooseNum(0, 65535).optionalOrNull,
+      "bitrate"         -> Gen.chooseNum(0L, 100000000L).optionalOrNull,
+      "framesPerSecond" -> Gen.chooseNum(1, 240).optionalOrNull,
       "automatic"       -> genBool.optionalOrNull
     )
 

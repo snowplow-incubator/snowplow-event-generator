@@ -12,7 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.primitives
 
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 
 sealed trait IpAddress {
   def repr: String
@@ -36,20 +36,22 @@ object IpAddress {
   case class IpAddressV6(repr: String) extends IpAddress
 
   object IpAddressV6 {
+    private val hexSegment: Gen[Int] = Gen.chooseNum(0, 65535)
+
     def gen: Gen[IpAddressV6] =
       for {
-        a <- Arbitrary.arbitrary[Short]
-        b <- Arbitrary.arbitrary[Short]
-        c <- Arbitrary.arbitrary[Short]
-        d <- Arbitrary.arbitrary[Short]
-        e <- Arbitrary.arbitrary[Short]
-        f <- Arbitrary.arbitrary[Short]
-        g <- Arbitrary.arbitrary[Short]
-        h <- Arbitrary.arbitrary[Short]
+        a <- hexSegment
+        b <- hexSegment
+        c <- hexSegment
+        d <- hexSegment
+        e <- hexSegment
+        f <- hexSegment
+        g <- hexSegment
+        h <- hexSegment
       } yield IpAddressV6(f"$a%x:$b%x:$c%x:$d%x:$e%x:$f%x:$g%x:$h%x")
   }
 
-  val gen: Gen[IpAddress] = Gen.oneOf(IpAddressV4.gen, IpAddressV4.gen)
+  val gen: Gen[IpAddress] = Gen.oneOf(IpAddressV4.gen, IpAddressV6.gen)
 
   val genOpt = Gen.option(gen)
 }

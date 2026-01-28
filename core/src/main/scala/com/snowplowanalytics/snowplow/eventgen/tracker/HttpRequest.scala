@@ -44,9 +44,9 @@ object HttpRequest {
         (freq.head, genHead)
       )
 
-    private def genPost: Gen[Method.Post] = Gen.oneOf(genApi(0), genApi(200)).map(Method.Post)
-    private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Get)
-    private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(0), genApi(1)).map(Method.Head)
+    private def genPost: Gen[Method.Post] = genApiPost.map(Method.Post)
+    private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(1)).map(Method.Get)
+    private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(1)).map(Method.Head)
   }
 
   def gen(
@@ -103,12 +103,12 @@ object HttpRequest {
   ) =
     for {
       method <- Method.gen(methodFreq)
-      qs     <- Gen.option(qsGen)
-      body <- method match {
-        case Method.Head(_) => Gen.const(None) // HEAD requests can't have a message body
-        case _              => Gen.option(bodyGen)
+      (qs, body) <- method match {
+        case Method.Get(_)  => qsGen.map(q => (Some(q), None))
+        case Method.Head(_) => qsGen.map(q => (Some(q), None))
+        case Method.Post(_) => bodyGen.map(b => (None, Some(b)))
       }
       generatedHs <- HttpRequestHeaders.genDefaultHeaders
-      raw = HttpRequestHeaders.rawReqUriHeader(qs)
+      raw = HttpRequestHeaders.rawReqUriHeader(method.path.toString, qs)
     } yield HttpRequest(method, generatedHs ++ raw, qs, body)
 }

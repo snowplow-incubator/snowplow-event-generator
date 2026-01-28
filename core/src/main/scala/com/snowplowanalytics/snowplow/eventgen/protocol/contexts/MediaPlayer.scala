@@ -27,7 +27,7 @@ object MediaPlayer extends SelfDescribingJsonGen {
 
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
-      "currentTime"      -> Gen.chooseNum(0, 2147483647).required,
+      "currentTime"      -> Gen.chooseNum(0, 86400).required,
       "ended"            -> genBool.required,
       "fullscreen"       -> genBool.optionalOrNull,
       "livestream"       -> genBool.optionalOrNull,
@@ -37,7 +37,7 @@ object MediaPlayer extends SelfDescribingJsonGen {
       "muted"            -> genBool.optionalOrNull,
       "paused"           -> genBool.required,
       "pictureInPicture" -> genBool.optionalOrNull,
-      "playbackRate"     -> Gen.chooseNum(0, 16).optionalOrNull,
+      "playbackRate"     -> Gen.oneOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0).optionalOrNull,
       "playerType"       -> strGen(1, 200).optionalOrNull,
       "quality"          -> strGen(1, 200).optionalOrNull,
       "volume"           -> Gen.chooseNum(0, 100).optionalOrNull

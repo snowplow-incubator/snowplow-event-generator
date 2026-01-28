@@ -21,7 +21,7 @@ import java.util.{Base64, TimeZone}
 import scala.util.Random
 
 package object primitives {
-  private val base64Encoder = Base64.getEncoder
+  private val base64Encoder = Base64.getUrlEncoder.withoutPadding
 
   private lazy val rng = new Random(30000L)
 
