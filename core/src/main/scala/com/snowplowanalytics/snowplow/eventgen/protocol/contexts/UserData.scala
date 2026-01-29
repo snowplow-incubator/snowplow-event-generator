@@ -36,10 +36,23 @@ object UserData extends SelfDescribingJsonGen {
       "country"     -> strGen(1, 200).optionalOrNull
     ).genObject
 
+  private val emailGen: Gen[String] =
+    for {
+      local  <- Gen.stringOfN(8, Gen.alphaNumChar)
+      domain <- Gen.stringOfN(6, Gen.alphaLowerChar)
+      tld    <- Gen.oneOf("com", "net", "org", "io", "co.uk")
+    } yield s"$local@$domain.$tld"
+
+  private val phoneGen: Gen[String] =
+    for {
+      countryCode <- Gen.oneOf("+1", "+44", "+49", "+33", "+81")
+      number      <- Gen.stringOfN(10, Gen.numChar)
+    } yield s"$countryCode$number"
+
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
-      "email_address" -> strGen(1, 256).optionalOrNull,
-      "phone_number"  -> strGen(1, 64).optionalOrNull,
+      "email_address" -> emailGen.optionalOrNull,
+      "phone_number"  -> phoneGen.optionalOrNull,
       "address"       -> addressGen.optionalOrNull
     )
 }

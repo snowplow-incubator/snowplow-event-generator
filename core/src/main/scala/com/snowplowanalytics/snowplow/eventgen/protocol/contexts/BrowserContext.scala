@@ -30,15 +30,15 @@ object BrowserContext extends SelfDescribingJsonGen {
       "viewport"            -> strGen(1, 20).required,
       "documentSize"        -> strGen(1, 20).required,
       "resolution"          -> strGen(1, 20).required,
-      "colorDepth"          -> Gen.chooseNum(0, 1000).required,
-      "devicePixelRatio"    -> Gen.chooseNum(0, 1000).optionalOrNull,
+      "colorDepth"          -> Gen.oneOf(1, 4, 8, 15, 16, 24, 32).required,
+      "devicePixelRatio"    -> Gen.oneOf(1, 2, 3, 4).optionalOrNull,
       "cookiesEnabled"      -> genBool.required,
       "online"              -> genBool.required,
       "browserLanguage"     -> strGen(1, 20).optionalOrNull,
       "documentLanguage"    -> strGen(1, 20).optionalOrNull,
       "webdriver"           -> genBool.optionalOrNull,
-      "deviceMemory"        -> Gen.chooseNum(0, 1000).optionalOrNull,
-      "hardwareConcurrency" -> Gen.chooseNum(0, 1000).optionalOrNull,
+      "deviceMemory"        -> Gen.oneOf(1, 2, 4, 8, 16, 32, 64, 128).optionalOrNull,
+      "hardwareConcurrency" -> Gen.chooseNum(1, 128).optionalOrNull,
       "tabId"               -> Gen.uuid.optionalOrNull
     )
 }

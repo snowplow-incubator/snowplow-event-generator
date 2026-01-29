@@ -31,7 +31,7 @@ object LinkClick extends SelfDescribingJsonGen {
       "elementId"      -> strGen(1, 32).required,
       "elementTarget"  -> strGen(1, 32).required,
       "elementContent" -> strGen(1, 256).required,
-      "elementClasses" -> Gen.listOfN(5, strGen(1, 32)).required
+      "elementClasses" -> Gen.chooseNum(0, 5).flatMap(n => Gen.listOfN(n, strGen(1, 32))).required
     )
 
 }

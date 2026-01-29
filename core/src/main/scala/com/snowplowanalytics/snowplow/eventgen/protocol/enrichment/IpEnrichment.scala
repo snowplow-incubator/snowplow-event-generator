@@ -33,16 +33,19 @@ case class IpEnrichment(
 )
 
 object IpEnrichment {
+  private val genLatitude: Gen[Option[Double]]  = Gen.option(Gen.choose(-90.0, 90.0))
+  private val genLongitude: Gen[Option[Double]] = Gen.option(Gen.choose(-180.0, 180.0))
+
   def gen: Gen[IpEnrichment] =
     (
       Gen.option(genGeoCountry),
       Gen.option(genGeoRegion),
       genStringOpt("geo_city", 10),
       genStringOpt("zip_", 10),
-      genDblOpt,
-      genDblOpt,
+      genLatitude,
+      genLongitude,
       genStringOpt("geo_region_name", 10),
-      genStringOpt("geo_timezone", 10),
+      genTzOpt,
       genStringOpt("ip_isp", 10),
       genStringOpt("ip_organization", 10),
       genStringOpt("ip_domain", 10),

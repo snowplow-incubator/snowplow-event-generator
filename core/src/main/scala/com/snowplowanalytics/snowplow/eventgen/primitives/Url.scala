@@ -66,6 +66,6 @@ object Url {
   private val urlDomainGen: Gen[String] = Gen.stringOfN(7, Gen.alphaNumChar)
   private val urlTldGen: Gen[String] =
     Gen.oneOf(".com", ".net", ".co.uk", ".bg", ".ru", ".fr", ".tr", ".pl", ".ie", ".ro", ".ca")
-  private val urlPortGen: Gen[Option[Int]] = Gen.option(Gen.chooseNum(1, 65335))
+  private val urlPortGen: Gen[Option[Int]] = Gen.option(Gen.chooseNum(1, 65535))
   private val urlPathGen: Gen[String]      = Gen.stringOfN(15, Gen.alphaNumChar).map(s => s"/$s")
 }

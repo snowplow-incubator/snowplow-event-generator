@@ -19,9 +19,8 @@ import org.scalacheck.Gen
 object HttpRequestHeaders {
   val FixedHeaders = Map("Accept" -> "*/*", "Content-Type" -> "application/json; charset=UTF-8")
 
-  // The host of the raw request URI is irrelevant, since this header is only used to extract the querystring from the request
-  def rawReqUriHeader(qs: Option[HttpRequestQuerystring]) =
-    Map("Raw-Request-URI" -> List(Some("http://doesntmatt.er/p1/p2"), qs.map(_.toString)).flatten.mkString("?"))
+  def rawReqUriHeader(apiPath: String, qs: Option[HttpRequestQuerystring]) =
+    Map("Raw-Request-URI" -> List(Some(s"http://doesntmatt.er$apiPath"), qs.map(_.toString)).flatten.mkString("?"))
 
   def genDefaultHeaders: Gen[Map[String, String]] =
     for {

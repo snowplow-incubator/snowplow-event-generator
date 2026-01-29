@@ -77,9 +77,17 @@ object LoadSucceeded extends SelfDescribingJsonGen {
       "types"          -> Gen.listOfN(5, typeGen).required
     ).genObject
 
+  private val validSchemaKeys = List(
+    "iglu:com.snowplowanalytics.snowplow/link_click/jsonschema/1-0-1",
+    "iglu:com.snowplowanalytics.snowplow/page_view/jsonschema/1-0-0",
+    "iglu:com.snowplowanalytics.snowplow/screen_view/jsonschema/1-0-0",
+    "iglu:com.snowplowanalytics.snowplow.ecommerce/snowplow_ecommerce_action/jsonschema/1-0-2",
+    "iglu:com.snowplowanalytics.snowplow/web_page/jsonschema/1-0-0"
+  )
+
   private def typeGen: Gen[Json] =
     Map(
-      "schemaKey"      -> strGen(1, 256).required,
+      "schemaKey"      -> Gen.oneOf(validSchemaKeys).required,
       "snowplowEntity" -> Gen.oneOf("SELF_DESCRIBING_EVENT", "CONTEXT").required
     ).genObject
 

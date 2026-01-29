@@ -18,7 +18,6 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.implicits._
 import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
 import io.circe.Json
-import scala.math.BigInt
 import java.time.Instant
 
 object MobileContext extends SelfDescribingJsonGen {
@@ -38,13 +37,13 @@ object MobileContext extends SelfDescribingJsonGen {
       "openIdfa"              -> strGen(1, 20).optionalOrNull,
       "appleIdfa"             -> strGen(1, 20).optionalOrNull,
       "androidIdfa"           -> strGen(1, 20).optionalOrNull,
-      "systemAvailableMemory" -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775000")).optionalOrNull,
-      "appAvailableMemory"    -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775000")).optionalOrNull,
+      "systemAvailableMemory" -> Gen.chooseNum(0L, 17179869184L).optionalOrNull,
+      "appAvailableMemory"    -> Gen.chooseNum(0L, 17179869184L).optionalOrNull,
       "batteryLevel"          -> Gen.chooseNum(0, 100).optionalOrNull,
       "batteryState"          -> Gen.oneOf("unplugged", "charging", "full").optionalOrNull,
       "lowPowerMode"          -> genBool.optionalOrNull,
-      "availableStorage"      -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775000")).optionalOrNull,
-      "totalStorage"          -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775000")).optionalOrNull,
+      "availableStorage"      -> Gen.chooseNum(0L, 1099511627776L).optionalOrNull,
+      "totalStorage"          -> Gen.chooseNum(0L, 1099511627776L).optionalOrNull,
       "isPortrait"            -> genBool.optionalOrNull,
       "resolution"            -> strGen(1, 20).optionalOrNull,
       "scale"                 -> Gen.chooseNum(0, 1000).optionalOrNull,

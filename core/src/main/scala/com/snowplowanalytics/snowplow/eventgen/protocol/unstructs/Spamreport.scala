@@ -25,11 +25,18 @@ object Spamreport extends SelfDescribingJsonGen {
   override def schemaKey: SchemaKey =
     SchemaKey("com.sendgrid", "spamreport", "jsonschema", SchemaVer.Full(3, 0, 0))
 
+  private val emailGen: Gen[String] =
+    for {
+      local  <- Gen.stringOfN(8, Gen.alphaNumChar)
+      domain <- Gen.stringOfN(6, Gen.alphaLowerChar)
+      tld    <- Gen.oneOf("com", "net", "org", "io")
+    } yield s"$local@$domain.$tld"
+
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
       "timestamp"                   -> genInstant(now).map(_.toString).optional,
-      "email"                       -> strGen(1, 320).optional,
-      "sg_event_id"                 -> strGen(22, 100).optional,
+      "email"                       -> emailGen.optional,
+      "sg_event_id"                 -> Gen.stringOfN(22, Gen.alphaNumChar).optional,
       "smtp-id"                     -> strGen(1, 100).optional,
       "category"                    -> Gen.listOfN(5, strGen(1, 5)).optional,
       "asm_group_id"                -> Gen.chooseNum(BigInt(0), BigInt("9223372036854775807")).optional,
