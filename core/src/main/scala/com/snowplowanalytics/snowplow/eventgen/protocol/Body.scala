@@ -91,7 +91,6 @@ object Body {
         in
     }
 
-
   private def genWithEt(
     etGen: Gen[EventTransaction],
     time: Instant,

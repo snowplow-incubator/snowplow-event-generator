@@ -34,14 +34,14 @@ object RokuVideo extends SelfDescribingJsonGen {
       "contentType"          -> strGen(1, 255).optionalOrNull,
       "streamFormat"         -> strGen(1, 255).optionalOrNull,
       "streamUrl"            -> Url.gen.map(_.toString).optionalOrNull,
-      "measuredBitrate"      -> Gen.choose(0, 2147483647).optionalOrNull,
-      "streamBitrate"        -> Gen.choose(0, 2147483647).optionalOrNull,
+      "measuredBitrate"      -> Gen.choose(0, 100000000).optionalOrNull,
+      "streamBitrate"        -> Gen.choose(0, 100000000).optionalOrNull,
       "isUnderrun"           -> genBool.optionalOrNull,
       "isResumed"            -> genBool.optionalOrNull,
       "videoFormat"          -> strGen(1, 255).optionalOrNull,
-      "timeToStartStreaming" -> Gen.chooseNum(0L, 9007199254740991L).optionalOrNull,
-      "width"                -> Gen.choose(0, 65535).required,
-      "height"               -> Gen.choose(0, 65535).required,
+      "timeToStartStreaming" -> Gen.chooseNum(0L, 300000L).optionalOrNull,
+      "width"                -> Gen.choose(1, 7680).required,
+      "height"               -> Gen.choose(1, 4320).required,
       "errorStr"             -> strGen(1, 255).optionalOrNull
     )
 }

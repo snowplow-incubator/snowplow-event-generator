@@ -36,10 +36,10 @@ final case class StructEvent(
 object StructEvent {
   def gen: Gen[StructEvent] =
     (
-      genStringOpt("se_ca", 10),
-      genStringOpt("se_ca", 10),
-      genStringOpt("se_ca", 10),
-      genStringOpt("se_ca", 10),
-      genDblOpt
+      genString("se_ca", 10).map(Some(_)),
+      genString("se_ac", 10).map(Some(_)),
+      genStringOpt("se_la", 10),
+      genStringOpt("se_pr", 10),
+      genScale2DoubleOpt
     ).mapN(StructEvent.apply)
 }

@@ -39,6 +39,9 @@ object Dependencies {
     val specs2           = "4.12.3"
     val scalaCheck       = "1.14.0"
     val collectionCompat = "2.4.4"
+    val igluClient       = "3.1.0"
+    val catsEffect       = "3.4.5"
+    val catsEffectSpecs2 = "1.5.0"
     // raw output
     val snowplowRawEvent = "0.1.0"
     val collectorPayload = "0.0.0"
@@ -75,9 +78,12 @@ object Dependencies {
     val http4sCirce    = "org.http4s"               %% "http4s-circe"                 % V.http4s
 
     // Scala (test only)
-    val specs2           = "org.specs2" %% "specs2-core"       % V.specs2 % Test
-    val specs2Cats       = "org.specs2" %% "specs2-cats"       % V.specs2 % Test
-    val specs2Scalacheck = "org.specs2" %% "specs2-scalacheck" % V.specs2 % Test
+    val specs2           = "org.specs2"            %% "specs2-core"                % V.specs2           % Test
+    val specs2Cats       = "org.specs2"            %% "specs2-cats"                % V.specs2           % Test
+    val specs2Scalacheck = "org.specs2"            %% "specs2-scalacheck"          % V.specs2           % Test
+    val igluClient       = "com.snowplowanalytics" %% "iglu-scala-client"          % V.igluClient       % Test
+    val catsEffect       = "org.typelevel"         %% "cats-effect"                % V.catsEffect       % Test
+    val catsEffectSpecs2 = "org.typelevel"         %% "cats-effect-testing-specs2" % V.catsEffectSpecs2 % Test
 
     val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat
     val thrift           = "org.apache.thrift"       % "libthrift"               % V.thrift

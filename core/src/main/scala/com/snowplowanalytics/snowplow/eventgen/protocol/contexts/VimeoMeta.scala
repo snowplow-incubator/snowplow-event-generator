@@ -18,7 +18,6 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.implicits._
 import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
 import io.circe.Json
-import scala.math.BigInt
 import java.time.Instant
 
 object VimeoMeta extends SelfDescribingJsonGen {
@@ -28,10 +27,10 @@ object VimeoMeta extends SelfDescribingJsonGen {
 
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
-      "videoId"     -> Gen.chooseNum(BigInt(0), BigInt("9223372036854776000")).required,
+      "videoId"     -> Gen.chooseNum(1L, 999999999L).required,
       "videoTitle"  -> strGen(1, 200).required,
       "videoUrl"    -> Url.gen.map(_.toString).optionalOrNull,
-      "videoWidth"  -> Gen.chooseNum(BigInt(0), BigInt("9223372036854776000")).required,
-      "videoHeight" -> Gen.chooseNum(BigInt(0), BigInt("9223372036854776000")).required
+      "videoWidth"  -> Gen.chooseNum(1, 7680).required,
+      "videoHeight" -> Gen.chooseNum(1, 4320).required
     )
 }

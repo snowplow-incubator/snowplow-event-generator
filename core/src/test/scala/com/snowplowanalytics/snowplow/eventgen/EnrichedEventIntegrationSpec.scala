@@ -22,6 +22,8 @@ import java.time.Instant
   */
 class EnrichedEventIntegrationSpec extends Specification {
 
+  val defaultAppIds = List("test-app-1", "test-app-2", "test-app-3")
+
   "Enriched event generation with UserGraph" should {
 
     "populate user_id at configured authenticationRate" in {
@@ -42,7 +44,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.SingleGraph(config),
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -73,7 +76,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.SingleGraph(config),
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -102,7 +106,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.SingleGraph(config),
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -130,7 +135,8 @@ class EnrichedEventIntegrationSpec extends Specification {
           GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
           GenConfig.ContextsPerEvent(0, 0),
           GenConfig.IdentitySource.SingleGraph(config),
-          None
+          None,
+          defaultAppIds
         )
         .sample
         .get
@@ -149,7 +155,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.NoIdentity,
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -172,7 +179,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 3),
             GenConfig.IdentitySource.NoIdentity,
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -197,7 +205,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.NoIdentity,
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get
@@ -218,7 +227,8 @@ class EnrichedEventIntegrationSpec extends Specification {
             GenConfig.EventsFrequencies(1, 0, 0, 0, 0, 0, 0, Map.empty),
             GenConfig.ContextsPerEvent(0, 0),
             GenConfig.IdentitySource.NoIdentity,
-            None
+            None,
+            defaultAppIds
           )
           .sample
           .get

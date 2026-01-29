@@ -29,7 +29,7 @@ object OptimizelyState extends SelfDescribingJsonGen {
     Map(
       "experimentId"   -> strGen(1, 32).orNull,
       "isActive"       -> Gen.oneOf(true, false).orNull,
-      "variationIndex" -> Gen.choose(-100, 32767).orNull,
+      "variationIndex" -> Gen.choose(0, 32767).orNull,
       "variationId"    -> strGen(1, 16).orNull,
       "variationName"  -> strGen(1, 32).orNull
     )

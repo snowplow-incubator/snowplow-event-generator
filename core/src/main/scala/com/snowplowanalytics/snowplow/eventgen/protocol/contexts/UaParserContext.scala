@@ -28,16 +28,16 @@ object UaParserContext extends SelfDescribingJsonGen {
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
     Map(
       "useragentFamily"  -> Gen.oneOf("Chrome", "Firefox", "Safari").required,
-      "useragentMajor"   -> strGen(1, 32).orNull,
-      "useragentMinor"   -> strGen(1, 32).orNull,
-      "useragentPatch"   -> strGen(1, 32).orNull,
-      "useragentVersion" -> strGen(1, 128).orNull,
+      "useragentMajor"   -> strGen(1, 32).required,
+      "useragentMinor"   -> strGen(1, 32).required,
+      "useragentPatch"   -> strGen(1, 32).required,
+      "useragentVersion" -> strGen(1, 128).required,
       "osFamily"         -> Gen.oneOf("Linux", "Windows", "Mac OS X").required,
-      "osMajor"          -> strGen(1, 32).optionalOrNull,
-      "osMinor"          -> strGen(1, 32).optionalOrNull,
-      "osPatch"          -> strGen(1, 32).optionalOrNull,
-      "osPatchMinor"     -> strGen(1, 32).optionalOrNull,
-      "osVersion"        -> strGen(1, 128).optionalOrNull,
+      "osMajor"          -> strGen(1, 32).optional,
+      "osMinor"          -> strGen(1, 32).optional,
+      "osPatch"          -> strGen(1, 32).optional,
+      "osPatchMinor"     -> strGen(1, 32).optional,
+      "osVersion"        -> strGen(1, 128).optional,
       "deviceFamily"     -> Gen.oneOf("Mac", "iPhone", "Generic Feature Phone").required
     )
 }
