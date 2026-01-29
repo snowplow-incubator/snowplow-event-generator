@@ -39,8 +39,6 @@ import java.net.URI
 class SchemaValidationSpec extends CatsResource[IO, IgluCirceClient[IO]] with SpecificationLike {
   import SchemaValidationSpec._
 
-  skipAllIf(SchemaValidationSpec.javaVersion < 11)
-
   override val Timeout = 2.minutes
 
   override val resource: Resource[IO, IgluCirceClient[IO]] =
@@ -90,9 +88,4 @@ object SchemaValidationSpec {
     Registry.Config("Iglu Central", 0, List.empty),
     Registry.HttpConnection(URI.create("http://iglucentral.com"), None)
   )
-
-  val javaVersion: Int = {
-    val version = System.getProperty("java.version")
-    """^(1\.)?(\d+)""".r.findFirstMatchIn(version).map(_.group(2).toInt).getOrElse(0)
-  }
 }

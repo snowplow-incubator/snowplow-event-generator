@@ -12,29 +12,14 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.collector
 
-import cats.implicits._
 import org.scalacheck.Gen
-import org.scalacheck.cats.implicits._
 
 /** Define the vendor and version of the payload, defined by collector endpoint
   */
 final case class Api(vendor: String, version: String) {
-  override def toString: String =
-    if (vendor == "com.snowplowanalytics.snowplow" && version == "tp1" || vendor == "i" && version == "") "/i"
-    else s"/$vendor/$version"
+  override def toString: String = s"/$vendor/$version"
 }
 
 object Api {
-  private val GenTp1 = Gen.const(Api("com.snowplowanalytics.snowplow", "tp1"))
-  private val GenTp2 = Gen.const(Api("com.snowplowanalytics.snowplow", "tp2"))
-
-  def fixedApis: Gen[Api] = GenTp1
-
-  def genApiPost: Gen[Api] = GenTp2
-
-  def genApi(nEvents: Int): Gen[Api] =
-    (nEvents match {
-      case 1 => (Gen.const("com.snowplowanalytics.snowplow"), Gen.oneOf("tp1", "tp2"))
-      case _ => (Gen.const("com.snowplowanalytics.snowplow"), Gen.const("tp2"))
-    }).mapN(Api.apply)
+  def gen: Gen[Api] = Gen.const(Api("com.snowplowanalytics.snowplow", "tp2"))
 }

@@ -13,7 +13,6 @@
 package com.snowplowanalytics.snowplow.eventgen.tracker
 
 import com.snowplowanalytics.snowplow.eventgen.collector.Api
-import com.snowplowanalytics.snowplow.eventgen.collector.Api._
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest.Method
 import org.scalacheck.Gen
 import com.snowplowanalytics.snowplow.eventgen.GenConfig
@@ -44,9 +43,9 @@ object HttpRequest {
         (freq.head, genHead)
       )
 
-    private def genPost: Gen[Method.Post] = genApiPost.map(Method.Post)
-    private def genGet: Gen[Method.Get]   = Gen.oneOf(fixedApis, genApi(1)).map(Method.Get)
-    private def genHead: Gen[Method.Head] = Gen.oneOf(fixedApis, genApi(1)).map(Method.Head)
+    private def genPost: Gen[Method.Post] = Api.gen.map(Method.Post)
+    private def genGet: Gen[Method.Get]   = Api.gen.map(Method.Get)
+    private def genHead: Gen[Method.Head] = Api.gen.map(Method.Head)
   }
 
   def gen(
