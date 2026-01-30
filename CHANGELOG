@@ -1,3 +1,10 @@
+Version 0.10.0 (2026-01-30)
+--------------------------
+Add deterministic user clustering for identity resolution test data (#88)
+Fix performance bottleneck in event generation (#90)
+Limit app_id cardinality (#91)
+Stop generating bad events (#92)
+
 Version 0.9.0 (2025-09-25)
 --------------------------
 Add rate support (#86)
