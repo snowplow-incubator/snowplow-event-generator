@@ -22,6 +22,8 @@ import java.time.Instant
 
 object GooglePrivate extends SelfDescribingJsonGen {
 
+  override val allowsAdditionalProperties: Boolean = true
+
   override def schemaKey: SchemaKey =
     SchemaKey("com.google.analytics", "private", "jsonschema", SchemaVer.Full(1, 0, 0))
 
