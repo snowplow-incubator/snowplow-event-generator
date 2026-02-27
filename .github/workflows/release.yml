@@ -3,6 +3,10 @@ name: Prepare PR for release
 on:
   create
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   prepare_release_pr:
     if: ${{ contains(github.ref, 'refs/heads/release/') }}

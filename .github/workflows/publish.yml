@@ -9,6 +9,9 @@ on:
       - develop
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
