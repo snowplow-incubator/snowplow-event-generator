@@ -48,7 +48,12 @@ object GenConfig {
     unstructEventFrequencies: Map[String, Int]
   )
 
-  case class ContextsPerEvent(min: Int, max: Int)
+  case class ContextsPerEvent(
+    min: Int,
+    max: Int,
+    contextFrequencyDefault: Int = 1,
+    contextFrequencies: Map[String, Int] = Map.empty
+  )
 
   case class Duplicates(natProb: Float, synProb: Float, natTotal: Int, synTotal: Int)
 

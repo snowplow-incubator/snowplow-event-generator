@@ -110,6 +110,13 @@
   "contextsPerEvent": {
     "min": 0
     "max": 10
+    # Weight for contexts not explicitly listed (default: 1). Set to 0 to exclude by default.
+    "contextFrequencyDefault": 1
+    # Per-context frequency weights keyed by schema name. Set to 0 to exclude a context.
+    "contextFrequencies": {
+      # "anything-a": 1
+      # "anonymous_ip": 0
+    }
   }
 
   "duplicates": {
