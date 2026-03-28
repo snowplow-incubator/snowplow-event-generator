@@ -24,9 +24,9 @@ case class CrossDomainEnrichment(
 )
 
 object CrossDomainEnrichment {
-  def gen: Gen[CrossDomainEnrichment] =
+  def gen(now: Instant): Gen[CrossDomainEnrichment] =
     (
       genStringOpt("refr_domain_userid", 10),
-      genInstantOpt(Instant.now)
+      genInstantOpt(now)
     ).mapN(CrossDomainEnrichment.apply)
 }

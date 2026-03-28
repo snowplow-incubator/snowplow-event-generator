@@ -92,7 +92,7 @@ object Main extends IOApp {
       .compile
       .drain
 
-  private def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
+  private[eventgen] def mkStream[F[_]: Async, A](config: Config, mkGen: Instant => ScalaGen[A]): Stream[F, A] =
     for {
       rng <- Stream.emit {
         config.seed.fold(new scala.util.Random(scala.util.Random.nextInt()))(seed => new scala.util.Random(seed))
@@ -113,10 +113,19 @@ object Main extends IOApp {
             Stream.evalSeq(List.fill(batchSize)(runGen(mkGen(time), rng)).pure[F])
           }
         case None =>
-          Stream(1)
-            .repeat
-            .covary[F]
-            .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+          config.seed match {
+            case Some(seed) =>
+              Stream.eval(Sync[F].delay(println(s"Deterministic mode: seed=$seed, generating events sequentially"))) >>
+                Stream.repeatEval(Sync[F].delay(runGen(mkGen(time), rng)))
+            case None =>
+              Stream.eval(
+                Sync[F].delay(println("Non-deterministic mode: no seed provided, generating events in parallel"))
+              ) >>
+                Stream(1)
+                  .repeat
+                  .covary[F]
+                  .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+          }
       }
       event <- config.eventsTotal.fold(events)(events.take)
     } yield event
