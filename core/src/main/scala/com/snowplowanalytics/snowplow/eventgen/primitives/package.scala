@@ -19,12 +19,9 @@ import java.nio.charset.Charset
 import java.time.Instant
 import java.util.{Base64, TimeZone}
 import scala.jdk.CollectionConverters._
-import scala.util.Random
 
 package object primitives {
   private val base64Encoder = Base64.getUrlEncoder.withoutPadding
-
-  private lazy val rng = new Random(30000L)
 
   type Epoch = Int
 
@@ -42,7 +39,7 @@ package object primitives {
 
   def genLocaleStrOpt: Gen[Option[String]] = Gen.option(genLocaleStr)
 
-  def genWords: Gen[String] = Gen.chooseNum(1, 10).map(n => rng.shuffle(LoremIpsum.take(n)).mkString(" ").capitalize)
+  def genWords: Gen[String] = Gen.chooseNum(1, 10).flatMap(n => Gen.pick(n, LoremIpsum).map(_.mkString(" ").capitalize))
 
   def genWordsOpt: Gen[Option[String]] = Gen.option(genWords)
 

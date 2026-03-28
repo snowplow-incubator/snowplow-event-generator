@@ -57,10 +57,7 @@ final case class Body(
 
 object Body {
 
-  private val DuplicationSeed      = 20000L
   private val ProbabilityPrecision = 10000
-
-  lazy val dupRng = new Random(DuplicationSeed)
 
   def gen(
     time: Instant,
@@ -85,10 +82,14 @@ object Body {
     baseGen.withPerturb { in =>
       if (duplicates.natProb == 0f | duplicates.natTotal == 0)
         in
-      else if (dupRng.nextInt(ProbabilityPrecision) < (duplicates.natProb * ProbabilityPrecision))
-        Seed(dupRng.nextInt(duplicates.natTotal).toLong)
-      else
-        in
+      else {
+        val (seedVal, _) = in.long
+        val rng          = new Random(seedVal)
+        if (rng.nextInt(ProbabilityPrecision) < (duplicates.natProb * ProbabilityPrecision))
+          Seed(rng.nextInt(duplicates.natTotal).toLong)
+        else
+          in
+      }
     }
 
   private def genWithEt(

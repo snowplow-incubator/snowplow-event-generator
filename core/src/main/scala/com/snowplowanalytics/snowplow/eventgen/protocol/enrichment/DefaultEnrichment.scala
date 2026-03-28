@@ -24,9 +24,9 @@ case class DefaultEnrichment(
 )
 
 object DefaultEnrichment {
-  def gen: Gen[DefaultEnrichment] =
+  def gen(now: Instant): Gen[DefaultEnrichment] =
     (
-      genInstant(Instant.now),
-      genInstant(Instant.now)
+      genInstant(now),
+      genInstant(now)
     ).mapN(DefaultEnrichment.apply)
 }
