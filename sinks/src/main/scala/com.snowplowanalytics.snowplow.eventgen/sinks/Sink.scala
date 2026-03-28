@@ -15,6 +15,7 @@ package com.snowplowanalytics.snowplow.eventgen.sinks
 import cats.effect.Async
 
 import fs2.Pipe
+import fs2.io.net.Network
 
 import com.snowplowanalytics.snowplow.eventgen.tracker.HttpRequest
 import com.snowplowanalytics.snowplow.eventgen.collector.CollectorPayload
@@ -27,7 +28,7 @@ trait Sink[F[_]] {
 }
 
 object Sink {
-  def make[F[_]: Async](sinkConfig: Config.Output): Sink[F] = sinkConfig match {
+  def make[F[_]: Async: Network](sinkConfig: Config.Output): Sink[F] = sinkConfig match {
     case fileConfig: Config.Output.File =>
       File.make(fileConfig)
     case httpConfig: Config.Output.Http =>

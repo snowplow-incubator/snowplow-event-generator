@@ -23,32 +23,33 @@ object Dependencies {
   object V {
     // Scala
     val analyticsSdk   = "2.1.0"
-    val fs2            = "3.1.1"
-    val decline        = "2.1.0"
+    val fs2            = "3.11.0"
+    val decline        = "2.5.0"
     val blobstore      = "0.9.5"
     val scalaCheckCats = "0.3.1"
     val catsRetry      = "3.1.3"
     val kcl            = "2.4.0"
     val slf4j          = "1.7.32"
-    val circeConfig    = "0.8.0"
-    val circe          = "0.14.1"
+    val circeConfig    = "0.10.1"
+    val circe          = "0.14.10"
+    val circeExtras    = "0.14.4"
     val fs2Pubsub      = "0.22.0"
-    val fs2Kafka       = "3.0.1"
-    val awsSdk         = "2.20.123"
+    val fs2Kafka       = "3.9.1"
+    val awsSdk         = "2.35.9"
     // Scala (test only)
-    val specs2           = "4.12.3"
-    val scalaCheck       = "1.14.0"
-    val collectionCompat = "2.4.4"
+    val specs2           = "4.21.0"
+    val scalaCheck       = "1.18.1"
+    val collectionCompat = "2.14.0"
     val igluClient       = "3.1.0"
-    val catsEffect       = "3.4.5"
-    val catsEffectSpecs2 = "1.5.0"
+    val catsEffect       = "3.7.0"
+    val catsEffectSpecs2 = "1.6.0"
     // raw output
     val snowplowRawEvent = "0.1.0"
     val collectorPayload = "0.0.0"
     val badRows          = "2.1.1"
-    val httpClient       = "4.5.13"
-    val thrift           = "0.15.0" // override transitive dependency to mitigate security vulnerabilities
-    val http4s           = "0.23.15"
+    val httpClient       = "4.5.14"
+    val thrift           = "0.22.0"
+    val http4s           = "0.23.33"
   }
 
   object Libraries {
@@ -64,7 +65,7 @@ object Dependencies {
     val circeConfig    = "io.circe"                 %% "circe-config"                 % V.circeConfig
     val circeGeneric   = "io.circe"                 %% "circe-generic"                % V.circe
     val circeParser    = "io.circe"                 %% "circe-parser"                 % V.circe
-    val circeExtras    = "io.circe"                 %% "circe-generic-extras"         % V.circe
+    val circeExtras    = "io.circe"                 %% "circe-generic-extras"         % V.circeExtras
     val scalaCheck     = "org.scalacheck"           %% "scalacheck"                   % V.scalaCheck
     val scalaCheckCats = "io.chrisdavenport"        %% "cats-scalacheck"              % V.scalaCheckCats
     val catsRetry      = "com.github.cb372"         %% "cats-retry"                   % V.catsRetry

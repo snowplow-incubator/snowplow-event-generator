@@ -19,6 +19,7 @@ import scala.concurrent.duration.DurationInt
 import org.scalacheck.{Gen => ScalaGen}
 
 import fs2.{Pipe, Stream}
+import fs2.io.net.Network
 
 import cats.syntax.all._
 
@@ -52,7 +53,7 @@ object Main extends IOApp {
   private def printCounts(gens: List[SelfDescribingJsonGen]): String =
     gens.map(g => s"  ${g.schemaKey.toSchemaUri} = ${g.genCount}").mkString("\n")
 
-  private def generate[F[_]: Async](config: Config): F[Unit] = {
+  private def generate[F[_]: Async: Network](config: Config): F[Unit] = {
 
     val sink: Sink[F] = Sink.make(config.output)
 

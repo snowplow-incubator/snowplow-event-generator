@@ -34,7 +34,12 @@ object BuildSettings {
     description := "Generate random events",
     organization := "com.snowplowanalytics",
     scalaVersion := "2.13.18",
-    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0")),
+    libraryDependencySchemes ++= Seq(
+      "io.circe" %% "circe-core"    % VersionScheme.Always,
+      "io.circe" %% "circe-generic" % VersionScheme.Always,
+      "io.circe" %% "circe-parser"  % VersionScheme.Always
+    )
   )
 
   lazy val basicSettigns = Seq(
