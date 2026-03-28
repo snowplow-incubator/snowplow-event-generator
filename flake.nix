@@ -22,7 +22,7 @@
           config.allowUnfree = true;
           config.allowUnsupportedSystem = true;
         };
-        jre = pkgs.openjdk11;
+        jre = pkgs.openjdk25;
         sbt = pkgs.sbt.override {inherit jre;};
         coursier = pkgs.coursier.override {inherit jre;};
         metals = pkgs.metals.override {inherit coursier jre;};
