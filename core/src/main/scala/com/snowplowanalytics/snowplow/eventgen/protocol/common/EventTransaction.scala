@@ -35,22 +35,22 @@ final case class EventTransaction(
 
 object EventTransaction {
 
-  lazy val etRng = new Random(10000L)
-
   def genDup(synProb: Float, synTotal: Int): Gen[EventTransaction] =
     (
       genIntOpt,
       Gen.option(
-        Gen
-          .uuid
-          .withPerturb(in =>
-            if (synProb == 0 | synTotal == 0)
-              in
-            else if (etRng.nextInt(10000) < (synProb * 10000))
-              Seed(etRng.nextInt(synTotal).toLong)
+        Gen.uuid.withPerturb { in =>
+          if (synProb == 0 | synTotal == 0)
+            in
+          else {
+            val (seedVal, _) = in.long
+            val rng          = new Random(seedVal)
+            if (rng.nextInt(10000) < (synProb * 10000))
+              Seed(rng.nextInt(synTotal).toLong)
             else
               in
-          )
+          }
+        }
       )
     ).mapN(EventTransaction.apply)
 

@@ -249,7 +249,7 @@ object SdkEvent {
   ): Gen[List[Event]] =
     for {
       cp <- CollectorPayload.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates, appIds)
-      enrichments <- if (generateEnrichments) Enrichments.gen.map(Some(_)) else Gen.const(None)
+      enrichments <- if (generateEnrichments) Enrichments.gen(time).map(Some(_)) else Gen.const(None)
       eid         <- Gen.uuid
     } yield eventsFromColPayload(cp, eid, enrichments)
 

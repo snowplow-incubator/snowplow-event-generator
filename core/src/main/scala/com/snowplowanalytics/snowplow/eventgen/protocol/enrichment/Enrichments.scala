@@ -12,6 +12,7 @@
  */
 package com.snowplowanalytics.snowplow.eventgen.protocol.enrichment
 
+import java.time.Instant
 import cats.implicits._
 import org.scalacheck.Gen
 import org.scalacheck.cats.implicits._
@@ -30,15 +31,15 @@ final case class Enrichments(
 
 object Enrichments {
 
-  def gen: Gen[Enrichments] =
+  def gen(now: Instant): Gen[Enrichments] =
     (
-      DefaultEnrichment.gen,
+      DefaultEnrichment.gen(now),
       Gen.option(IpEnrichment.gen),
       Gen.option(UrlEnrichment.gen),
       Gen.option(RefererEnrichment.gen),
       Gen.option(CampaignAttributionEnrichment.gen),
       Gen.option(CurrencyConversionEnrichment.gen),
-      Gen.option(CrossDomainEnrichment.gen),
+      Gen.option(CrossDomainEnrichment.gen(now)),
       Gen.option(EventFingerprintEnrichment.gen),
       Gen.option(DeprecatedFields.gen)
     ).mapN(Enrichments.apply)

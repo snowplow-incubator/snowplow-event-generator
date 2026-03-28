@@ -70,9 +70,10 @@
   # If not set, defaults to ["event-gen-1", "event-gen-2", ..., "event-gen-10"]
   # "appIds": ["my-app-1", "my-app-2", "my-app-3"]
 
-  # Optional. Seed to use to generate events
-  # For a same seed, the same event will get deterministically generated
-  # If not set, each event will get generated randomly
+  # Optional. Seed for deterministic event generation.
+  # When set, identical events are produced across runs (requires a fixed timestamp).
+  # Without a fixed timestamp, event structure and order will be the same across runs
+  # but timestamp-derived fields will differ.
   # "seed": 42
 
   "eventsPerPayload": {
