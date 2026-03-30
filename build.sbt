@@ -23,7 +23,7 @@ lazy val core = project
   .settings(
     moduleName := "snowplow-event-generator-core",
     description := "Generate random enriched events",
-    crossScalaVersions := Seq("2.12.14", "2.13.6")
+    crossScalaVersions := Seq("2.12.21", "2.13.18")
   )
   .enablePlugins(SiteScaladocPlugin, DockerPlugin, JavaAppPackaging)
   .settings(commonSettings)

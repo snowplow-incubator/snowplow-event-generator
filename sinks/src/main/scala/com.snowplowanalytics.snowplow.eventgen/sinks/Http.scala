@@ -21,6 +21,8 @@ import cats.syntax.all._
 
 import cats.effect.kernel.Async
 
+import fs2.io.net.Network
+
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.Request
 import org.http4s.Header.Raw
@@ -34,7 +36,7 @@ import com.snowplowanalytics.snowplow.eventgen.Config
 
 object Http {
 
-  def make[F[_]: Async](config: Config.Output.Http) = new Sink[F] {
+  def make[F[_]: Async: Network](config: Config.Output.Http) = new Sink[F] {
 
     override def collectorPayload: Pipe[F, CollectorPayload, Unit] =
       _ => Stream.raiseError(new IllegalStateException(s"Can't use HTTP output for Thrift collector payloads"))

@@ -23,8 +23,6 @@ import software.amazon.awssdk.regions.Region
 
 import fs2.{Pipe, Stream}
 
-import cats.syntax.all._
-
 import cats.effect.kernel.{Async, Resource, Sync}
 
 import retry.{RetryDetails, RetryPolicies}

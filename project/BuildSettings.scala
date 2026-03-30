@@ -33,8 +33,13 @@ object BuildSettings {
     name := "snowplow-event-generator",
     description := "Generate random events",
     organization := "com.snowplowanalytics",
-    scalaVersion := "2.13.6",
-    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0"))
+    scalaVersion := "2.13.18",
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0")),
+    libraryDependencySchemes ++= Seq(
+      "io.circe" %% "circe-core"    % VersionScheme.Always,
+      "io.circe" %% "circe-generic" % VersionScheme.Always,
+      "io.circe" %% "circe-parser"  % VersionScheme.Always
+    )
   )
 
   lazy val basicSettigns = Seq(
@@ -49,7 +54,7 @@ object BuildSettings {
   /** Docker image settings */
   lazy val dockerSettings = Seq(
     Docker / maintainer := "Snowplow Analytics Ltd. <support@snowplowanalytics.com>",
-    dockerBaseImage := "adoptopenjdk:11-jre-hotspot-focal",
+    dockerBaseImage := "eclipse-temurin:25-jre-noble",
     Docker / daemonUser := "daemon",
     dockerUpdateLatest := true,
     dockerRepository := Some("snowplow"),
