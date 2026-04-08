@@ -36,7 +36,6 @@ object AllUnstructs {
       FullscreenChangeEvent,
       FunnelInteraction,
       LinkClick,
-      LoadSucceeded,
       PauseEvent,
       PercentProgressEvent,
       PictureInPictureChangeEvent,
