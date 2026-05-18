@@ -31,7 +31,6 @@ final case class Config(
   output: Config.Output,
   eventsTotal: Option[Long],
   timestamp: Config.Timestamp,
-  appIds: List[String],
   seed: Option[Long],
   eventsPerPayload: GenConfig.EventsPerPayload,
   eventsFrequencies: GenConfig.EventsFrequencies,

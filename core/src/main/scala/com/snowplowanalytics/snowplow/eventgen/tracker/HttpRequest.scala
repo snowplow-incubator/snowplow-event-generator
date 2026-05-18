@@ -55,13 +55,12 @@ object HttpRequest {
     contexts: GenConfig.ContextsPerEvent,
     methodFrequencies: Option[GenConfig.Events.Http.MethodFrequencies],
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates],
-    appIds: List[String]
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[HttpRequest] = {
     val methodFreq = methodFrequencies.getOrElse(new GenConfig.Events.Http.MethodFrequencies(1, 1, 1))
     genWithParts(
-      HttpRequestQuerystring.gen(time, frequencies, contexts, identitySource, appIds),
-      HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates, appIds),
+      HttpRequestQuerystring.gen(time, frequencies, contexts, identitySource),
+      HttpRequestBody.gen(eventsPerPayload, time, frequencies, contexts, identitySource, duplicates),
       methodFreq
     )
   }

@@ -33,7 +33,6 @@ class DeterminismSpec extends Specification {
       output = Config.Output.Stdout,
       eventsTotal = Some(eventCount.toLong),
       timestamp = Config.Timestamp.Fixed(fixedTimestamp),
-      appIds = List("test-app"),
       seed = seed,
       eventsPerPayload = GenConfig.EventsPerPayload(1, 1),
       eventsFrequencies = GenConfig.EventsFrequencies(1, 1, 1, 1, 0, 0, 1, Map.empty),

@@ -308,7 +308,6 @@ object AtomicFieldsValidationSpec {
 
   private val defaultEventsPerPayload = GenConfig.EventsPerPayload(min = 1, max = 1)
   private val defaultContextsPerEvent = GenConfig.ContextsPerEvent(min = 0, max = 3)
-  private val defaultAppIds           = List("test-app-id")
 
   def eventGen(now: Instant): Gen[Event] =
     SdkEvent
@@ -319,8 +318,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -392,8 +390,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -406,8 +403,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -420,8 +416,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -434,8 +429,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -448,8 +442,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 
@@ -462,8 +455,7 @@ object AtomicFieldsValidationSpec {
         defaultContextsPerEvent,
         generateEnrichments = true,
         GenConfig.IdentitySource.NoIdentity,
-        None,
-        defaultAppIds
+        None
       )
       .flatMap(events => Gen.oneOf(events))
 

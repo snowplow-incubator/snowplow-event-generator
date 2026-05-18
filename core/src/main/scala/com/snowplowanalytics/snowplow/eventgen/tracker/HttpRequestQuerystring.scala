@@ -31,10 +31,9 @@ object HttpRequestQuerystring {
     time: Instant,
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
-    identitySource: GenConfig.IdentitySource,
-    appIds: List[String]
+    identitySource: GenConfig.IdentitySource
   ): Gen[HttpRequestQuerystring] =
-    genWithBody(Body.gen(time, frequencies, contexts, identitySource, None, appIds))
+    genWithBody(Body.gen(time, frequencies, contexts, identitySource, None))
 
   private def genWithBody(bodyGen: Gen[Body]) =
     bodyGen.flatMap(qs =>

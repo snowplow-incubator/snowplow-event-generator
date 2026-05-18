@@ -65,11 +65,6 @@
     # "at": "2022-02-01T01:01:01z"
   }
 
-  # Optional. List of App IDs to use in the events
-  # Each event will get a randomly selected app ID from this list
-  # If not set, defaults to ["event-gen-1", "event-gen-2", ..., "event-gen-10"]
-  # "appIds": ["my-app-1", "my-app-2", "my-app-3"]
-
   # Optional. Seed for deterministic event generation.
   # When set, identical events are produced across runs (requires a fixed timestamp).
   # Without a fixed timestamp, event structure and order will be the same across runs

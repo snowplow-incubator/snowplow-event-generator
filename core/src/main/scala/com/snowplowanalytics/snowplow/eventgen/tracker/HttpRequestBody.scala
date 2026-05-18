@@ -37,10 +37,9 @@ object HttpRequestBody {
     frequencies: GenConfig.EventsFrequencies,
     contexts: GenConfig.ContextsPerEvent,
     identitySource: GenConfig.IdentitySource,
-    duplicates: Option[GenConfig.Duplicates],
-    appIds: List[String]
+    duplicates: Option[GenConfig.Duplicates]
   ): Gen[HttpRequestBody] =
-    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates, appIds))
+    genWithBody(eventsPerPayload, Body.gen(time, frequencies, contexts, identitySource, duplicates))
 
   private def genWithBody(
     eventsPerPayload: GenConfig.EventsPerPayload,

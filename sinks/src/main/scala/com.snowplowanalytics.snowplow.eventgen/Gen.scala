@@ -45,8 +45,7 @@ object Gen {
         config.eventsFrequencies,
         config.contextsPerEvent,
         identitySource,
-        config.duplicates,
-        config.appIds
+        config.duplicates
       )
     } yield payload
 
@@ -65,8 +64,7 @@ object Gen {
         config.contextsPerEvent,
         generateEnrichments,
         identitySource,
-        config.duplicates,
-        config.appIds
+        config.duplicates
       )
     } yield events.map { e =>
       format match {
@@ -89,8 +87,7 @@ object Gen {
         config.contextsPerEvent,
         methodFrequencies,
         identitySource,
-        config.duplicates,
-        config.appIds
+        config.duplicates
       )
     } yield request
 }
