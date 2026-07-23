@@ -138,7 +138,7 @@ object Body {
       }
 
       allContexts = authUserContext.toList ++ regularContexts.value
-      derivedContexts <- Context.DerivedContextsWrapper.gen(time)
+      derivedContexts <- Context.DerivedContextsWrapper.gen(time, contexts)
     } yield Body(e, app, dt, dev, tv, et, u, event, ContextsWrapper(allContexts), derivedContexts)
 
   def encodeValue(value: String) = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)

@@ -176,6 +176,7 @@ object Config {
       .ensure(_.min >= 0, "minPerEvent must be a positive number")
       .ensure(_.max >= 0, "minPerEvent must be a positive number")
       .ensure(c => c.max >= c.min, "minPerEvent cannot be larger than maxPerEvent")
+      .ensure(_.contextFrequencyDefault >= 0, "contextFrequencyDefault must be non-negative")
 
   implicit val duplicatesDecoder: Decoder[GenConfig.Duplicates] =
     deriveConfiguredDecoder[GenConfig.Duplicates]

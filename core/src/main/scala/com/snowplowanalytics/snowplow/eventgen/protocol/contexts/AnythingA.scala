@@ -14,25 +14,17 @@ package com.snowplowanalytics.snowplow.eventgen.protocol.contexts
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer}
 import com.snowplowanalytics.snowplow.eventgen.protocol.SelfDescribingJsonGen
-import com.snowplowanalytics.snowplow.eventgen.protocol.implicits._
-import com.snowplowanalytics.snowplow.eventgen.primitives._
 import org.scalacheck.Gen
 import io.circe.Json
 import java.time.Instant
 
-object OptimizelyState extends SelfDescribingJsonGen {
+object AnythingA extends SelfDescribingJsonGen {
+
+  override def schemaKey: SchemaKey =
+    SchemaKey("com.snowplowanalytics.iglu", "anything-a", "jsonschema", SchemaVer.Full(1, 0, 0))
 
   override val allowsAdditionalProperties: Boolean = true
 
-  override def schemaKey: SchemaKey =
-    SchemaKey("com.optimizely", "state", "jsonschema", SchemaVer.Full(1, 0, 0))
-
   override def fieldGens(now: Instant): Map[String, Gen[Option[Json]]] =
-    Map(
-      "experimentId"   -> strGen(1, 32).orNull,
-      "isActive"       -> Gen.oneOf(true, false).orNull,
-      "variationIndex" -> Gen.choose(0, 32767).orNull,
-      "variationId"    -> strGen(1, 16).orNull,
-      "variationName"  -> strGen(1, 32).orNull
-    )
+    Map.empty
 }

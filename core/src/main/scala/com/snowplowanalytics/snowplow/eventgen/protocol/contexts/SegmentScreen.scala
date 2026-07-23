@@ -22,6 +22,8 @@ import java.time.Instant
 
 object SegmentScreen extends SelfDescribingJsonGen {
 
+  override val allowsAdditionalProperties: Boolean = true
+
   override def schemaKey: SchemaKey =
     SchemaKey("com.segment", "screen", "jsonschema", SchemaVer.Full(1, 0, 0))
 

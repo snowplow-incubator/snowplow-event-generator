@@ -34,14 +34,20 @@ object Context {
     def forSdkEvent: Contexts = Contexts(value)
   }
 
-  private def anyContext(alternatives: List[SelfDescribingJsonGen], now: Instant): Gen[SelfDescribingData[Json]] =
-    alternatives match {
-      case g1 :: g2 :: grest =>
-        Gen.oneOf(g1.gen(now), g2.gen(now), grest.map(_.gen(now)): _*)
-      case _ =>
-        // should never happen, because our controlled lists have >2 generators
-        throw new IllegalStateException("Got invalid number of generators")
+  private def anyContext(
+    alternatives: List[SelfDescribingJsonGen],
+    now: Instant,
+    config: GenConfig.ContextsPerEvent
+  ): Gen[SelfDescribingData[Json]] = {
+    val weighted = alternatives.flatMap { ctx =>
+      val freq = config.contextFrequencies.getOrElse(ctx.schemaKey.name, config.contextFrequencyDefault)
+      if (freq > 0) Some((freq, ctx.gen(now))) else None
     }
+    if (weighted.nonEmpty)
+      Gen.frequency(weighted: _*)
+    else
+      throw new IllegalStateException("All context frequencies are 0")
+  }
 
   object ContextsWrapper {
 
@@ -49,7 +55,7 @@ object Context {
       Gen
         .chooseNum(contextsPerEvent.min, contextsPerEvent.max)
         .flatMap { numContexts =>
-          Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now))
+          Gen.listOfN(numContexts, anyContext(AllContexts.sentContexts, now, contextsPerEvent))
         }
         .map(ContextsWrapper(_))
   }
@@ -59,11 +65,11 @@ object Context {
   }
 
   object DerivedContextsWrapper {
-    def gen(now: Instant): Gen[DerivedContextsWrapper] =
+    def gen(now: Instant, contextsPerEvent: GenConfig.ContextsPerEvent): Gen[DerivedContextsWrapper] =
       Gen
         .chooseNum(0, AllContexts.derivedContexts.length)
         .flatMap { numContexts =>
-          Gen.listOfN(numContexts, anyContext(AllContexts.derivedContexts, now))
+          Gen.listOfN(numContexts, anyContext(AllContexts.derivedContexts, now, contextsPerEvent))
         }
         .map(DerivedContextsWrapper(_))
   }

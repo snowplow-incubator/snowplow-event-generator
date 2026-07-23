@@ -22,6 +22,8 @@ import java.time.Instant
 
 object OptimizelyVisitor extends SelfDescribingJsonGen {
 
+  override val allowsAdditionalProperties: Boolean = true
+
   override def schemaKey: SchemaKey =
     SchemaKey("com.optimizely", "visitor", "jsonschema", SchemaVer.Full(1, 0, 0))
 

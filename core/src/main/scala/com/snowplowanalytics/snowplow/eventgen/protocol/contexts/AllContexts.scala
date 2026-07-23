@@ -26,6 +26,7 @@ object AllContexts {
   val sentContexts: List[SelfDescribingJsonGen] =
     List(
       AnonymousIp,
+      AnythingA,
       BrowserContext,
       CheckoutStep,
       ClientSession,
