@@ -109,9 +109,18 @@ object Main extends IOApp {
         case Some(rate) =>
           val tick      = rate.tickMillis.millis
           val batchSize = rate.eventsPerSecond * rate.tickMillis / 1000
-          Stream.awakeEvery[F](tick).flatMap { _ =>
-            Stream.evalSeq(List.fill(batchSize)(runGen(mkGen(time), rng)).pure[F])
+          val batch = config.seed match {
+            case Some(_) =>
+              Stream.range(0, batchSize).covary[F].evalMap(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+            case None =>
+              Stream
+                .range(0, batchSize)
+                .covary[F]
+                .parEvalMapUnordered(Runtime.getRuntime.availableProcessors)(_ =>
+                  Sync[F].delay(runGen(mkGen(time), rng))
+                )
           }
+          Stream.awakeEvery[F](tick).flatMap(_ => batch)
         case None =>
           config.seed match {
             case Some(seed) =>
@@ -124,7 +133,9 @@ object Main extends IOApp {
                 Stream(1)
                   .repeat
                   .covary[F]
-                  .parEvalMap(Runtime.getRuntime.availableProcessors * 5)(_ => Sync[F].delay(runGen(mkGen(time), rng)))
+                  .parEvalMapUnordered(Runtime.getRuntime.availableProcessors)(_ =>
+                    Sync[F].delay(runGen(mkGen(time), rng))
+                  )
           }
       }
       event <- config.eventsTotal.fold(events)(events.take)

@@ -27,7 +27,11 @@ class DeterminismSpec extends Specification {
   private val fixedTimestamp = Instant.parse("2026-01-01T00:00:00Z")
   private val eventCount     = 50
 
-  private def mkConfig(seed: Option[Long], events: GenConfig.Events): Config =
+  private def mkConfig(
+    seed: Option[Long],
+    events: GenConfig.Events,
+    rate: Option[GenConfig.Rate] = None
+  ): Config =
     Config(
       events = events,
       output = Config.Output.Stdout,
@@ -39,7 +43,7 @@ class DeterminismSpec extends Specification {
       eventsFrequencies = GenConfig.EventsFrequencies(1, 1, 1, 1, 0, 0, 1, Map.empty),
       contextsPerEvent = GenConfig.ContextsPerEvent(0, 3),
       duplicates = None,
-      rate = None,
+      rate = rate,
       userGraph = None,
       appProfiles = None
     )
@@ -100,6 +104,26 @@ class DeterminismSpec extends Specification {
       run1.size must_== eventCount
       run2.size must_== eventCount
       run1 must_!= run2
+    }
+
+    // Rate mode generates each tick's batch through a seed-aware path (sequential when seeded,
+    // parallel otherwise); these guard that the seeded path stays reproducible and the parallel
+    // path still yields the requested number of events.
+    "produce identical events across two seeded runs in rate mode" in {
+      val config =
+        mkConfig(seed = Some(12345L), GenConfig.Events.CollectorPayloads, rate = Some(GenConfig.Rate(1000, 100)))
+      val run1 = collectCollectorPayloads(config)
+      val run2 = collectCollectorPayloads(config)
+
+      run1.size must_== eventCount
+      run1 must_== run2
+    }
+
+    "produce the requested number of events without seed in rate mode" in {
+      val config = mkConfig(seed = None, GenConfig.Events.CollectorPayloads, rate = Some(GenConfig.Rate(1000, 100)))
+      val run1   = collectCollectorPayloads(config)
+
+      run1.size must_== eventCount
     }
   }
 
