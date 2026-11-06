@@ -1,3 +1,11 @@
+Version 0.11.0 (2026-11-06)
+--------------------------
+Remove insecure HTTP Snowplow Maven resolver (#100)
+chore(ci): remove Snyk workflow (#98)
+Avoid worker starvation (#97)
+Fix non-deterministic event generation when seed is provided (#96)
+Bump to Java 25 (#95)
+
 Version 0.10.0 (2026-01-30)
 --------------------------
 Add deterministic user clustering for identity resolution test data (#88)
