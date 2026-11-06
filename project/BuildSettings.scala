@@ -42,10 +42,6 @@ object BuildSettings {
     )
   )
 
-  lazy val basicSettigns = Seq(
-    resolvers ++= Dependencies.resolutionRepos
-  )
-
   lazy val dynVerSettings = Seq(
     ThisBuild / dynverVTagPrefix := false, // Otherwise git tags required to have v-prefix
     ThisBuild / dynverSeparator := "-"     // to be compatible with docker
