@@ -14,10 +14,6 @@ import Keys._
 
 object Dependencies {
 
-  val resolutionRepos = Seq(
-    "Snowplow Analytics Maven repo".at("http://maven.snplow.com/releases/").withAllowInsecureProtocol(true)
-  )
-
   libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.32" % Test
 
   object V {
@@ -44,12 +40,10 @@ object Dependencies {
     val catsEffect       = "3.7.0"
     val catsEffectSpecs2 = "1.6.0"
     // raw output
-    val snowplowRawEvent = "0.1.0"
-    val collectorPayload = "0.0.0"
-    val badRows          = "2.1.1"
-    val httpClient       = "4.5.14"
-    val thrift           = "0.22.0"
-    val http4s           = "0.23.33"
+    val badRows    = "2.1.1"
+    val httpClient = "4.5.14"
+    val thrift     = "0.22.0"
+    val http4s     = "0.23.33"
   }
 
   object Libraries {
@@ -88,9 +82,6 @@ object Dependencies {
 
     val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat
     val thrift           = "org.apache.thrift"       % "libthrift"               % V.thrift
-    // raw output
-    val snowplowRawEvent = "com.snowplowanalytics"  % "snowplow-thrift-raw-event" % V.snowplowRawEvent
-    val collectorPayload = "com.snowplowanalytics"  % "collector-payload-1"       % V.collectorPayload
-    val badRows          = "com.snowplowanalytics" %% "snowplow-badrows"          % V.badRows
+    val badRows          = "com.snowplowanalytics"  %% "snowplow-badrows"        % V.badRows
   }
 }

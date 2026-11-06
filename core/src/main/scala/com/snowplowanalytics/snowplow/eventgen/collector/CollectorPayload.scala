@@ -13,7 +13,6 @@
 package com.snowplowanalytics.snowplow.eventgen.collector
 
 import com.snowplowanalytics.iglu.core.{SchemaKey, SchemaVer, SelfDescribingData}
-import com.snowplowanalytics.snowplow.CollectorPayload.thrift.model1.{CollectorPayload => CollectorPayload1}
 import com.snowplowanalytics.snowplow.eventgen.protocol._
 import com.snowplowanalytics.snowplow.eventgen.GenConfig
 import com.snowplowanalytics.iglu.core.circe.CirceIgluCodecs._
@@ -21,7 +20,6 @@ import com.snowplowanalytics.snowplow.eventgen.protocol.common.PayloadDataSchema
 import org.apache.http.NameValuePair
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.message.BasicNameValuePair
-import org.apache.thrift.TSerializer
 import org.scalacheck.Gen
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -68,25 +66,25 @@ final case class CollectorPayload(
     PayloadParts(querystring, bodyJson, contentType, timestamp)
   }
 
-  def toThrift: CollectorPayload1 =
-    // Timestamp must be always set, otherwise long will fallback it to 1970-01-01
-    new CollectorPayload1(
-      CollectorPayload.IgluUri.toSchemaUri,
-      context.ipAddress.map(_.toString).orNull,
-      parts.timestamp,
-      source.encoding,
-      source.name
-    ).setHostname(source.hostname.orNull)
-      .setQuerystring(
+  private[collector] def thriftFields: CollectorPayloadThrift =
+    CollectorPayloadThrift(
+      schema = CollectorPayload.IgluUri.toSchemaUri,
+      ipAddress = context.ipAddress.map(_.toString),
+      timestamp = parts.timestamp,
+      encoding = source.encoding,
+      collector = source.name,
+      userAgent = context.useragent,
+      refererUri = context.refererUri.map(_.toString),
+      path = Some(api.toString),
+      querystring = Option(
         (new URIBuilder).setPath(api.toString).setParameters(parts.querystring.asJava).build().getQuery
-      )
-      .setRefererUri(context.refererUri.map(_.toString).orNull)
-      .setContentType(parts.contentType.orNull)
-      .setUserAgent(context.useragent.orNull)
-      .setBody(parts.body.orNull)
-      .setNetworkUserId(context.userId.map(_.toString).orNull)
-      .setHeaders(context.headers.toList.asJava)
-      .setPath(api.toString);
+      ),
+      body = parts.body,
+      headers = Some(context.headers.toList),
+      contentType = parts.contentType,
+      hostname = source.hostname,
+      networkUserId = context.userId.map(_.toString)
+    )
 
   override def toString: String =
     s"""
@@ -109,7 +107,7 @@ final case class CollectorPayload(
        """.stripMargin
 
   def toRaw: Array[Byte] =
-    CollectorPayload.serializer.serialize(toThrift)
+    thriftFields.toBytes
 }
 
 object CollectorPayload {
@@ -146,6 +144,4 @@ object CollectorPayload {
 
   val IgluUri: SchemaKey =
     SchemaKey("com.snowplowanalytics.snowplow", "CollectorPayload", "thrift", SchemaVer.Full(1, 0, 0))
-
-  lazy val serializer = new TSerializer()
 }

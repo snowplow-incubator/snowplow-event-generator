@@ -13,7 +13,6 @@ import sbt.Keys.crossScalaVersions
 
 lazy val commonSettings = BuildSettings.commonSettings ++
   BuildSettings.sbtSiteSettings ++
-  BuildSettings.basicSettigns ++
   BuildSettings.publishSettings ++
   BuildSettings.scoverage ++
   BuildSettings.dynVerSettings ++
@@ -35,8 +34,6 @@ lazy val core = project
       Dependencies.Libraries.scalaCheckCats,
       Dependencies.Libraries.badRows,
       Dependencies.Libraries.httpClient,
-      Dependencies.Libraries.snowplowRawEvent,
-      Dependencies.Libraries.collectorPayload,
       Dependencies.Libraries.slf4j,
       Dependencies.Libraries.thrift,
       Dependencies.Libraries.stsSdk % Runtime,
